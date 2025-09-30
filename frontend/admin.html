@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детективка - Админ-панель</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background: #2c3e50;
+        }
+        .sidebar .nav-link {
+            color: #ecf0f1;
+            padding: 0.75rem 1rem;
+            border-radius: 0.25rem;
+            margin: 0.125rem 0.5rem;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: #3498db;
+            color: white;
+        }
+        .content-area {
+            background: #ecf0f1;
+            min-height: calc(100vh - 56px);
+            padding: 2rem;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        .table-actions {
+            white-space: nowrap;
+        }
+        .form-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand">
+                <i class="fas fa-map-marked-alt me-2"></i>
+                Location Game - Админ-панель
+            </span>
+            <div class="navbar-nav ms-auto">
+                <div class="d-flex align-items-center">
+                    <span class="navbar-text me-3" id="adminUsername"></span>
+                    <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                        <i class="fas fa-sign-out-alt me-1"></i>Выйти
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="#" data-tab="users">
+                        <i class="fas fa-users me-2"></i>Пользователи
+                    </a>
+                    <a class="nav-link" href="#" data-tab="scenarios">
+                        <i class="fas fa-list-alt me-2"></i>Сценарии
+                    </a>
+                    <a class="nav-link" href="#" data-tab="addresses">
+                        <i class="fas fa-map-marker-alt me-2"></i>Адреса
+                    </a>
+                    <a class="nav-link" href="#" data-tab="rooms">
+                        <i class="fas fa-door-open me-2"></i>Комнаты
+                    </a>
+                    <a class="nav-link" href="#" data-tab="answers">
+                        <i class="fas fa-clipboard-check me-2"></i>Ответы команд
+                    </a>
+                    <a class="nav-link" href="#" data-tab="statistics">
+                        <i class="fas fa-chart-bar me-2"></i>Статистика
+                    </a>
+                    <a class="nav-link" href="#" data-tab="permissions">
+                        <i class="fas fa-key me-2"></i>Разрешения
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 content-area">
+                <!-- Users Tab -->
+                <div id="users-tab" class="tab-content">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-users me-2"></i>Управление пользователями</h3>
+                    </div>
+
+                    <!-- Add User Form -->
+                    <div class="form-section">
+                        <h5 class="mb-3">Добавить нового пользователя</h5>
+                        <form id="addUserForm">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="newUsername" class="form-label">Имя пользователя</label>
+                                        <input type="text" class="form-control" id="newUsername" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="newPassword" class="form-label">Пароль</label>
+                                        <input type="password" class="form-control" id="newPassword" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Роль</label>
+                                        <div class="mt-2">
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="userRole" id="roleUser" value="user" checked>
+                                                <label class="form-check-label" for="roleUser">Пользователь</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="userRole" id="roleAdmin" value="admin">
+                                                <label class="form-check-label" for="roleAdmin">Администратор</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Добавить пользователя
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Users Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Список пользователей</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Имя пользователя</th>
+                                            <th>Роль</th>
+                                            <th>Дата создания</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTable">
+                                        <tr>
+                                            <td colspan="5" class="text-center">Загрузка...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scenarios Tab -->
+                <div id="scenarios-tab" class="tab-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-list-alt me-2"></i>Управление сценариями</h3>
+                    </div>
+
+                    <!-- Add Scenario Form -->
+                    <div class="form-section">
+                        <h5 class="mb-3">Создать новый сценарий</h5>
+                        <form id="addScenarioForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="scenarioName" class="form-label">Название сценария</label>
+                                        <input type="text" class="form-control" id="scenarioName" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="scenarioDescription" class="form-label">Описание</label>
+                                        <input type="text" class="form-control" id="scenarioDescription">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Секция вопросов -->
+                            <div class="mb-3">
+                                <label class="form-label">Вопросы для игроков</label>
+                                <div id="questionsContainer">
+                                    <div class="question-item mb-2">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control question-input" placeholder="Введите вопрос">
+                                            <button type="button" class="btn btn-outline-danger" onclick="removeQuestion(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuestion()">
+                                    <i class="fas fa-plus me-1"></i>Добавить вопрос
+                                </button>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Создать сценарий
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Scenarios Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Список сценариев</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Название</th>
+                                            <th>Описание</th>
+                                            <th>Дата создания</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scenariosTable">
+                                        <tr>
+                                            <td colspan="6" class="text-center">Загрузка...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Tab -->
+                <div id="statistics-tab" class="tab-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-chart-bar me-2"></i>Статистика попыток по сценарию</h3>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-6">
+                                    <label class="form-label">Сценарий</label>
+                                    <select id="statsScenarioSelect" class="form-select"></select>
+                                </div>
+                                <div class="col-md-3">
+                                    <button class="btn btn-outline-primary w-100" onclick="loadStatistics()">
+                                        <i class="fas fa-sync-alt me-1"></i>Обновить
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Попытки по районам</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Район</th>
+                                            <th>Всего попыток</th>
+                                            <th>Найдено</th>
+                                            <th>Не найдено</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="statsTable">
+                                        <tr>
+                                            <td colspan="4" class="text-center">Выберите сценарий и нажмите Обновить</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Permissions Tab -->
+                <div id="permissions-tab" class="tab-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-key me-2"></i>Управление разрешениями сценариев</h3>
+                    </div>
+
+                    <!-- Grant Permission Form -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Выдать разрешение на сценарий</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="grantPermissionForm">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="permissionAdmin" class="form-label">Админ</label>
+                                        <select id="permissionAdmin" class="form-select" required>
+                                            <option value="">Выберите админа...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="permissionScenario" class="form-label">Сценарий</label>
+                                        <select id="permissionScenario" class="form-select" required>
+                                            <option value="">Выберите сценарий...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-plus me-1"></i>Выдать разрешение
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Current Permissions -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Текущие разрешения</h5>
+                            <button class="btn btn-outline-primary btn-sm" onclick="loadPermissions()">
+                                <i class="fas fa-sync-alt me-1"></i>Обновить
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Админ</th>
+                                            <th>Сценарий</th>
+                                            <th>Выдано</th>
+                                            <th>Выдал</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="permissionsTable">
+                                        <tr>
+                                            <td colspan="5" class="text-center">Загрузка разрешений...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rooms Tab -->
+                <div id="rooms-tab" class="tab-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-door-open me-2"></i>Комнаты</h3>
+                    </div>
+
+                    <div class="form-section">
+                        <h5 class="mb-3">Создать комнату</h5>
+                        <form id="createRoomForm">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Название комнаты</label>
+                                    <input type="text" class="form-control" id="roomName" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Сценарий</label>
+                                    <select id="roomScenario" class="form-select" required>
+                                        <option value="">Выберите сценарий...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Длительность (мин.)</label>
+                                    <input type="number" min="1" class="form-control" id="roomDuration" value="60">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-3">
+                                <i class="fas fa-plus me-1"></i>Создать комнату
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Мои комнаты</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Название</th>
+                                            <th>Сценарий</th>
+                                            <th>Старт</th>
+                                            <th>Длительность</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="roomsTable">
+                                        <tr><td colspan="6" class="text-center">Загрузка...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Игроки комнаты</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="addRoomUserForm" class="row g-3 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label">Комната</label>
+                                    <select id="roomSelectForUsers" class="form-select" required>
+                                        <option value="">Выберите комнату...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Логин</label>
+                                    <input type="text" id="roomUserLogin" class="form-control" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Пароль</label>
+                                    <input type="text" id="roomUserPassword" class="form-control" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-user-plus me-1"></i>Добавить игрока
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div class="table-responsive mt-3">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Логин</th>
+                                            <th>Создан</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="roomUsersTable">
+                                        <tr><td colspan="4" class="text-center">Выберите комнату...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Addresses Tab -->
+                <div id="addresses-tab" class="tab-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-map-marker-alt me-2"></i>Управление адресами</h3>
+                    </div>
+
+                    <!-- Add Address Form -->
+                    <div class="form-section">
+                        <h5 class="mb-3">Добавить новый адрес</h5>
+                        <form id="addAddressForm">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="addressScenario" class="form-label">Сценарий</label>
+                                        <select class="form-select" id="addressScenario" required>
+                                            <option value="">Выберите сценарий...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="addressDistrict" class="form-label">Район</label>
+                                        <select class="form-select" id="addressDistrict" required>
+                                            <option value="">Выберите район...</option>
+                                            <option value="С">С</option>
+											<option value="Ю">Ю</option>
+											<option value="З">З</option>
+											<option value="В">В</option>
+                                            <option value="Ц">Ц</option>
+                                            <option value="СВ">СВ</option>
+                                            <option value="СЗ">СЗ</option>
+                                            <option value="ЮВ">ЮВ</option>
+											<option value="ЮЗ">ЮЗ</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="addressHouseNumber" class="form-label">Номер дома</label>
+                                        <input type="text" class="form-control" id="addressHouseNumber" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="addressDescription" class="form-label">Описание локации</label>
+                                <textarea class="form-control" id="addressDescription" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Добавить адрес
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Address Management -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Выберите сценарий</h5>
+                                </div>
+                                <div class="card-body">
+                                    <select class="form-select" id="viewAddressScenario">
+                                        <option value="">Выберите сценарий для просмотра...</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Addresses Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Адреса сценария</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Район</th>
+                                            <th>Номер дома</th>
+                                            <th>Описание</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="addressesTable">
+                                        <tr>
+                                            <td colspan="5" class="text-center">Выберите сценарий для просмотра адресов</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Answers Tab -->
+                <div id="answers-tab" class="tab-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-clipboard-check me-2"></i>Ответы команд</h3>
+                    </div>
+
+                    <div class="form-section">
+                        <h5 class="mb-3">Выберите комнату для просмотра ответов</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Комната</label>
+                                <select id="answersRoomSelect" class="form-select" required>
+                                    <option value="">Выберите комнату...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="button" class="btn btn-primary w-100" onclick="loadRoomAnswers()">
+                                    <i class="fas fa-eye me-1"></i>Показать ответы
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="answersContent" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0" id="answersRoomTitle">Ответы команд</h5>
+                            </div>
+                            <div class="card-body" id="answersList">
+                                <!-- Ответы будут загружены здесь -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Scenario Modal -->
+    <div class="modal fade" id="editScenarioModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать сценарий</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editScenarioForm">
+                        <input type="hidden" id="editScenarioId">
+                        <div class="mb-3">
+                            <label for="editScenarioName" class="form-label">Название</label>
+                            <input type="text" class="form-control" id="editScenarioName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editScenarioDescription" class="form-label">Описание</label>
+                            <input type="text" class="form-control" id="editScenarioDescription">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="updateScenario()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

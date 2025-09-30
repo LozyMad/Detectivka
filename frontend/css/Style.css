@@ -1,0 +1,115 @@
+.auth-body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.auth-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.auth-title {
+    color: #333;
+    font-weight: 600;
+}
+
+.game-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.game-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    backdrop-filter: blur(10px);
+}
+
+.location-result {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.district-btn {
+    margin: 0.25rem;
+    min-width: 80px;
+}
+
+.admin-nav {
+    background: #2c3e50;
+}
+
+.admin-sidebar {
+    background: #34495e;
+    min-height: calc(100vh - 56px);
+}
+
+.admin-content {
+    background: #ecf0f1;
+    min-height: calc(100vh - 56px);
+}
+
+.nav-link.active {
+    background: #3498db !important;
+}
+.visited-locations {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.visited-location-item {
+    background: #f8f9fa;
+    transition: background-color 0.2s;
+}
+
+.visited-location-item:hover {
+    background: #e9ecef;
+}
+
+.visited-location-item:last-child {
+    margin-bottom: 0 !important;
+	/* Добавляем в style.css */
+.attempts-history {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.attempt-item {
+    padding: 0.75rem;
+    border-left: 4px solid #6c757d;
+    margin-bottom: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 0.25rem;
+}
+
+.attempt-item.success {
+    border-left-color: #28a745;
+    background: #f8fff9;
+}
+
+.attempt-item.failure {
+    border-left-color: #dc3545;
+    background: #fff8f8;
+}
+
+.attempt-item .attempt-info {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.attempt-item .attempt-description {
+    font-weight: 500;
+    margin: 0.25rem 0;
+}
+
+.district-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+}
