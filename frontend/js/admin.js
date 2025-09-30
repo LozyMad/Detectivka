@@ -74,7 +74,14 @@ function setupAdminInterface(adminLevel) {
             console.log(`Processing tab: ${tabName}, found:`, tabLink);
             if (tabLink) {
                 tabLink.style.display = '';
+                tabLink.style.visibility = 'visible';
+                tabLink.style.opacity = '1';
                 console.log(`Showing tab: ${tabName}`);
+                console.log(`Tab ${tabName} computed styles:`, {
+                    display: window.getComputedStyle(tabLink).display,
+                    visibility: window.getComputedStyle(tabLink).visibility,
+                    opacity: window.getComputedStyle(tabLink).opacity
+                });
             } else {
                 console.log(`Tab not found: ${tabName}`);
             }
