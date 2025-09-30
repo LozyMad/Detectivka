@@ -31,6 +31,7 @@ function checkAdminAuth() {
 
 function setupAdminInterface(adminLevel) {
     console.log('Setting up admin interface for level:', adminLevel);
+    console.log('Current user object:', currentUser);
     
     const sidebar = document.querySelector('.sidebar');
     const navLinks = sidebar.querySelectorAll('.nav-link');
