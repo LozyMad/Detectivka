@@ -74,11 +74,11 @@ const createScenario = async (req, res) => {
       });
     }
 
-    const scenario = await Scenario.create({ 
-      name, 
-      description, 
-      is_active, 
-      created_by: req.user.id 
+    const scenario = await Scenario.create({
+      name,
+      description,
+      is_active,
+      created_by: req.user.id
     });
     // Create per-scenario database file and tables
     createScenarioDb(scenario.id);

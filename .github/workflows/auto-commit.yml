@@ -1,0 +1,36 @@
+name: Auto Commit Changes
+
+on:
+  workflow_dispatch:  # Запуск вручную
+  schedule:
+    - cron: '0 */6 * * *'  # Каждые 6 часов
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run linting and fixes
+        run: |
+          npm run lint --fix || true
+          npm run format || true
+      
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git diff --staged --quiet || git commit -m "Auto-fix: Linting and formatting"
+          git push
