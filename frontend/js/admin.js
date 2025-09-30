@@ -728,29 +728,38 @@ async function handleAddRoomUser(e) {
 // Функция для загрузки списка игроков комнаты
 async function loadRoomUsers(roomId) {
     try {
+        console.log('Loading room users for room:', roomId);
         const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE}/rooms/${roomId}/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
+        console.log('API response:', data);
         if (!res.ok) throw new Error(data.error || 'Ошибка загрузки игроков');
         displayRoomUsers(data.users);
     } catch (err) {
-        console.error(err);
+        console.error('Error loading room users:', err);
         showMessage(err.message || 'Ошибка загрузки игроков', 'danger');
     }
 }
 
 // Функция для отображения списка игроков
 function displayRoomUsers(users) {
+    console.log('Displaying room users:', users);
     const tbody = document.getElementById('roomUsersTable');
-    if (!tbody) return;
+    console.log('Table body element:', tbody);
+    if (!tbody) {
+        console.error('Table body not found!');
+        return;
+    }
     
     if (!users || users.length === 0) {
+        console.log('No users found, showing empty message');
         tbody.innerHTML = '<tr><td colspan="4" class="text-center">Нет игроков в комнате</td></tr>';
         return;
     }
     
+    console.log('Rendering', users.length, 'users');
     tbody.innerHTML = users.map(user => `
         <tr>
             <td>${user.id}</td>
@@ -1263,29 +1272,38 @@ async function revokePermission(adminId, scenarioId) {
 // Функция для загрузки списка игроков комнаты
 async function loadRoomUsers(roomId) {
     try {
+        console.log('Loading room users for room:', roomId);
         const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE}/rooms/${roomId}/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
+        console.log('API response:', data);
         if (!res.ok) throw new Error(data.error || 'Ошибка загрузки игроков');
         displayRoomUsers(data.users);
     } catch (err) {
-        console.error(err);
+        console.error('Error loading room users:', err);
         showMessage(err.message || 'Ошибка загрузки игроков', 'danger');
     }
 }
 
 // Функция для отображения списка игроков
 function displayRoomUsers(users) {
+    console.log('Displaying room users:', users);
     const tbody = document.getElementById('roomUsersTable');
-    if (!tbody) return;
+    console.log('Table body element:', tbody);
+    if (!tbody) {
+        console.error('Table body not found!');
+        return;
+    }
     
     if (!users || users.length === 0) {
+        console.log('No users found, showing empty message');
         tbody.innerHTML = '<tr><td colspan="4" class="text-center">Нет игроков в комнате</td></tr>';
         return;
     }
     
+    console.log('Rendering', users.length, 'users');
     tbody.innerHTML = users.map(user => `
         <tr>
             <td>${user.id}</td>
