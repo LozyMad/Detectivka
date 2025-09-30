@@ -33,6 +33,10 @@ function setupAdminInterface(adminLevel) {
     console.log('Setting up admin interface for level:', adminLevel);
     console.log('Current user object:', currentUser);
     
+    // Проверяем, существует ли вкладка backup в DOM
+    const backupTab = document.querySelector('[data-tab="backup"]');
+    console.log('Backup tab found in DOM:', backupTab);
+    
     const sidebar = document.querySelector('.sidebar');
     const navLinks = sidebar.querySelectorAll('.nav-link');
     
