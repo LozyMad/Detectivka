@@ -104,6 +104,18 @@ function setupEventListeners() {
     const addRoomUserForm = document.getElementById('addRoomUserForm');
     if (addRoomUserForm) addRoomUserForm.addEventListener('submit', handleAddRoomUser);
     const roomSelectForUsers = document.getElementById('roomSelectForUsers');
+    if (roomSelectForUsers) roomSelectForUsers.addEventListener('change', function() {
+        const roomId = this.value;
+        if (roomId) {
+            loadRoomUsers(roomId);
+        } else {
+            // Очищаем таблицу если комната не выбрана
+            const tbody = document.getElementById('roomUsersTable');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">Выберите комнату...</td></tr>';
+            }
+        }
+    });
 }
 
 function switchTab(tabName) {
@@ -705,9 +717,73 @@ async function handleAddRoomUser(e) {
         if (!res.ok) throw new Error(data.error || 'Ошибка добавления игрока');
         showMessage('Игрок добавлен', 'success');
         (e.target).reset();
+        // Обновляем список игроков после добавления
+        loadRoomUsers(room_id);
     } catch (err) {
         console.error(err);
         showMessage(err.message || 'Ошибка добавления игрока', 'danger');
+    }
+}
+
+// Функция для загрузки списка игроков комнаты
+async function loadRoomUsers(roomId) {
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE}/rooms/${roomId}/users`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Ошибка загрузки игроков');
+        displayRoomUsers(data.users);
+    } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Ошибка загрузки игроков', 'danger');
+    }
+}
+
+// Функция для отображения списка игроков
+function displayRoomUsers(users) {
+    const tbody = document.getElementById('roomUsersTable');
+    if (!tbody) return;
+    
+    if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Нет игроков в комнате</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = users.map(user => `
+        <tr>
+            <td>${user.id}</td>
+            <td>${user.username}</td>
+            <td>${new Date(user.created_at).toLocaleString()}</td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="removeRoomUser(${user.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Функция для удаления игрока из комнаты
+async function removeRoomUser(userId) {
+    if (!confirm('Удалить игрока из комнаты?')) return;
+    
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE}/rooms/users/${userId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Ошибка удаления игрока');
+        showMessage('Игрок удален', 'success');
+        // Обновляем список игроков
+        const roomId = document.getElementById('roomSelectForUsers').value;
+        if (roomId) loadRoomUsers(roomId);
+    } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Ошибка удаления игрока', 'danger');
     }
 }
 
