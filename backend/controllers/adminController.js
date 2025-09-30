@@ -74,12 +74,12 @@ const createScenario = async (req, res) => {
       });
     }
 
-   const scenario = await Scenario.create({ 
-     name, 
-     description, 
-     is_active, 
-     created_by: req.user.id 
-   });
+    const scenario = await Scenario.create({
+      name,
+      description,
+      is_active,
+      created_by: req.user.id
+    });
       name, 
       description, 
       is_active, 
