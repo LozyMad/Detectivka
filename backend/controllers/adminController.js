@@ -82,6 +82,16 @@ const createScenario = async (req, res) => {
     });
     // Create per-scenario database file and tables
     createScenarioDb(scenario.id);
+    
+    // Автоматический экспорт сценариев после создания
+    try {
+      const backupController = require('./backupController');
+      await backupController.exportScenarios({}, { json: () => {} });
+    } catch (exportError) {
+      console.error('Auto-export error:', exportError);
+      // Не прерываем создание сценария из-за ошибки экспорта
+    }
+    
     res.status(201).json({ 
       message: 'Scenario created successfully',
       scenario 

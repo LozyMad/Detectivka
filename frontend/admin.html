@@ -88,6 +88,9 @@
                     <a class="nav-link" href="#" data-tab="permissions">
                         <i class="fas fa-key me-2"></i>Разрешения
                     </a>
+                    <a class="nav-link" href="#" data-tab="backup">
+                        <i class="fas fa-download me-2"></i>Бэкап сценариев
+                    </a>
                 </nav>
             </div>
 
@@ -350,6 +353,77 @@
                                     <tbody id="permissionsTable">
                                         <tr>
                                             <td colspan="5" class="text-center">Загрузка разрешений...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Backup Tab -->
+                <div id="backup-tab" class="tab-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-download me-2"></i>Бэкап сценариев</h3>
+                    </div>
+
+                    <!-- Export Section -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Экспорт сценариев</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">
+                                Создайте резервную копию всех сценариев, включая вопросы, адреса и разрешения.
+                            </p>
+                            <button class="btn btn-success" onclick="exportScenarios()">
+                                <i class="fas fa-download me-2"></i>Экспортировать сценарии
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Import Section -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Импорт сценариев</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">
+                                Восстановите сценарии из файла резервной копии. Сценарии с одинаковыми именами будут пропущены.
+                            </p>
+                            <form id="importForm" enctype="multipart/form-data" onsubmit="event.preventDefault(); importScenarios();">
+                                <div class="mb-3">
+                                    <label for="backupFile" class="form-label">Выберите файл бэкапа (.json)</label>
+                                    <input type="file" class="form-control" id="backupFile" accept=".json" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload me-2"></i>Импортировать сценарии
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Backup List -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Доступные бэкапы</h5>
+                            <button class="btn btn-outline-primary btn-sm" onclick="loadBackupList()">
+                                <i class="fas fa-sync-alt me-1"></i>Обновить
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Имя файла</th>
+                                            <th>Размер</th>
+                                            <th>Дата создания</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="backupTable">
+                                        <tr>
+                                            <td colspan="3" class="text-center">Загрузка списка бэкапов...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -627,5 +701,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/admin.js"></script>
+    <script src="js/backup.js"></script>
 </body>
 </html>

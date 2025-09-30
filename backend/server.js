@@ -12,6 +12,7 @@ const roomRoutes = require('./routes/room');
 const roomPublicRoutes = require('./routes/roomPublic');
 const scenarioRoutes = require('./routes/scenarios');
 const questionRoutes = require('./routes/questions');
+const backupRoutes = require('./routes/backup');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,6 +31,7 @@ app.use('/api/rooms', roomRoutes);
 app.use('/api/room', roomPublicRoutes);
 app.use('/api/scenarios', scenarioRoutes);
 app.use('/api/questions', questionRoutes);
+app.use('/api/backup', backupRoutes);
 
 // Serve frontend
 app.get('/', (req, res) => {
