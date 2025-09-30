@@ -67,8 +67,12 @@ function setupAdminInterface(adminLevel) {
         // Для супер-админа показываем все вкладки
         restrictedTabs.forEach(tabName => {
             const tabLink = document.querySelector(`[data-tab="${tabName}"]`);
+            console.log(`Processing tab: ${tabName}, found:`, tabLink);
             if (tabLink) {
                 tabLink.style.display = '';
+                console.log(`Showing tab: ${tabName}`);
+            } else {
+                console.log(`Tab not found: ${tabName}`);
             }
         });
     }
