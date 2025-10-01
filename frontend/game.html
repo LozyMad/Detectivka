@@ -97,6 +97,144 @@
             border-color: var(--noir-gold);
             color: var(--noir-dark);
         }
+
+        /* Адаптивные стили для мобильных устройств */
+        @media (max-width: 767.98px) {
+            .navbar .container {
+                padding: 0.5rem 1rem;
+            }
+            
+            .navbar .d-flex {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 0.5rem;
+            }
+            
+            .navbar-brand {
+                font-size: 1.2rem !important;
+                margin-bottom: 0.25rem !important;
+            }
+            
+            .navbar-text {
+                font-size: 0.8rem !important;
+            }
+            
+            .btn-group {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .btn-group .btn {
+                flex: 1;
+                font-size: 0.9rem;
+                padding: 0.4rem 0.8rem;
+            }
+            
+            .d-flex.align-items-center:last-child {
+                justify-content: space-between;
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+            
+            .badge {
+                font-size: 0.7rem !important;
+                padding: 0.25rem 0.5rem !important;
+            }
+            
+            .btn-sm {
+                font-size: 0.8rem;
+                padding: 0.25rem 0.5rem;
+            }
+            
+            .container {
+                padding: 0.5rem !important;
+            }
+            
+            .game-card {
+                padding: 1rem !important;
+            }
+            
+            .game-card h2 {
+                font-size: 1.3rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .district-buttons {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                justify-content: center;
+            }
+            
+            .district-btn {
+                font-size: 0.8rem !important;
+                padding: 0.5rem 0.8rem !important;
+                margin: 0.2rem !important;
+                min-width: 70px;
+            }
+            
+            .address-card {
+                margin-bottom: 1rem !important;
+            }
+            
+            .address-card .card-body {
+                padding: 1rem !important;
+            }
+            
+            .address-title {
+                font-size: 1.1rem !important;
+            }
+            
+            .address-description {
+                font-size: 0.9rem !important;
+            }
+            
+            .trip-history {
+                margin-top: 1rem !important;
+            }
+            
+            .trip-history .card-body {
+                padding: 1rem !important;
+            }
+            
+            .trip-item {
+                padding: 0.5rem 0 !important;
+                font-size: 0.9rem !important;
+            }
+            
+            .attempts-history {
+                max-height: 300px !important;
+            }
+            
+            .attempt-item {
+                padding: 0.5rem !important;
+                font-size: 0.85rem !important;
+            }
+        }
+
+        /* Адаптивные стили для планшетов */
+        @media (min-width: 768px) and (max-width: 991.98px) {
+            .navbar-brand {
+                font-size: 1.4rem !important;
+            }
+            
+            .btn-group .btn {
+                font-size: 0.9rem;
+                padding: 0.4rem 0.8rem;
+            }
+            
+            .badge {
+                font-size: 0.8rem !important;
+            }
+            
+            .game-card {
+                padding: 2rem !important;
+            }
+            
+            .district-btn {
+                font-size: 0.9rem !important;
+                padding: 0.6rem 1rem !important;
+            }
+        }
         
         .btn-group .btn:hover:not(.active) {
             background: rgba(212, 175, 55, 0.2);
