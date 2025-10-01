@@ -2,6 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+
+console.log('__dirname:', __dirname);
+console.log('Static files path:', path.join(__dirname, '../frontend'));
+
 const database = require('./config/database');
 
 const authRoutes = require('./routes/auth');
@@ -22,12 +26,18 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Serve static files from frontend directory with proper MIME types
-app.use(express.static(path.join(__dirname, '../frontend'), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.css')) {
+const staticPath = path.join(__dirname, '../frontend');
+console.log('Setting up static files from:', staticPath);
+
+app.use(express.static(staticPath, {
+  setHeaders: (res, filePath) => {
+    console.log('Serving static file:', filePath);
+    if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
-    } else if (path.endsWith('.js')) {
+      console.log('Set CSS Content-Type for:', filePath);
+    } else if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
+      console.log('Set JS Content-Type for:', filePath);
     }
   }
 }));
