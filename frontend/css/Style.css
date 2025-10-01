@@ -449,18 +449,20 @@ h1, h2, h3, h4, h5, h6 {
 .main-title {
     font-size: 4rem;
     font-weight: 700;
-    color: var(--noir-cream);
+    color: var(--noir-gold);
     text-shadow: 2px 2px 4px var(--noir-shadow);
     margin-bottom: 1rem;
     letter-spacing: 2px;
+    font-family: 'Playfair Display', serif;
 }
 
 .subtitle {
     font-size: 1.5rem;
-    color: var(--noir-gold);
-    font-weight: 300;
+    color: var(--noir-cream);
+    font-weight: 400;
     margin-bottom: 1rem;
     text-shadow: 1px 1px 2px var(--noir-shadow);
+    font-family: 'Source Sans Pro', sans-serif;
 }
 
 .hero-description {
@@ -474,7 +476,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Choice Section */
 .choice-section {
-    padding: 20px 0 40px;
+    padding: 20px 0 20px;
     position: relative;
     z-index: 2;
 }
@@ -550,17 +552,21 @@ h1, h2, h3, h4, h5, h6 {
 
 .choice-card .card-title {
     font-size: 1.8rem;
-    color: var(--noir-cream);
+    color: var(--noir-gold);
     margin-bottom: 1rem;
     font-weight: 600;
+    font-family: 'Playfair Display', serif;
+    text-shadow: 1px 1px 2px var(--noir-shadow);
 }
 
 .choice-card .card-text {
-    color: var(--noir-text);
+    color: var(--noir-cream);
     font-size: 1rem;
     line-height: 1.6;
     margin-bottom: 1.5rem;
     opacity: 0.9;
+    font-family: 'Source Sans Pro', sans-serif;
+    font-weight: 400;
 }
 
 .choice-card .fas.fa-arrow-right {
@@ -576,7 +582,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Info Section */
 .info-section {
-    padding: 30px 0 50px;
+    padding: 20px 0 50px;
     background: rgba(13, 13, 13, 0.5);
     border-top: 1px solid rgba(212, 175, 55, 0.2);
     position: relative;
@@ -588,15 +594,19 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
     font-weight: 600;
+    font-family: 'Playfair Display', serif;
+    text-shadow: 1px 1px 2px var(--noir-shadow);
 }
 
 .info-text {
-    color: var(--noir-text);
+    color: var(--noir-cream);
     font-size: 1.1rem;
     line-height: 1.8;
     max-width: 800px;
     margin: 0 auto;
     opacity: 0.9;
+    font-family: 'Source Sans Pro', sans-serif;
+    font-weight: 400;
 }
 
 /* Responsive Design */

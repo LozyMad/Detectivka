@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js",
+    "build": "echo 'Build completed'",
     "commit": "node scripts/auto-commit.js",
     "commit:all": "git add . && git commit -m 'Auto-commit: $(date)' && git push",
     "lint": "eslint . --ext .js",
@@ -16,7 +17,9 @@
     "sqlite3": "^5.1.6",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "multer": "^2.0.2",
+    "body-parser": "^1.20.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
