@@ -423,6 +423,312 @@ h1, h2, h3, h4, h5, h6 {
     overflow-x: hidden;
 }
 
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
+
+/* Мобильные устройства (до 768px) */
+@media (max-width: 767.98px) {
+    .main-body {
+        padding: 0 10px;
+    }
+    
+    .hero-section {
+        padding: 20px 0 10px !important;
+    }
+    
+    .main-title {
+        font-size: 2.5rem !important;
+        margin-bottom: 0.5rem !important;
+        letter-spacing: 1px !important;
+    }
+    
+    .subtitle {
+        font-size: 1.2rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .choice-section {
+        padding: 10px 0 10px !important;
+    }
+    
+    .choice-card {
+        margin-bottom: 20px !important;
+        border-radius: 15px !important;
+    }
+    
+    .choice-card .card-body {
+        padding: 2rem !important;
+    }
+    
+    .choice-icon {
+        font-size: 2.5rem !important;
+        margin-bottom: 0.8rem !important;
+    }
+    
+    .choice-card .card-title {
+        font-size: 1.4rem !important;
+        margin-bottom: 0.8rem !important;
+    }
+    
+    .choice-card .card-text {
+        font-size: 0.9rem !important;
+        line-height: 1.5 !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .info-section {
+        padding: 15px 0 30px !important;
+    }
+    
+    .info-title {
+        font-size: 1.3rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .info-text {
+        font-size: 1rem !important;
+        line-height: 1.6 !important;
+        padding: 0 10px;
+    }
+}
+
+/* Планшеты (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .main-title {
+        font-size: 3.2rem !important;
+    }
+    
+    .subtitle {
+        font-size: 1.3rem !important;
+    }
+    
+    .choice-card .card-body {
+        padding: 3rem !important;
+    }
+    
+    .choice-icon {
+        font-size: 3rem !important;
+    }
+    
+    .choice-card .card-title {
+        font-size: 1.6rem !important;
+    }
+}
+
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ДЛЯ СТРАНИЦ ВХОДА ===== */
+
+/* Мобильные устройства - страницы входа */
+@media (max-width: 767.98px) {
+    .auth-body {
+        padding: 20px 10px;
+    }
+    
+    .auth-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 15px;
+    }
+    
+    .auth-card {
+        border-radius: 15px !important;
+        padding: 2rem 1.5rem !important;
+    }
+    
+    .auth-title {
+        font-size: 1.8rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .auth-subtitle {
+        font-size: 1rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    .form-control {
+        font-size: 16px !important; /* Предотвращает зум на iOS */
+        padding: 12px 15px !important;
+        border-radius: 8px !important;
+    }
+    
+    .btn {
+        font-size: 16px !important;
+        padding: 12px 20px !important;
+        border-radius: 8px !important;
+    }
+    
+    .auth-icon {
+        font-size: 2.5rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .back-link {
+        font-size: 0.9rem !important;
+        margin-top: 1rem !important;
+    }
+}
+
+/* Планшеты - страницы входа */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .auth-container {
+        max-width: 500px !important;
+    }
+    
+    .auth-card {
+        padding: 3rem 2.5rem !important;
+    }
+    
+    .auth-title {
+        font-size: 2.2rem !important;
+    }
+    
+    .auth-icon {
+        font-size: 3.5rem !important;
+    }
+}
+
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ДЛЯ ИГРОВОГО ИНТЕРФЕЙСА ===== */
+
+/* Мобильные устройства - игровой интерфейс */
+@media (max-width: 767.98px) {
+    .navbar {
+        padding: 0.5rem 0 !important;
+    }
+    
+    .navbar-brand {
+        font-size: 1.1rem !important;
+    }
+    
+    .navbar-nav .nav-link {
+        font-size: 0.9rem !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+    
+    .game-header {
+        padding: 1rem 0 !important;
+    }
+    
+    .game-title {
+        font-size: 1.5rem !important;
+    }
+    
+    .scenario-title {
+        font-size: 1rem !important;
+    }
+    
+    .timer-badge, .trips-badge {
+        font-size: 0.8rem !important;
+        padding: 0.3rem 0.6rem !important;
+    }
+    
+    .district-buttons {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+    }
+    
+    .district-btn {
+        font-size: 0.8rem !important;
+        padding: 0.5rem 0.8rem !important;
+        margin: 0.2rem !important;
+    }
+    
+    .address-card {
+        margin-bottom: 1rem !important;
+    }
+    
+    .address-card .card-body {
+        padding: 1rem !important;
+    }
+    
+    .address-title {
+        font-size: 1.1rem !important;
+    }
+    
+    .address-description {
+        font-size: 0.9rem !important;
+    }
+    
+    .trip-history {
+        margin-top: 1rem !important;
+    }
+    
+    .trip-history .card-body {
+        padding: 1rem !important;
+    }
+    
+    .trip-item {
+        padding: 0.5rem 0 !important;
+        font-size: 0.9rem !important;
+    }
+}
+
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ДЛЯ АДМИН-ПАНЕЛИ ===== */
+
+/* Мобильные устройства - админ-панель */
+@media (max-width: 767.98px) {
+    .admin-container {
+        padding: 0.5rem !important;
+    }
+    
+    .admin-header {
+        padding: 1rem 0 !important;
+    }
+    
+    .admin-title {
+        font-size: 1.5rem !important;
+    }
+    
+    .admin-nav {
+        flex-wrap: wrap !important;
+    }
+    
+    .admin-nav .nav-link {
+        font-size: 0.8rem !important;
+        padding: 0.5rem 0.75rem !important;
+        margin: 0.2rem !important;
+    }
+    
+    .admin-content {
+        padding: 1rem 0 !important;
+    }
+    
+    .table-responsive {
+        font-size: 0.8rem !important;
+    }
+    
+    .table th, .table td {
+        padding: 0.5rem 0.3rem !important;
+    }
+    
+    .btn-sm {
+        font-size: 0.7rem !important;
+        padding: 0.25rem 0.5rem !important;
+    }
+    
+    .form-control, .form-select {
+        font-size: 16px !important; /* Предотвращает зум на iOS */
+    }
+    
+    .modal-dialog {
+        margin: 0.5rem !important;
+    }
+    
+    .modal-content {
+        border-radius: 10px !important;
+    }
+    
+    .modal-header {
+        padding: 1rem !important;
+    }
+    
+    .modal-body {
+        padding: 1rem !important;
+    }
+    
+    .modal-footer {
+        padding: 1rem !important;
+    }
+}
+
 .main-body::before {
     content: '';
     position: absolute;
