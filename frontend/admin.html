@@ -42,6 +42,12 @@
         .navbar {
             background: var(--noir-darker) !important;
             border-bottom: 2px solid var(--noir-gold);
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            width: 100%;
         }
 
         .navbar-brand {
@@ -60,6 +66,10 @@
             background: var(--noir-gray);
             border-right: 1px solid rgba(212, 175, 55, 0.3);
             transition: transform 0.3s ease;
+            position: sticky;
+            top: 56px;
+            height: calc(100vh - 56px);
+            overflow-y: auto;
         }
 
         /* Гамбургер-меню */
@@ -86,7 +96,7 @@
         /* Адаптивное поведение */
         @media (max-width: 991.98px) {
             .sidebar {
-                position: fixed;
+                position: fixed !important;
                 top: 56px;
                 left: 0;
                 width: 280px;
@@ -94,6 +104,7 @@
                 z-index: 1000;
                 transform: translateX(-100%);
                 box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+                overflow-y: auto;
             }
 
             .sidebar.show {
@@ -127,6 +138,15 @@
             .hamburger-btn {
                 display: none;
             }
+        }
+
+        /* Отступ для фиксированного навбара */
+        body {
+            padding-top: 56px;
+        }
+
+        .main-content {
+            margin-top: 0;
         }
 
         .sidebar .nav-link {
