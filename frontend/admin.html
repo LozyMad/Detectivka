@@ -46,7 +46,7 @@
             top: 0;
             left: 0;
             right: 0;
-            z-index: 1030;
+            z-index: 1020;
             width: 100%;
         }
 
@@ -70,6 +70,13 @@
             top: 56px;
             height: calc(100vh - 56px);
             overflow-y: auto;
+        }
+
+        /* Отступ для контента сайдбара на мобильных */
+        @media (max-width: 991.98px) {
+            .sidebar .nav {
+                padding-top: 56px;
+            }
         }
 
         /* Гамбургер-меню */
@@ -97,11 +104,11 @@
         @media (max-width: 991.98px) {
             .sidebar {
                 position: fixed !important;
-                top: 56px;
+                top: 0;
                 left: 0;
                 width: 280px;
-                height: calc(100vh - 56px);
-                z-index: 1000;
+                height: 100vh;
+                z-index: 1030;
                 transform: translateX(-100%);
                 box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
                 overflow-y: auto;
@@ -117,12 +124,12 @@
 
             .sidebar-overlay {
                 position: fixed;
-                top: 56px;
+                top: 0;
                 left: 0;
                 width: 100%;
-                height: calc(100vh - 56px);
+                height: 100vh;
                 background: rgba(0, 0, 0, 0.5);
-                z-index: 999;
+                z-index: 1025;
                 opacity: 0;
                 visibility: hidden;
                 transition: all 0.3s ease;
