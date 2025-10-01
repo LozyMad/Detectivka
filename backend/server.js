@@ -2,9 +2,26 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const fs = require('fs');
 
 console.log('__dirname:', __dirname);
 console.log('Static files path:', path.join(__dirname, '../frontend'));
+
+// Check if frontend directory exists
+const frontendPath = path.join(__dirname, '../frontend');
+const cssPath = path.join(frontendPath, 'css');
+const styleCssPath = path.join(cssPath, 'style.css');
+
+console.log('Frontend directory exists:', fs.existsSync(frontendPath));
+console.log('CSS directory exists:', fs.existsSync(cssPath));
+console.log('style.css exists:', fs.existsSync(styleCssPath));
+
+if (fs.existsSync(frontendPath)) {
+  console.log('Frontend directory contents:', fs.readdirSync(frontendPath));
+}
+if (fs.existsSync(cssPath)) {
+  console.log('CSS directory contents:', fs.readdirSync(cssPath));
+}
 
 const database = require('./config/database');
 
