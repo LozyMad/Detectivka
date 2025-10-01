@@ -417,7 +417,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ===== СТИЛИ ГЛАВНОЙ СТРАНИЦЫ ===== */
 
 .main-body {
-    background: linear-gradient(135deg, var(--noir-darker) 0%, var(--noir-gray) 50%, var(--noir-dark) 100%);
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 25%, #1f1f1f 50%, #2a2a2a 75%, #1c1c1c 100%);
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
@@ -431,15 +431,16 @@ h1, h2, h3, h4, h5, h6 {
     right: 0;
     bottom: 0;
     background: 
-        radial-gradient(circle at 20% 80%, rgba(212, 175, 55, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(184, 115, 51, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(192, 192, 192, 0.05) 0%, transparent 50%);
+        radial-gradient(ellipse at 30% 20%, rgba(212, 175, 55, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 70% 80%, rgba(184, 115, 51, 0.06) 0%, transparent 60%),
+        radial-gradient(ellipse at 50% 50%, rgba(192, 192, 192, 0.03) 0%, transparent 70%),
+        linear-gradient(45deg, rgba(212, 175, 55, 0.02) 0%, transparent 50%, rgba(184, 115, 51, 0.02) 100%);
     pointer-events: none;
 }
 
 /* Hero Section */
 .hero-section {
-    padding: 80px 0 60px;
+    padding: 40px 0 20px;
     text-align: center;
     position: relative;
     z-index: 2;
@@ -458,7 +459,7 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 1.5rem;
     color: var(--noir-gold);
     font-weight: 300;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     text-shadow: 1px 1px 2px var(--noir-shadow);
 }
 
@@ -473,19 +474,19 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Choice Section */
 .choice-section {
-    padding: 40px 0 80px;
+    padding: 20px 0 40px;
     position: relative;
     z-index: 2;
 }
 
 .choice-card {
-    background: rgba(45, 45, 45, 0.8);
-    border: 2px solid transparent;
-    border-radius: 15px;
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(50, 50, 50, 0.95) 50%, rgba(35, 35, 35, 0.95) 100%);
+    border: 2px solid var(--noir-gold);
+    border-radius: 20px;
+    transition: all 0.4s ease;
     cursor: pointer;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 30px rgba(212, 175, 55, 0.1);
     height: 100%;
     position: relative;
     overflow: hidden;
@@ -495,22 +496,22 @@ h1, h2, h3, h4, h5, h6 {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(184, 115, 51, 0.1) 100%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.3), transparent);
+    transition: left 0.8s ease;
 }
 
 .choice-card:hover {
-    transform: translateY(-10px);
+    transform: translateY(-15px) scale(1.03);
     border-color: var(--noir-gold);
-    box-shadow: 0 15px 40px rgba(212, 175, 55, 0.2);
+    box-shadow: 0 35px 70px rgba(212, 175, 55, 0.4), 0 0 40px rgba(212, 175, 55, 0.2);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(40, 40, 40, 0.95) 30%, rgba(60, 60, 60, 0.95) 70%, rgba(35, 35, 35, 0.95) 100%);
 }
 
 .choice-card:hover::before {
-    opacity: 1;
+    left: 100%;
 }
 
 .admin-card:hover {
@@ -528,6 +529,10 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--noir-gold);
     margin-bottom: 1.5rem;
     transition: all 0.3s ease;
+}
+
+.choice-icon i {
+    color: var(--noir-gold) !important;
 }
 
 .admin-card .choice-icon {
@@ -571,7 +576,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Info Section */
 .info-section {
-    padding: 60px 0;
+    padding: 30px 0 50px;
     background: rgba(13, 13, 13, 0.5);
     border-top: 1px solid rgba(212, 175, 55, 0.2);
     position: relative;
