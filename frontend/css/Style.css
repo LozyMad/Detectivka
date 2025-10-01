@@ -413,3 +413,211 @@ h1, h2, h3, h4, h5, h6 {
     0% { transform: translateY(-100%); }
     100% { transform: translateY(100vh); }
 }
+
+/* ===== СТИЛИ ГЛАВНОЙ СТРАНИЦЫ ===== */
+
+.main-body {
+    background: linear-gradient(135deg, var(--noir-darker) 0%, var(--noir-gray) 50%, var(--noir-dark) 100%);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+.main-body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(212, 175, 55, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(184, 115, 51, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(192, 192, 192, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* Hero Section */
+.hero-section {
+    padding: 80px 0 60px;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+}
+
+.main-title {
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--noir-cream);
+    text-shadow: 2px 2px 4px var(--noir-shadow);
+    margin-bottom: 1rem;
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    font-size: 1.5rem;
+    color: var(--noir-gold);
+    font-weight: 300;
+    margin-bottom: 2rem;
+    text-shadow: 1px 1px 2px var(--noir-shadow);
+}
+
+.hero-description {
+    font-size: 1.1rem;
+    color: var(--noir-text);
+    max-width: 800px;
+    margin: 0 auto 3rem;
+    line-height: 1.8;
+    opacity: 0.9;
+}
+
+/* Choice Section */
+.choice-section {
+    padding: 40px 0 80px;
+    position: relative;
+    z-index: 2;
+}
+
+.choice-card {
+    background: rgba(45, 45, 45, 0.8);
+    border: 2px solid transparent;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.choice-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(184, 115, 51, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.choice-card:hover {
+    transform: translateY(-10px);
+    border-color: var(--noir-gold);
+    box-shadow: 0 15px 40px rgba(212, 175, 55, 0.2);
+}
+
+.choice-card:hover::before {
+    opacity: 1;
+}
+
+.admin-card:hover {
+    border-color: var(--noir-gold);
+    box-shadow: 0 15px 40px rgba(212, 175, 55, 0.3);
+}
+
+.player-card:hover {
+    border-color: var(--noir-copper);
+    box-shadow: 0 15px 40px rgba(184, 115, 51, 0.3);
+}
+
+.choice-icon {
+    font-size: 3rem;
+    color: var(--noir-gold);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.admin-card .choice-icon {
+    color: var(--noir-gold);
+}
+
+.player-card .choice-icon {
+    color: var(--noir-copper);
+}
+
+.choice-card:hover .choice-icon {
+    transform: scale(1.1);
+    text-shadow: 0 0 20px currentColor;
+}
+
+.choice-card .card-title {
+    font-size: 1.8rem;
+    color: var(--noir-cream);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.choice-card .card-text {
+    color: var(--noir-text);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    opacity: 0.9;
+}
+
+.choice-card .fas.fa-arrow-right {
+    color: var(--noir-gold);
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.choice-card:hover .fas.fa-arrow-right {
+    transform: translateX(10px);
+    color: var(--noir-cream);
+}
+
+/* Info Section */
+.info-section {
+    padding: 60px 0;
+    background: rgba(13, 13, 13, 0.5);
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    position: relative;
+    z-index: 2;
+}
+
+.info-title {
+    color: var(--noir-gold);
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.info-text {
+    color: var(--noir-text);
+    font-size: 1.1rem;
+    line-height: 1.8;
+    max-width: 800px;
+    margin: 0 auto;
+    opacity: 0.9;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-title {
+        font-size: 2.5rem;
+    }
+    
+    .subtitle {
+        font-size: 1.2rem;
+    }
+    
+    .hero-description {
+        font-size: 1rem;
+        padding: 0 20px;
+    }
+    
+    .choice-card {
+        margin-bottom: 2rem;
+    }
+    
+    .choice-icon {
+        font-size: 2.5rem;
+    }
+    
+    .choice-card .card-title {
+        font-size: 1.5rem;
+    }
+}
