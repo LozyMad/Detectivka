@@ -21,8 +21,16 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Serve static files from frontend directory
-app.use(express.static(path.join(__dirname, '../frontend')));
+// Serve static files from frontend directory with proper MIME types
+app.use(express.static(path.join(__dirname, '../frontend'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    } else if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -56,23 +64,6 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin.html'));
 });
 
-// Explicit CSS routes for Railway with correct MIME type
-app.get('/css/:filename', (req, res) => {
-  const filename = req.params.filename;
-  if (filename.endsWith('.css')) {
-    res.setHeader('Content-Type', 'text/css');
-  }
-  res.sendFile(path.join(__dirname, '../frontend/css', filename));
-});
-
-// Explicit JS routes for Railway with correct MIME type
-app.get('/js/:filename', (req, res) => {
-  const filename = req.params.filename;
-  if (filename.endsWith('.js')) {
-    res.setHeader('Content-Type', 'application/javascript');
-  }
-  res.sendFile(path.join(__dirname, '../frontend/js', filename));
-});
 
 // Initialize database and start server
 database.init().then(() => {
