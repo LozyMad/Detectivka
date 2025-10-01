@@ -30,7 +30,7 @@ const getRoomState = async (req, res) => {
       remaining = 0;
     }
     
-    res.json({
+    const response = {
       room: {
         id: room.id,
         name: room.name,
@@ -40,9 +40,13 @@ const getRoomState = async (req, res) => {
         game_end_time: room.game_end_time,
         duration_seconds: room.duration_seconds
       },
+      scenario_name: room.scenario_name, // Добавляем scenario_name на верхний уровень
       state,
       remaining
-    });
+    };
+    
+    console.log('Room state response:', JSON.stringify(response, null, 2));
+    res.json(response);
   } catch (error) {
     console.error('Get room state error:', error);
     res.status(500).json({ error: 'Internal server error' });

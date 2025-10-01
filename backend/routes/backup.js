@@ -33,4 +33,10 @@ router.post('/import', upload.single('backupFile'), backupController.importScena
 // Получить список бэкапов
 router.get('/list', backupController.getBackupList);
 
+// Скачать бэкап (без middleware авторизации, токен передается в query)
+router.get('/download/:filename', backupController.downloadBackup);
+
+// Удалить бэкап
+router.delete('/delete/:filename', backupController.deleteBackup);
+
 module.exports = router;

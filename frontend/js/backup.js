@@ -67,6 +67,7 @@ async function loadBackupList() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Ошибка загрузки списка бэкапов');
         
+        console.log('Backup list response:', data);
         displayBackupList(data.backups);
     } catch (err) {
         console.error(err);
@@ -80,7 +81,7 @@ function displayBackupList(backups) {
     if (!tbody) return;
     
     if (!backups || backups.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center">Нет доступных бэкапов</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Нет доступных бэкапов</td></tr>';
         return;
     }
     
@@ -89,8 +90,70 @@ function displayBackupList(backups) {
             <td>${backup.filename}</td>
             <td>${formatFileSize(backup.size)}</td>
             <td>${new Date(backup.created).toLocaleString()}</td>
+            <td>
+                <button class="btn btn-sm btn-primary me-1" onclick="downloadBackup('${backup.filename}')" title="Скачать">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteBackup('${backup.filename}')" title="Удалить">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
         </tr>
     `).join('');
+}
+
+// Скачать бэкап
+async function downloadBackup(filename) {
+    try {
+        const token = localStorage.getItem('token');
+        
+        // Создаем ссылку для скачивания с токеном в URL
+        const downloadUrl = `${API_BASE}/backup/download/${encodeURIComponent(filename)}?token=${encodeURIComponent(token)}`;
+        
+        // Создаем временную ссылку и кликаем по ней
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+        link.style.display = 'none';
+        
+        // Добавляем ссылку в DOM, кликаем и удаляем
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showMessage(`Бэкап "${filename}" скачан`, 'success');
+        
+    } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Ошибка скачивания бэкапа', 'danger');
+    }
+}
+
+// Удалить бэкап
+async function deleteBackup(filename) {
+    if (!confirm(`Вы уверены, что хотите удалить бэкап "${filename}"?`)) {
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE}/backup/delete/${encodeURIComponent(filename)}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Ошибка удаления');
+        
+        showMessage(`Бэкап "${filename}" удален`, 'success');
+        loadBackupList(); // Обновляем список
+        
+    } catch (err) {
+        console.error(err);
+        showMessage(err.message || 'Ошибка удаления бэкапа', 'danger');
+    }
 }
 
 // Форматирование размера файла

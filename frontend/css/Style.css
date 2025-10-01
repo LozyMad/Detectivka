@@ -1,62 +1,165 @@
+/* Лондонский нуар - Основные цвета */
+:root {
+    --noir-dark: #1a1a1a;
+    --noir-darker: #0d0d0d;
+    --noir-gray: #2d2d2d;
+    --noir-light-gray: #404040;
+    --noir-gold: #d4af37;
+    --noir-copper: #b87333;
+    --noir-silver: #c0c0c0;
+    --noir-cream: #f5f5dc;
+    --noir-text: #e0e0e0;
+    --noir-danger: #8b0000;
+    --noir-shadow: rgba(0, 0, 0, 0.8);
+}
+
+/* Импорт шрифтов */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+Pro:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Базовые стили */
+body {
+    font-family: 'Source Sans Pro', sans-serif;
+    background-color: var(--noir-dark);
+    color: var(--noir-text);
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    color: var(--noir-cream);
+    font-weight: 600;
+}
+
 .auth-body {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--noir-darker) 0%, var(--noir-gray) 50%, var(--noir-dark) 100%);
     min-height: 100vh;
     display: flex;
     align-items: center;
+    position: relative;
+}
+
+.auth-body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(184, 115, 51, 0.1) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .auth-card {
-    background: white;
+    background: rgba(45, 45, 45, 0.95);
     padding: 2rem;
     border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 20px 40px var(--noir-shadow);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(209, 52, 41, 0.088);
+    position: relative;
+    z-index: 1;
 }
 
 .auth-title {
-    color: #333;
+    color: var(--noir-gold);
     font-weight: 600;
+    text-shadow: 0 2px 4px var(--noir-shadow);
 }
 
 .game-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--noir-darker) 0%, var(--noir-gray) 50%, var(--noir-dark) 100%);
+    position: relative;
+}
+
+.game-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 30% 70%, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 70% 30%, rgba(184, 115, 51, 0.05) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .game-card {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(45, 45, 45, 0.95);
     border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 20px 40px var(--noir-shadow);
     backdrop-filter: blur(10px);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    position: relative;
+    z-index: 1;
 }
 
 .location-result {
-    background: #f8f9fa;
+    background: rgba(64, 64, 64, 0.8);
     border-radius: 10px;
     padding: 1.5rem;
     margin-top: 1rem;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: var(--noir-text);
 }
 
 .district-btn {
     margin: 0.25rem;
     min-width: 80px;
+    background: var(--noir-gray);
+    border: 1px solid var(--noir-gold);
+    color: var(--noir-gold);
+    transition: all 0.3s ease;
+}
+
+.district-btn.active,
+.district-btn.btn-primary {
+    background: var(--noir-gold) !important;
+    border-color: var(--noir-gold) !important;
+    color: var(--noir-dark) !important;
+}
+
+.district-btn:hover {
+    background: var(--noir-gold);
+    color: var(--noir-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--noir-shadow);
 }
 
 .admin-nav {
-    background: #2c3e50;
+    background: var(--noir-darker);
+    border-bottom: 2px solid var(--noir-gold);
 }
 
 .admin-sidebar {
-    background: #34495e;
+    background: var(--noir-gray);
     min-height: calc(100vh - 56px);
+    border-right: 1px solid rgba(212, 175, 55, 0.3);
 }
 
 .admin-content {
-    background: #ecf0f1;
+    background: var(--noir-dark);
     min-height: calc(100vh - 56px);
+    color: var(--noir-text);
 }
 
 .nav-link.active {
-    background: #3498db !important;
+    background: var(--noir-gold) !important;
+    color: var(--noir-dark) !important;
+    font-weight: 600;
+}
+
+.nav-link {
+    color: var(--noir-text) !important;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    background: rgba(212, 175, 55, 0.2) !important;
+    color: var(--noir-gold) !important;
 }
 .visited-locations {
     max-height: 400px;
@@ -64,17 +167,22 @@
 }
 
 .visited-location-item {
-    background: #f8f9fa;
-    transition: background-color 0.2s;
+    background: rgba(64, 64, 64, 0.8);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    color: var(--noir-text);
 }
 
 .visited-location-item:hover {
-    background: #e9ecef;
+    background: rgba(212, 175, 55, 0.1);
+    border-color: var(--noir-gold);
+    transform: translateX(5px);
 }
 
 .visited-location-item:last-child {
     margin-bottom: 0 !important;
-	/* Добавляем в style.css */
+}
+
 .attempts-history {
     max-height: 400px;
     overflow-y: auto;
@@ -82,34 +190,226 @@
 
 .attempt-item {
     padding: 0.75rem;
-    border-left: 4px solid #6c757d;
+    border-left: 4px solid var(--noir-silver);
     margin-bottom: 0.5rem;
-    background: #f8f9fa;
+    background: rgba(64, 64, 64, 0.8);
     border-radius: 0.25rem;
+    color: var(--noir-text);
+    border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
 .attempt-item.success {
-    border-left-color: #28a745;
-    background: #f8fff9;
+    border-left-color: var(--noir-gold);
+    background: rgba(212, 175, 55, 0.1);
 }
 
 .attempt-item.failure {
-    border-left-color: #dc3545;
-    background: #fff8f8;
+    border-left-color: var(--noir-danger);
+    background: rgba(139, 0, 0, 0.1);
 }
 
 .attempt-item .attempt-info {
     font-size: 0.9rem;
-    color: #6c757d;
+    color: var(--noir-silver);
+    font-family: 'JetBrains Mono', monospace;
 }
 
 .attempt-item .attempt-description {
     font-weight: 500;
     margin: 0.25rem 0;
+    color: var(--noir-cream);
 }
 
 .district-badge {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
+    background: var(--noir-gray) !important;
+    color: var(--noir-gold) !important;
+    border-radius: 4px;
+    font-weight: 600;
+    border: 1px solid var(--noir-gold);
 }
+
+.trips-badge {
+    background: var(--noir-gold) !important;
+    color: var(--noir-dark) !important;
+    border: 1px solid var(--noir-gold);
+}
+
+
+/* Дополнительные нуаровые стили */
+.btn-primary {
+    background: var(--noir-gold);
+    border: 1px solid var(--noir-gold);
+    color: var(--noir-dark);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: var(--noir-copper);
+    border-color: var(--noir-copper);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--noir-shadow);
+}
+
+.btn-secondary {
+    background: var(--noir-gray);
+    border: 1px solid var(--noir-silver);
+    color: var(--noir-text);
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--noir-light-gray);
+    border-color: var(--noir-gold);
+    color: var(--noir-gold);
+}
+
+.form-control {
+    background: rgba(64, 64, 64, 0.8);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: var(--noir-text);
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    background: rgba(64, 64, 64, 0.9);
+    border-color: var(--noir-gold);
+    box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+    color: var(--noir-cream);
+}
+
+.form-control::placeholder {
+    color: var(--noir-silver);
+}
+
+.input-group-text {
+    background: var(--noir-gray);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: var(--noir-gold);
+}
+
+.card {
+    background: rgba(45, 45, 45, 0.95);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    color: var(--noir-text);
+}
+
+.card-header {
+    background: var(--noir-gray);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    color: var(--noir-cream);
+}
+
+.alert {
+    border: 1px solid;
+    border-radius: 8px;
+}
+
+.alert-danger {
+    background: rgba(139, 0, 0, 0.2);
+    border-color: var(--noir-danger);
+    color: #ff6b6b;
+}
+
+.alert-success {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: var(--noir-gold);
+    color: var(--noir-gold);
+}
+
+.table {
+    color: var(--noir-text);
+}
+
+.table-dark {
+    background: var(--noir-gray);
+}
+
+.table-dark th {
+    background: var(--noir-darker);
+    border-color: rgba(212, 175, 55, 0.3);
+    color: var(--noir-cream);
+}
+
+.table-dark td {
+    border-color: rgba(212, 175, 55, 0.2);
+    color: var(--noir-text) !important;
+}
+
+/* Убираем hover эффект для таблиц */
+.table-hover tbody tr:hover td {
+    background-color: transparent !important;
+    color: var(--noir-text) !important;
+}
+
+.table-hover tbody tr:hover th {
+    background-color: transparent !important;
+    color: var(--noir-cream) !important;
+}
+
+/* Убираем полосатость таблиц, которая может влиять на видимость */
+.table-striped tbody tr:nth-of-type(odd) td {
+    background-color: transparent !important;
+    color: var(--noir-text) !important;
+}
+
+.table-striped tbody tr:nth-of-type(even) td {
+    background-color: transparent !important;
+    color: var(--noir-text) !important;
+}
+
+/* Дополнительные стили для обеспечения видимости текста */
+.table td, .table th {
+    color: var(--noir-text) !important;
+    background-color: transparent !important;
+}
+
+.table tbody tr td {
+    color: var(--noir-text) !important;
+    background-color: transparent !important;
+}
+
+.table tbody tr th {
+    color: var(--noir-cream) !important;
+    background-color: transparent !important;
+}
+
+/* Анимации для нуарового стиля */
+@keyframes fadeInNoir {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-noir {
+    animation: fadeInNoir 0.6s ease-out;
+}
+
+/* Эффект дождя для атмосферы */
+.noir-rain::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        linear-gradient(90deg, transparent 98%, rgba(192, 192, 192, 0.1) 100%),
+        linear-gradient(90deg, transparent 98%, rgba(192, 192, 192, 0.1) 100%);
+    background-size: 2px 100%, 1px 100%;
+    background-position: 0 0, 1px 0;
+    animation: rain 2s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes rain {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
 }

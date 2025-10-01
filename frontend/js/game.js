@@ -29,7 +29,10 @@ function checkAuth() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
     
-    if (!token || (!user.id && !roomUser)) {
+    console.log('Auth check:', { token: !!token, user, roomUser });
+    
+    if (!token || (!user.id && !roomUser?.id)) {
+        console.log('Auth failed, redirecting to home');
         window.location.href = '/';
         return;
     }
@@ -74,6 +77,17 @@ async function visitLocation() {
         return;
     }
     
+    // Проверяем, не была ли уже совершена поездка в эту локацию
+    const existingTrip = tripHistory.find(trip => 
+        trip.district === selectedDistrict && 
+        trip.houseNumber === houseNumber
+    );
+    
+    if (existingTrip) {
+        alert('Вы уже посещали эту локацию! Проверьте записи о поездках.');
+        return;
+    }
+    
     const resultDiv = document.getElementById('result');
     const resultText = document.getElementById('resultText');
     
@@ -105,7 +119,7 @@ async function visitLocation() {
                 success: data.success,
                 description: data.description || null,
                 timestamp: new Date().toISOString(),
-                alreadyVisited: data.alreadyVisited || false
+                alreadyVisited: false // Теперь все поездки уникальные
             };
             tripHistory.unshift(trip); // Добавляем в начало массива
             updateTripHistory();
@@ -239,7 +253,6 @@ function updateTripHistory() {
                 <span class="badge district-badge bg-primary">${trip.district}</span>
                 <span class="ms-2">Дом ${trip.houseNumber}</span>
                 <span class="ms-2 text-muted">${formatTripTime(trip.timestamp)}</span>
-                ${trip.alreadyVisited ? '<span class="badge bg-warning ms-2">Повторно</span>' : ''}
             </div>
             <div class="trip-description">
                 ${trip.success ? 
@@ -275,6 +288,7 @@ function formatTripTime(timestamp) {
 async function loadScenarioInfo() {
     try {
         const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
+        const room = JSON.parse(localStorage.getItem('room') || 'null');
         
         if (roomUser && roomUser.room_id) {
             // Для игроков комнаты получаем информацию о сценарии из комнаты
@@ -287,13 +301,37 @@ async function loadScenarioInfo() {
             
             if (response.ok) {
                 const data = await response.json();
-                if (data.room && data.room.scenario_name) {
-                    document.getElementById('scenarioTitle').textContent = data.room.scenario_name;
+                console.log('Room state data:', data);
+                
+                // Проверяем несколько возможных источников названия сценария
+                let scenarioName = null;
+                if (data.scenario_name) {
+                    scenarioName = data.scenario_name;
+                } else if (data.room && data.room.scenario_name) {
+                    scenarioName = data.room.scenario_name;
+                } else if (data.scenario && data.scenario.name) {
+                    scenarioName = data.scenario.name;
+                } else if (room && room.scenario_name) {
+                    scenarioName = room.scenario_name;
+                }
+                
+                console.log('Available scenario sources:', {
+                    'data.scenario_name': data.scenario_name,
+                    'data.room.scenario_name': data.room?.scenario_name,
+                    'data.scenario.name': data.scenario?.name,
+                    'room.scenario_name': room?.scenario_name
+                });
+                
+                if (scenarioName) {
+                    document.getElementById('scenarioTitle').textContent = scenarioName;
+                    console.log('Scenario name loaded:', scenarioName);
                 } else {
                     document.getElementById('scenarioTitle').textContent = 'Сценарий не определен';
+                    console.log('No scenario name found in data:', data);
                 }
             } else {
                 document.getElementById('scenarioTitle').textContent = 'Ошибка загрузки комнаты';
+                console.error('Failed to load room state:', response.status);
             }
         } else {
             // Для обычных пользователей получаем активный сценарий
@@ -315,6 +353,7 @@ async function loadScenarioInfo() {
 // ===== Room timer =====
 async function initRoomTimer() {
     await refreshRoomState();
+    await loadScenarioInfo(); // Загружаем информацию о сценарии при инициализации таймера
     renderTimer();
     if (roomTimerInterval) clearInterval(roomTimerInterval);
     roomTimerInterval = setInterval(async () => {
@@ -330,6 +369,21 @@ async function refreshRoomState() {
         const res = await fetch(`/api/room/${room.id}/state`);
         if (!res.ok) return;
         roomState = await res.json();
+        
+        // Обновляем название сценария при каждом обновлении состояния комнаты
+        if (roomState) {
+            let scenarioName = null;
+            if (roomState.scenario_name) {
+                scenarioName = roomState.scenario_name;
+            } else if (roomState.room && roomState.room.scenario_name) {
+                scenarioName = roomState.room.scenario_name;
+            }
+            
+            if (scenarioName) {
+                document.getElementById('scenarioTitle').textContent = scenarioName;
+                console.log('Scenario name updated from room state:', scenarioName);
+            }
+        }
     } catch (e) {
         // ignore
     }

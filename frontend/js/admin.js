@@ -1,6 +1,9 @@
 const API_BASE = '/api';
 let currentUser = null;
 let scenarios = [];
+let roomsCache = null;
+let roomsCacheTime = 0;
+const CACHE_DURATION = 5000; // 5 секунд кэш
 
 // Initialize admin panel
 document.addEventListener('DOMContentLoaded', () => {
@@ -163,7 +166,14 @@ function switchTab(tabName) {
         ensureStatsScenarioOptions();
         // Don't auto-load; let user click refresh
     } else if (tabName === 'rooms') {
-        loadRooms();
+        // Если данные уже загружены, показываем их сразу
+        if (roomsCache && roomsCache.length > 0) {
+            displayRooms(roomsCache);
+            populateRoomsForUsers(roomsCache);
+        } else {
+            // Иначе загружаем без показа индикатора загрузки
+            loadRooms();
+        }
         ensureRoomScenarioOptions();
     } else if (tabName === 'answers') {
         populateAnswersRoomSelect();
@@ -176,17 +186,25 @@ function switchTab(tabName) {
 }
 
 async function loadInitialData() {
-    // Загружаем сценарии только если у нас есть доступ к ним
+    // Параллельная загрузка данных для ускорения
+    const promises = [];
+    
+    // Загружаем сценарии для всех админов
+    promises.push(loadScenarios());
+    
+    // Загружаем пользователей только для супер-админа
     if (currentUser.admin_level === 'super_admin') {
-    await loadScenarios();
-    populateScenarioDropdowns();
-    loadUsers();
-    } else {
-        // Для обычных админов загружаем только доступные сценарии
-        await loadScenarios();
-        populateScenarioDropdowns();
+        promises.push(loadUsers());
     }
     
+    // Предзагружаем комнаты для быстрого доступа
+    promises.push(loadRooms());
+    
+    // Ждем завершения всех запросов
+    await Promise.all(promises);
+    
+    // Заполняем выпадающие списки
+    populateScenarioDropdowns();
     ensureStatsScenarioOptions();
     ensureRoomScenarioOptions();
     populateAnswersRoomSelect();
@@ -561,6 +579,59 @@ function ensureStatsScenarioOptions() {
     select.innerHTML = '<option value="">Выберите сценарий...</option>' + options;
 }
 
+// Загрузка статистики по сценарию
+async function loadStatistics() {
+    const scenarioSelect = document.getElementById('statsScenarioSelect');
+    const statsTable = document.getElementById('statsTable');
+    
+    if (!scenarioSelect || !statsTable) return;
+    
+    const scenarioId = scenarioSelect.value;
+    if (!scenarioId) {
+        statsTable.innerHTML = '<tr><td colspan="4" class="text-center">Выберите сценарий и нажмите Обновить</td></tr>';
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/admin/statistics/${scenarioId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Нет доступа к статистике этого сценария');
+            }
+            throw new Error('Failed to load statistics');
+        }
+        
+        const data = await response.json();
+        const stats = data.stats || [];
+        
+        if (stats.length === 0) {
+            statsTable.innerHTML = '<tr><td colspan="4" class="text-center">Нет данных для выбранного сценария</td></tr>';
+            return;
+        }
+        
+        // Отображаем статистику в таблице
+        statsTable.innerHTML = stats.map(stat => `
+            <tr>
+                <td>${stat.district}</td>
+                <td>${stat.total_attempts}</td>
+                <td class="text-success">${stat.found_count}</td>
+                <td class="text-danger">${stat.not_found_count}</td>
+            </tr>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+        statsTable.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Ошибка загрузки статистики</td></tr>';
+        showMessage('Ошибка загрузки статистики', 'danger');
+    }
+}
+
 function ensureRoomScenarioOptions() {
     const select = document.getElementById('roomScenario');
     if (!select) return;
@@ -585,23 +656,40 @@ async function handleCreateRoom(e) {
         if (!res.ok) throw new Error(data.error || 'Ошибка создания комнаты');
         showMessage('Комната создана', 'success');
         (e.target).reset();
-        await loadRooms();
+        await loadRooms(true);
     } catch (err) {
         console.error(err);
         showMessage(err.message || 'Ошибка создания комнаты', 'danger');
     }
 }
 
-async function loadRooms() {
+async function loadRooms(forceRefresh = false) {
     try {
+        const now = Date.now();
+        
+        // Проверяем кэш, если не принудительное обновление
+        if (!forceRefresh && roomsCache && (now - roomsCacheTime) < CACHE_DURATION) {
+            displayRooms(roomsCache);
+            populateRoomsForUsers(roomsCache);
+            return;
+        }
+        
         const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE}/rooms`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (!res.ok) throw new Error('Failed to load rooms');
         const data = await res.json();
-        displayRooms(data.rooms || []);
-        populateRoomsForUsers(data.rooms || []);
+        
+        // Обновляем кэш
+        roomsCache = data.rooms || [];
+        roomsCacheTime = now;
+        
+        displayRooms(roomsCache);
+        populateRoomsForUsers(roomsCache);
     } catch (err) {
         console.error(err);
+        // Показываем пустой список вместо ошибки для лучшего UX
+        displayRooms([]);
+        populateRoomsForUsers([]);
         showMessage('Ошибка загрузки комнат', 'danger');
     }
 }
@@ -613,11 +701,16 @@ function displayRooms(rooms) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center">Нет комнат</td></tr>';
         return;
     }
-    tbody.innerHTML = rooms.map(r => `
+    tbody.innerHTML = rooms.map(r => {
+        // Найти название сценария по ID
+        const scenario = scenarios.find(s => s.id === r.scenario_id);
+        const scenarioName = r.scenario_name || (scenario ? scenario.name : `Сценарий ${r.scenario_id}`);
+        
+        return `
         <tr>
             <td>${r.id}</td>
             <td>${r.name}</td>
-            <td>${r.scenario_name || r.scenario_id}</td>
+            <td style="color: var(--noir-cream) !important;">${scenarioName}</td>
             <td>${r.game_start_time ? new Date(r.game_start_time).toLocaleString('ru-RU') : '-'}</td>
             <td>${Math.floor((r.duration_seconds||3600)/60)} мин.</td>
             <td class="table-actions">
@@ -643,7 +736,8 @@ function displayRooms(rooms) {
                 </button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function populateRoomsForUsers(rooms) {
@@ -660,7 +754,7 @@ async function startRoom(roomId) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Ошибка запуска');
         showMessage('Таймер запущен', 'success');
-        await loadRooms();
+        await loadRooms(true);
         // refresh users list if open
         const cur = document.getElementById('roomSelectForUsers').value;
     } catch (err) {
@@ -676,7 +770,7 @@ async function pauseRoom(roomId) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Ошибка паузы');
         showMessage('Таймер на паузе', 'warning');
-        await loadRooms();
+        await loadRooms(true);
     } catch (err) {
         console.error(err);
         showMessage(err.message || 'Ошибка паузы комнаты', 'danger');
@@ -690,7 +784,7 @@ async function resumeRoom(roomId) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Ошибка продолжения');
         showMessage('Таймер продолжен', 'info');
-        await loadRooms();
+        await loadRooms(true);
     } catch (err) {
         console.error(err);
         showMessage(err.message || 'Ошибка продолжения комнаты', 'danger');
@@ -704,7 +798,7 @@ async function stopRoom(roomId) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Ошибка остановки');
         showMessage('Таймер остановлен', 'danger');
-        await loadRooms();
+        await loadRooms(true);
     } catch (err) {
         console.error(err);
         showMessage(err.message || 'Ошибка остановки комнаты', 'danger');
@@ -829,7 +923,7 @@ async function deleteRoom(roomId) {
             throw new Error(error.error || 'Failed to delete room');
         }
         showMessage('Комната удалена', 'success');
-        loadRooms();
+        loadRooms(true);
     } catch (err) {
         console.error(err);
         showMessage('Ошибка удаления комнаты: ' + err.message, 'danger');
@@ -964,6 +1058,22 @@ function showMessage(message, type) {
     toast.addEventListener('hidden.bs.toast', () => {
         toast.remove();
     });
+}
+
+function showLoadingIndicator(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.style.opacity = '0.5';
+        element.style.pointerEvents = 'none';
+    }
+}
+
+function hideLoadingIndicator(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.style.opacity = '1';
+        element.style.pointerEvents = 'auto';
+    }
 }
 
 function createToastContainer() {

@@ -1,24 +1,11 @@
 # Dependencies
 node_modules/
-backend/node_modules/
-
-# Database files
-*.sqlite
-*.db
-backend/database.sqlite
-backend/data/
-
-# Environment variables
-.env
-.env.local
-.env.production
-
-# Logs
-*.log
-logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Runtime data
-pids/
+pids
 *.pid
 *.seed
 *.pid.lock
@@ -28,6 +15,18 @@ coverage/
 
 # nyc test coverage
 .nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
 
 # Dependency directories
 jspm_packages/
@@ -46,12 +45,44 @@ jspm_packages/
 
 # dotenv environment variables file
 .env
+.env.test
+.env.production
 
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# next.js build output
+.next
+
+# nuxt.js build output
+.nuxt
+
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Database files
+*.sqlite
+*.db
+
+# Backup files
+backups/
+
+# Logs
+logs
+*.log
 
 # OS generated files
 .DS_Store
@@ -61,3 +92,14 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp

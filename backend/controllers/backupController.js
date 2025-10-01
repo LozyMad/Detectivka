@@ -229,27 +229,37 @@ const backupController = {
   // Получить список доступных бэкапов
   getBackupList: async (req, res) => {
     try {
-      const backupDir = path.join(__dirname, '../../backups/scenarios');
+      const backupDir = path.join(__dirname, '../backups/scenarios');
+      console.log('Backup directory:', backupDir);
       
       try {
         const files = await fs.readdir(backupDir);
-        const backupFiles = files
-          .filter(file => file.endsWith('.json') && file !== 'latest.json')
-          .map(file => {
-            const stats = fs.stat(path.join(backupDir, file));
-            return {
-              filename: file,
-              size: stats.size,
-              created: stats.birthtime
-            };
-          })
-          .sort((a, b) => new Date(b.created) - new Date(a.created));
+        console.log('Found files:', files);
+        
+        const backupFiles = await Promise.all(
+          files
+            .filter(file => file.endsWith('.json') && file !== 'latest.json')
+            .map(async (file) => {
+              const filePath = path.join(backupDir, file);
+              const stats = await fs.stat(filePath);
+              console.log(`File ${file}: size=${stats.size}, created=${stats.birthtime}`);
+              return {
+                filename: file,
+                size: stats.size,
+                created: stats.birthtime
+              };
+            })
+        );
+
+        backupFiles.sort((a, b) => new Date(b.created) - new Date(a.created));
+        console.log('Final backup files:', backupFiles);
 
         res.json({
           success: true,
           backups: backupFiles
         });
       } catch (dirError) {
+        console.log('Directory error:', dirError);
         // Папка не существует
         res.json({
           success: true,
@@ -262,6 +272,96 @@ const backupController = {
       res.status(500).json({
         success: false,
         error: 'Ошибка получения списка бэкапов'
+      });
+    }
+  },
+
+  // Скачать бэкап
+  downloadBackup: async (req, res) => {
+    try {
+      const { filename } = req.params;
+      const { token } = req.query;
+      
+      // Проверяем токен из query параметра
+      if (!token) {
+        return res.status(401).json({
+          success: false,
+          error: 'Токен авторизации не предоставлен'
+        });
+      }
+      
+      // Проверяем безопасность имени файла
+      if (!filename || filename.includes('..') || !filename.endsWith('.json')) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверное имя файла'
+        });
+      }
+
+      const backupDir = path.join(__dirname, '../backups/scenarios');
+      const filePath = path.join(backupDir, filename);
+
+      try {
+        // Проверяем, что файл существует
+        await fs.access(filePath);
+        
+        // Отправляем файл
+        res.download(filePath, filename);
+      } catch (fileError) {
+        res.status(404).json({
+          success: false,
+          error: 'Файл не найден'
+        });
+      }
+
+    } catch (error) {
+      console.error('Download backup error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Ошибка скачивания бэкапа'
+      });
+    }
+  },
+
+  // Удалить бэкап
+  deleteBackup: async (req, res) => {
+    try {
+      const { filename } = req.params;
+      
+      // Проверяем безопасность имени файла
+      if (!filename || filename.includes('..') || !filename.endsWith('.json')) {
+        return res.status(400).json({
+          success: false,
+          error: 'Неверное имя файла'
+        });
+      }
+
+      const backupDir = path.join(__dirname, '../backups/scenarios');
+      const filePath = path.join(backupDir, filename);
+
+      try {
+        // Проверяем, что файл существует
+        await fs.access(filePath);
+        
+        // Удаляем файл
+        await fs.unlink(filePath);
+        
+        res.json({
+          success: true,
+          message: 'Бэкап успешно удален'
+        });
+      } catch (fileError) {
+        res.status(404).json({
+          success: false,
+          error: 'Файл не найден'
+        });
+      }
+
+    } catch (error) {
+      console.error('Delete backup error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Ошибка удаления бэкапа'
       });
     }
   }

@@ -8,38 +8,238 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/style.css?v=4" rel="stylesheet">
     <style>
+        /* Лондонский нуар - Основные цвета */
+        :root {
+            --noir-dark: #1a1a1a;
+            --noir-darker: #0d0d0d;
+            --noir-gray: #2d2d2d;
+            --noir-light-gray: #404040;
+            --noir-gold: #d4af37;
+            --noir-copper: #b87333;
+            --noir-silver: #c0c0c0;
+            --noir-cream: #f5f5dc;
+            --noir-text: #e0e0e0;
+            --noir-danger: #8b0000;
+            --noir-shadow: rgba(0, 0, 0, 0.8);
+        }
+
+        /* Импорт шрифтов */
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+Pro:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background-color: var(--noir-dark);
+            color: var(--noir-text);
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Playfair Display', serif;
+            color: var(--noir-cream);
+            font-weight: 600;
+        }
+
+        .navbar {
+            background: var(--noir-darker) !important;
+            border-bottom: 2px solid var(--noir-gold);
+        }
+
+        .navbar-brand {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            color: var(--noir-gold) !important;
+            text-shadow: 0 2px 4px var(--noir-shadow);
+        }
+
+        .navbar-text {
+            color: var(--noir-silver) !important;
+        }
+
         .sidebar {
             min-height: calc(100vh - 56px);
-            background: #2c3e50;
+            background: var(--noir-gray);
+            border-right: 1px solid rgba(212, 175, 55, 0.3);
         }
+
         .sidebar .nav-link {
-            color: #ecf0f1;
+            color: var(--noir-text) !important;
             padding: 0.75rem 1rem;
             border-radius: 0.25rem;
             margin: 0.125rem 0.5rem;
+            transition: all 0.3s ease;
         }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            background: #3498db;
-            color: white;
+
+        .sidebar .nav-link:hover {
+            background: rgba(212, 175, 55, 0.2) !important;
+            color: var(--noir-gold) !important;
         }
+
+        .sidebar .nav-link.active {
+            background: var(--noir-gold) !important;
+            color: var(--noir-dark) !important;
+            font-weight: 600;
+        }
+
         .content-area {
-            background: #ecf0f1;
+            background: var(--noir-dark);
             min-height: calc(100vh - 56px);
             padding: 2rem;
+            color: var(--noir-text);
         }
+
         .card {
-            border: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: rgba(45, 45, 45, 0.95);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 20px 40px var(--noir-shadow);
             margin-bottom: 1.5rem;
+            color: var(--noir-text);
         }
+
+        .card-header {
+            background: var(--noir-gray);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            color: var(--noir-cream);
+        }
+
         .table-actions {
             white-space: nowrap;
         }
+
         .form-section {
-            background: white;
+            background: rgba(45, 45, 45, 0.95);
             padding: 1.5rem;
             border-radius: 0.5rem;
             margin-bottom: 1.5rem;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .btn-primary {
+            background: var(--noir-gold);
+            border: 1px solid var(--noir-gold);
+            color: var(--noir-dark);
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--noir-copper);
+            border-color: var(--noir-copper);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px var(--noir-shadow);
+        }
+
+        .btn-secondary {
+            background: var(--noir-gray);
+            border: 1px solid var(--noir-silver);
+            color: var(--noir-text);
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--noir-light-gray);
+            border-color: var(--noir-gold);
+            color: var(--noir-gold);
+        }
+
+        .btn-outline-light {
+            border-color: var(--noir-gold);
+            color: var(--noir-gold);
+        }
+
+        .btn-outline-light:hover {
+            background: var(--noir-gold);
+            border-color: var(--noir-gold);
+            color: var(--noir-dark);
+        }
+
+        .form-control {
+            background: rgba(64, 64, 64, 0.8);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: var(--noir-text);
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            background: rgba(64, 64, 64, 0.9);
+            border-color: var(--noir-gold);
+            box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+            color: var(--noir-cream);
+        }
+
+        .form-control::placeholder {
+            color: var(--noir-silver);
+        }
+
+        .table {
+            color: var(--noir-text);
+        }
+
+        .table-dark {
+            background: var(--noir-gray);
+        }
+
+        .table-dark th {
+            background: var(--noir-darker);
+            border-color: rgba(212, 175, 55, 0.3);
+            color: var(--noir-cream);
+        }
+
+        .table-dark td {
+            border-color: rgba(212, 175, 55, 0.2);
+        }
+
+        .alert {
+            border: 1px solid;
+            border-radius: 8px;
+        }
+
+        .alert-danger {
+            background: rgba(139, 0, 0, 0.2);
+            border-color: var(--noir-danger);
+            color: #ff6b6b;
+        }
+
+        .alert-success {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: var(--noir-gold);
+            color: var(--noir-gold);
+        }
+
+        .badge {
+            background: var(--noir-gold);
+            color: var(--noir-dark);
+        }
+
+        .text-muted {
+            color: var(--noir-silver) !important;
+        }
+
+        .text-primary {
+            color: var(--noir-gold) !important;
+        }
+
+        .text-danger {
+            color: #ff6b6b !important;
+        }
+
+        .text-success {
+            color: var(--noir-gold) !important;
+        }
+
+        /* Анимации для нуарового стиля */
+        @keyframes fadeInNoir {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-noir {
+            animation: fadeInNoir 0.6s ease-out;
         }
     </style>
 </head>
@@ -49,7 +249,7 @@
         <div class="container-fluid">
             <span class="navbar-brand">
                 <i class="fas fa-map-marked-alt me-2"></i>
-                Location Game - Админ-панель
+                Детективка - Админ-панель
             </span>
             <div class="navbar-nav ms-auto">
                 <div class="d-flex align-items-center">
@@ -419,11 +619,12 @@
                                             <th>Имя файла</th>
                                             <th>Размер</th>
                                             <th>Дата создания</th>
+                                            <th>Действия</th>
                                         </tr>
                                     </thead>
                                     <tbody id="backupTable">
                                         <tr>
-                                            <td colspan="3" class="text-center">Загрузка списка бэкапов...</td>
+                                            <td colspan="4" class="text-center">Загрузка списка бэкапов...</td>
                                         </tr>
                                     </tbody>
                                 </table>

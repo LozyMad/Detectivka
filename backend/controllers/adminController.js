@@ -106,6 +106,18 @@ const createScenario = async (req, res) => {
 const getStatistics = async (req, res) => {
   try {
     const { scenario_id } = req.params;
+    
+    // Проверяем права доступа к сценарию
+    if (req.user.admin_level !== 'super_admin') {
+      // Для обычного админа проверяем, есть ли у него доступ к этому сценарию
+      const AdminPermission = require('../models/adminPermission');
+      const hasPermission = await AdminPermission.hasPermission(req.user.id, scenario_id);
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: 'Access denied to this scenario' });
+      }
+    }
+    
     const stats = await VisitAttempt.getStatsByScenario(scenario_id);
     res.json({ stats });
   } catch (error) {
