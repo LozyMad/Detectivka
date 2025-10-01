@@ -20,7 +20,11 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+
+// Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
+app.use('/css', express.static(path.join(__dirname, '../frontend/css')));
+app.use('/js', express.static(path.join(__dirname, '../frontend/js')));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -52,6 +56,16 @@ app.get('/game', (req, res) => {
 
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin.html'));
+});
+
+// Explicit CSS route for Railway
+app.get('/css/style.css', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/css/style.css'));
+});
+
+// Explicit JS routes for Railway
+app.get('/js/:filename', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/js', req.params.filename));
 });
 
 // Initialize database and start server
