@@ -129,6 +129,7 @@ async function visitLocation() {
             
             // Проверяем, есть ли интерактивные выборы для этого адреса
             if (data.success && data.address_id) {
+                console.log('Visit successful, checking for choices:', data);
                 checkForInteractiveChoices(data.address_id, data.description, data.visited_location_id);
             }
             
@@ -603,19 +604,21 @@ let currentScenarioId = null;
 async function checkForInteractiveChoices(addressId, description, visitedLocationId) {
     try {
         // Получаем ID сценария из состояния комнаты
-        if (!roomState || !roomState.scenario_id) {
-            console.log('No scenario ID available');
+        const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
+        if (!roomState || !scenarioId) {
+            console.log('No scenario ID available', roomState);
             return;
         }
         
         currentAddressId = addressId;
         currentVisitedLocationId = visitedLocationId;
-        currentScenarioId = roomState.scenario_id;
+        currentScenarioId = scenarioId;
         
+        console.log('Checking for choices:', { scenarioId: currentScenarioId, addressId });
         const response = await fetch(`${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`);
         
         if (!response.ok) {
-            console.log('No choices available or error loading choices');
+            console.log('No choices available or error loading choices', response.status);
             return;
         }
         
