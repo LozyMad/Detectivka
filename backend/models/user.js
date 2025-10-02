@@ -1,7 +1,17 @@
-const { db } = require('../config/database');
-const bcrypt = require('bcryptjs');
+// Определяем тип базы данных из переменной окружения
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
 
-const User = {
+let User;
+
+if (DB_TYPE === 'postgresql') {
+  // Используем PostgreSQL версию
+  User = require('./userPostgreSQL');
+} else {
+  // Используем SQLite версию (оригинальная логика)
+  const { db } = require('../config/database');
+  const bcrypt = require('bcryptjs');
+
+  User = {
     create: (userData) => {
         return new Promise((resolve, reject) => {
             const { username, password, is_admin = false, admin_level = 'user' } = userData;
@@ -98,6 +108,7 @@ const User = {
             );
         });
     }
-};
+  };
+}
 
 module.exports = User;

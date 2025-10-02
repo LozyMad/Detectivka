@@ -77,6 +77,10 @@ jspm_packages/
 *.sqlite
 *.db
 
+# Test files
+test-postgresql.js
+migrate-to-postgresql.js
+
 # Backup files
 backups/
 

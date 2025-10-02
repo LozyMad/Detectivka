@@ -1,12 +1,52 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+// Определяем тип базы данных из переменной окружения
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
 
-const dbPath = path.join(__dirname, '..', 'database.sqlite');
-const db = new sqlite3.Database(dbPath);
+let db, query, getClient, initMainDatabase;
 
-const init = () => {
-  return new Promise((resolve, reject) => {
-    db.serialize(() => {
+if (DB_TYPE === 'postgresql') {
+  // Используем PostgreSQL
+  const pgConfig = require('./postgresql');
+  db = pgConfig.pool;
+  query = pgConfig.query;
+  getClient = pgConfig.getClient;
+  initMainDatabase = pgConfig.initMainDatabase;
+} else {
+  // Используем SQLite (по умолчанию)
+  const sqlite3 = require('sqlite3').verbose();
+  const path = require('path');
+  
+  const dbPath = path.join(__dirname, '..', 'database.sqlite');
+  db = new sqlite3.Database(dbPath);
+  
+  // Адаптер для SQLite чтобы работал как PostgreSQL
+  query = (text, params = []) => {
+    return new Promise((resolve, reject) => {
+      db.all(text, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve({ rows });
+      });
+    });
+  };
+  
+  getClient = () => {
+    return {
+      query: query,
+      release: () => {}
+    };
+  };
+}
+
+const init = async () => {
+  try {
+    if (DB_TYPE === 'postgresql') {
+      // Для PostgreSQL используем готовую инициализацию
+      await initMainDatabase();
+      return;
+    }
+    
+    // Для SQLite используем старую логику
+    return new Promise((resolve, reject) => {
+      db.serialize(() => {
       // Users table
       db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -184,9 +224,15 @@ const init = () => {
       });
     });
   });
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    throw error;
+  }
 };
 
 module.exports = {
   db,
+  query,
+  getClient,
   init
 };

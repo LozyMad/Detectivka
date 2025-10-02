@@ -1,6 +1,16 @@
-const { getScenarioDb } = require('../config/scenarioDatabase');
+// Определяем тип базы данных из переменной окружения
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
 
-const Address = {
+let Address;
+
+if (DB_TYPE === 'postgresql') {
+  // Используем PostgreSQL версию
+  Address = require('./addressPostgreSQL');
+} else {
+  // Используем SQLite версию (оригинальная логика)
+  const { getScenarioDb } = require('../config/scenarioDatabase');
+
+  Address = {
     create: (addressData) => {
         return new Promise((resolve, reject) => {
             const { scenario_id, district, house_number, description } = addressData;
@@ -135,6 +145,7 @@ const Address = {
             );
         });
     }
-};
+  };
+}
 
 module.exports = Address;
