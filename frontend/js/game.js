@@ -119,7 +119,9 @@ async function visitLocation() {
                 success: data.success,
                 description: data.description || null,
                 timestamp: new Date().toISOString(),
-                alreadyVisited: false // Теперь все поездки уникальные
+                alreadyVisited: false, // Теперь все поездки уникальные
+                address_id: data.address_id || null,
+                visited_location_id: data.visited_location_id || null
             };
             tripHistory.unshift(trip); // Добавляем в начало массива
             updateTripHistory();
@@ -259,6 +261,11 @@ function updateTripHistory() {
                 <span class="badge district-badge bg-primary">${trip.district}</span>
                 <span class="ms-2">Дом ${trip.houseNumber}</span>
                 <span class="ms-2 text-muted">${formatTripTime(trip.timestamp)}</span>
+                ${trip.success && trip.address_id ? 
+                    `<button class="btn btn-sm btn-outline-warning ms-2" onclick="openChoiceHistory(${trip.address_id}, '${trip.description}', ${trip.visited_location_id || 'null'})" title="Интерактивные выборы">
+                        <i class="fas fa-question-circle"></i>
+                    </button>` : ''
+                }
             </div>
             <div class="trip-description">
                 ${trip.success ? 
@@ -735,6 +742,83 @@ function showChoiceResponse(responseText) {
     // Показать результат
     document.getElementById('choiceResponse').style.display = 'block';
     document.getElementById('responseText').textContent = responseText;
+}
+
+// Открыть выборы из истории поездок
+async function openChoiceHistory(addressId, description, visitedLocationId) {
+    try {
+        const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
+        if (!scenarioId) {
+            console.log('No scenario ID available');
+            return;
+        }
+        
+        const roomUser = JSON.parse(localStorage.getItem('roomUser'));
+        if (!roomUser || !roomUser.id) {
+            console.log('No room user found');
+            return;
+        }
+        
+        // Проверяем, есть ли уже сделанный выбор
+        const token = localStorage.getItem('token');
+        const choiceResponse = await fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${addressId}/choice`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (choiceResponse.ok) {
+            const choiceData = await choiceResponse.json();
+            
+            if (choiceData.choice) {
+                // Показываем уже сделанный выбор
+                showExistingChoice(choiceData.choice, description);
+                return;
+            }
+        }
+        
+        // Если выбор не был сделан, показываем доступные варианты
+        const response = await fetch(`${API_BASE}/choices/game/scenarios/${scenarioId}/addresses/${addressId}/choices`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.choices && data.choices.length > 0) {
+                currentAddressId = addressId;
+                currentVisitedLocationId = visitedLocationId;
+                currentScenarioId = scenarioId;
+                showInteractiveChoiceModal(data.choices, description);
+            } else {
+                alert('Для этой локации нет интерактивных выборов');
+            }
+        } else {
+            alert('Не удалось загрузить варианты выбора');
+        }
+        
+    } catch (error) {
+        console.error('Error opening choice history:', error);
+        alert('Произошла ошибка при загрузке выборов');
+    }
+}
+
+// Показать уже сделанный выбор
+function showExistingChoice(choice, description) {
+    // Обновить описание адреса
+    document.getElementById('addressDescription').textContent = description || 'Локация найдена';
+    
+    // Скрыть варианты выбора
+    document.getElementById('choiceOptions').style.display = 'none';
+    
+    // Показать результат
+    document.getElementById('choiceResponse').style.display = 'block';
+    document.getElementById('responseText').innerHTML = `
+        <strong>Ваш выбор:</strong> ${choice.choice_text}<br>
+        <strong>Результат:</strong> ${choice.response_text}
+    `;
+    
+    // Показать модальное окно
+    const modal = new bootstrap.Modal(document.getElementById('choiceModal'));
+    modal.show();
 }
 
 // Сброс модального окна при закрытии

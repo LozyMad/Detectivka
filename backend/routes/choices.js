@@ -52,8 +52,9 @@ router.get('/game/players/:room_user_id/choice-history',
     choiceController.getPlayerChoiceHistory
 );
 
-// Получить выбор игрока для конкретного адреса (публичный доступ)
+// Получить выбор игрока для конкретного адреса
 router.get('/game/players/:room_user_id/scenarios/:scenario_id/addresses/:address_id/choice', 
+    roomUserRequired,
     choiceController.getPlayerChoiceForAddress
 );
 

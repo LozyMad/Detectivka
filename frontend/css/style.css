@@ -489,6 +489,46 @@ h1, h2, h3, h4, h5, h6 {
         line-height: 1.6 !important;
         padding: 0 10px;
     }
+    
+    /* Интерактивные выборы на мобильных */
+    #choiceModal .modal-dialog {
+        margin: 10px !important;
+        max-width: calc(100% - 20px) !important;
+    }
+    
+    #choiceModal .modal-content {
+        border-radius: 15px !important;
+    }
+    
+    #choiceModal .modal-header {
+        padding: 15px 20px 10px !important;
+    }
+    
+    #choiceModal .modal-body {
+        padding: 10px 20px 20px !important;
+    }
+    
+    #choiceModal .modal-title {
+        font-size: 1.3rem !important;
+    }
+    
+    #choiceModal .choice-btn {
+        padding: 15px !important;
+        font-size: 1rem !important;
+        border-radius: 10px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    #choiceModal .choice-btn .badge {
+        font-size: 0.9rem !important;
+        padding: 8px 12px !important;
+    }
+    
+    #choiceModal .alert {
+        padding: 15px !important;
+        font-size: 0.95rem !important;
+        border-radius: 10px !important;
+    }
 }
 
 /* Планшеты (768px - 991px) */
