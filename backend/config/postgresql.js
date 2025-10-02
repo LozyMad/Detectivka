@@ -134,6 +134,18 @@ const createTables = async () => {
     )
   `);
 
+  // Addresses table (основная таблица для совместимости)
+  await query(`
+    CREATE TABLE IF NOT EXISTS addresses (
+      id SERIAL PRIMARY KEY,
+      scenario_id INTEGER REFERENCES scenarios(id) ON DELETE CASCADE,
+      district VARCHAR(255) NOT NULL,
+      house_number VARCHAR(255) NOT NULL,
+      description TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Question answers table
   await query(`
     CREATE TABLE IF NOT EXISTS question_answers (

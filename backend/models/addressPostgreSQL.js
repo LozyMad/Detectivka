@@ -138,6 +138,12 @@ const Address = {
         );
         
         return parseInt(result.rows[0].count) > 0;
+    },
+
+    // Алиас для совместимости
+    findByScenario: async (scenarioId) => {
+        const result = await query('SELECT * FROM addresses WHERE scenario_id = $1 ORDER BY id', [scenarioId]);
+        return result.rows;
     }
 };
 
