@@ -102,6 +102,11 @@ const Scenario = {
         );
         
         return result.rows;
+    },
+
+    // Алиас для совместимости
+    getAvailableForAdmin: async (adminId, adminLevel) => {
+        return await Scenario.getByAdmin(adminId, adminLevel);
     }
 };
 

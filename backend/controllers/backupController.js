@@ -1,6 +1,17 @@
 const fs = require('fs').promises;
 const path = require('path');
-const { db } = require('../config/database');
+// Определяем тип базы данных
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
+
+let db, query;
+if (DB_TYPE === 'postgresql') {
+  const pgConfig = require('../config/database');
+  db = pgConfig.db;
+  query = pgConfig.query;
+} else {
+  const sqliteConfig = require('../config/database');
+  db = sqliteConfig.db;
+}
 const Scenario = require('../models/scenario');
 const Question = require('../models/question');
 const Address = require('../models/address');
@@ -12,12 +23,18 @@ const backupController = {
       console.log('Starting scenarios export...');
       
       // Получаем все сценарии
-      const scenarios = await new Promise((resolve, reject) => {
-        db.all('SELECT * FROM scenarios ORDER BY id', (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
+      let scenarios;
+      if (DB_TYPE === 'postgresql') {
+        const result = await query('SELECT * FROM scenarios ORDER BY id');
+        scenarios = result.rows;
+      } else {
+        scenarios = await new Promise((resolve, reject) => {
+          db.all('SELECT * FROM scenarios ORDER BY id', (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+          });
         });
-      });
+      }
 
       console.log(`Found ${scenarios.length} scenarios`);
 

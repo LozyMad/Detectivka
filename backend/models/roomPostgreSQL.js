@@ -137,6 +137,14 @@ const Room = {
         `);
         
         return result.rows[0];
+    },
+
+    // Алиас для совместимости
+    listByAdmin: async (adminId, adminLevel) => {
+        if (adminLevel === 'super_admin') {
+            return await Room.getAll();
+        }
+        return await Room.getByCreator(adminId);
     }
 };
 
