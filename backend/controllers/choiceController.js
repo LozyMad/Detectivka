@@ -150,7 +150,9 @@ const makePlayerChoice = async (req, res) => {
         
         // Получаем информацию о выборе из базы сценария
         const choices = await Address.getChoices(scenario_id, address_id);
+        console.log('Available choices for address:', choices);
         const selectedChoice = choices.find(c => c.id === choice_id);
+        console.log('Selected choice:', selectedChoice);
         
         if (!selectedChoice) {
             return res.status(404).json({ error: 'Choice not found' });
@@ -257,6 +259,8 @@ const getPlayerChoiceForAddress = async (req, res) => {
                 }
             );
         });
+        
+        console.log('Retrieved player choice:', choice);
         
         res.json({
             success: true,
