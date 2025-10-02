@@ -63,20 +63,32 @@ const backupController = {
         }
 
         // Получаем адреса для сценария
-        const addresses = await new Promise((resolve, reject) => {
-          db.all('SELECT * FROM addresses WHERE scenario_id = ? ORDER BY id', [scenario.id], (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
+        let addresses;
+        if (DB_TYPE === 'postgresql') {
+          const result = await query('SELECT * FROM addresses WHERE scenario_id = $1 ORDER BY id', [scenario.id]);
+          addresses = result.rows;
+        } else {
+          addresses = await new Promise((resolve, reject) => {
+            db.all('SELECT * FROM addresses WHERE scenario_id = ? ORDER BY id', [scenario.id], (err, rows) => {
+              if (err) reject(err);
+              else resolve(rows);
+            });
           });
-        });
+        }
 
         // Получаем разрешения для сценария
-        const permissions = await new Promise((resolve, reject) => {
-          db.all('SELECT * FROM admin_scenario_permissions WHERE scenario_id = ?', [scenario.id], (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
+        let permissions;
+        if (DB_TYPE === 'postgresql') {
+          const result = await query('SELECT * FROM admin_permissions WHERE scenario_id = $1', [scenario.id]);
+          permissions = result.rows;
+        } else {
+          permissions = await new Promise((resolve, reject) => {
+            db.all('SELECT * FROM admin_scenario_permissions WHERE scenario_id = ?', [scenario.id], (err, rows) => {
+              if (err) reject(err);
+              else resolve(rows);
+            });
           });
-        });
+        }
 
         exportData.scenarios.push({
           scenario: scenario,
@@ -100,21 +112,26 @@ const backupController = {
 
       console.log(`Export completed: ${filename}`);
       
-      res.json({
-        success: true,
-        message: 'Сценарии успешно экспортированы',
-        filename: filename,
-        scenarios_count: scenarios.length,
-        export_date: exportData.export_date
-      });
+      if (res.json && typeof res.json === 'function') {
+        res.json({
+          success: true,
+          message: 'Сценарии успешно экспортированы',
+          filename: filename,
+          scenarios_count: scenarios.length,
+          export_date: exportData.export_date
+        });
+      }
 
     } catch (error) {
       console.error('Export error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Ошибка экспорта сценариев',
-        details: error.message
-      });
+      if (res.status && typeof res.status === 'function') {
+        res.status(500).json({
+          success: false,
+          error: 'Ошибка экспорта сценариев',
+          details: error.message
+        });
+      }
+      throw error; // Пробрасываем ошибку для автоэкспорта
     }
   },
 
