@@ -1,6 +1,16 @@
-const { db } = require('../config/database');
+// Определяем тип базы данных из переменной окружения
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
 
-const Scenario = {
+let Scenario;
+
+if (DB_TYPE === 'postgresql') {
+  // Используем PostgreSQL версию
+  Scenario = require('./scenarioPostgreSQL');
+} else {
+  // Используем SQLite версию (оригинальная логика)
+  const { db } = require('../config/database');
+
+  Scenario = {
     create: (scenarioData) => {
         return new Promise((resolve, reject) => {
             const { name, description, is_active = false, created_by } = scenarioData;
@@ -110,6 +120,7 @@ const Scenario = {
             });
         });
     }
-};
+  };
+}
 
 module.exports = Scenario;

@@ -1,6 +1,16 @@
-const { db } = require('../config/database');
+// Определяем тип базы данных из переменной окружения
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
 
-class VisitAttempt {
+let VisitAttempt;
+
+if (DB_TYPE === 'postgresql') {
+  // Используем PostgreSQL версию
+  VisitAttempt = require('./visitAttemptPostgreSQL');
+} else {
+  // Используем SQLite версию (оригинальная логика)
+  const { db } = require('../config/database');
+
+  class VisitAttemptSQLite {
   static create(attemptData) {
     return new Promise((resolve, reject) => {
       const { user_id, scenario_id, district, house_number, found, address_id = null, room_id = null } = attemptData;
@@ -153,6 +163,9 @@ class VisitAttempt {
       }
     });
   }
+  }
+
+  VisitAttempt = VisitAttemptSQLite;
 }
 
 module.exports = VisitAttempt;
