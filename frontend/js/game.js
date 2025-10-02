@@ -381,7 +381,12 @@ async function refreshRoomState() {
     try {
         const room = JSON.parse(localStorage.getItem('room') || 'null');
         if (!room) return;
-        const res = await fetch(`/api/room/${room.id}/state`);
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE}/room/${room.id}/state`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         if (!res.ok) return;
         roomState = await res.json();
         
