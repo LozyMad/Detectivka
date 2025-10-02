@@ -510,7 +510,7 @@ async function loadAddressesForScenario() {
     const addressesTable = document.getElementById('addressesTable');
     
     if (!scenarioId) {
-        addressesTable.innerHTML = '<tr><td colspan="5" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
+        addressesTable.innerHTML = '<tr><td colspan="6" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
         return;
     }
     
@@ -527,15 +527,33 @@ async function loadAddressesForScenario() {
             const addresses = data.addresses || [];
             
             if (addresses.length === 0) {
-                addressesTable.innerHTML = '<tr><td colspan="5" class="text-center">Адреса для этого сценария не найдены</td></tr>';
+                addressesTable.innerHTML = '<tr><td colspan="6" class="text-center">Адреса для этого сценария не найдены</td></tr>';
             } else {
-                addressesTable.innerHTML = addresses.map(address => `
+                // Загружаем информацию о выборах для каждого адреса
+                const addressesWithChoices = await Promise.all(
+                    addresses.map(async (address) => {
+                        const hasChoices = await checkAddressHasChoices(scenarioId, address.id);
+                        return { ...address, hasChoices };
+                    })
+                );
+                
+                addressesTable.innerHTML = addressesWithChoices.map(address => `
                     <tr>
                         <td>${address.id}</td>
                         <td>${address.district}</td>
                         <td>${address.house_number}</td>
                         <td>${address.description || '-'}</td>
+                        <td class="text-center">
+                            ${address.hasChoices ? 
+                                '<span class="badge bg-success"><i class="fas fa-check"></i> Есть</span>' : 
+                                '<span class="badge bg-secondary">Нет</span>'
+                            }
+                        </td>
                         <td class="table-actions">
+                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                    onclick="openChoicesModal(${scenarioId}, ${address.id}, {district: '${address.district}', house_number: '${address.house_number}', description: '${address.description || ''}'})">
+                                <i class="fas fa-question-circle"></i>
+                            </button>
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteAddress(${address.id})">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -546,12 +564,12 @@ async function loadAddressesForScenario() {
         } else {
             const data = await response.json();
             showMessage(data.error || 'Ошибка загрузки адресов', 'danger');
-            addressesTable.innerHTML = '<tr><td colspan="5" class="text-center">Ошибка загрузки адресов</td></tr>';
+            addressesTable.innerHTML = '<tr><td colspan="6" class="text-center">Ошибка загрузки адресов</td></tr>';
         }
     } catch (error) {
         console.error('Error loading addresses:', error);
         showMessage('Ошибка соединения', 'danger');
-        addressesTable.innerHTML = '<tr><td colspan="5" class="text-center">Ошибка соединения</td></tr>';
+        addressesTable.innerHTML = '<tr><td colspan="6" class="text-center">Ошибка соединения</td></tr>';
     }
 }
 
