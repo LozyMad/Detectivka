@@ -77,7 +77,6 @@ class VisitAttempt {
          LEFT JOIN visited_locations vl ON va.address_id = vl.address_id 
            AND va.user_id = vl.user_id 
            AND va.scenario_id = vl.scenario_id
-           ${roomId !== null ? 'AND va.room_id = vl.room_id' : ''}
          WHERE va.user_id = ? AND va.scenario_id = ? ${roomId !== null ? 'AND va.room_id = ?' : ''}
          ORDER BY va.attempted_at DESC
          LIMIT 100`;
