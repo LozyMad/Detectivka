@@ -39,7 +39,7 @@ const createAdmin = async (req, res) => {
 // Получить всех админов
 const getAdmins = async (req, res) => {
   try {
-    const admins = await User.findAllAdmins();
+    const admins = await User.getAdmins();
     res.json({ admins });
   } catch (error) {
     console.error('Get admins error:', error);

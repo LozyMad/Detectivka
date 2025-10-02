@@ -2,7 +2,15 @@ const User = require('../models/user');
 const Scenario = require('../models/scenario');
 const Address = require('../models/address');
 const VisitAttempt = require('../models/visitAttempt');
-const { createScenarioDb, deleteScenarioDb } = require('../config/scenarioDatabase');
+// Определяем тип базы данных
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
+
+let scenarioDbConfig;
+if (DB_TYPE === 'postgresql') {
+  scenarioDbConfig = require('../config/scenarioPostgreSQL');
+} else {
+  scenarioDbConfig = require('../config/scenarioDatabase');
+}
 
 // User management
 const createUser = async (req, res) => {
@@ -19,7 +27,7 @@ const createUser = async (req, res) => {
       user: { id: user.id, username: user.username, is_admin: user.is_admin }
     });
   } catch (error) {
-    if (error.code === 'SQLITE_CONSTRAINT') {
+    if (error.code === 'SQLITE_CONSTRAINT' || error.code === '23505') {
       return res.status(400).json({ error: 'Username already exists' });
     }
     console.error('Create user error:', error);
@@ -29,7 +37,7 @@ const createUser = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    const users = await User.findAll();
+    const users = await User.getAll();
     res.json({ users });
   } catch (error) {
     console.error('Get users error:', error);
@@ -80,8 +88,12 @@ const createScenario = async (req, res) => {
       is_active,
       created_by: req.user.id
     });
-    // Create per-scenario database file and tables
-    createScenarioDb(scenario.id);
+    // Create per-scenario database tables
+    if (DB_TYPE === 'postgresql') {
+      await scenarioDbConfig.ensureTables(scenario.id);
+    } else {
+      scenarioDbConfig.createScenarioDb(scenario.id);
+    }
     
     // Автоматический экспорт сценариев после создания
     try {
