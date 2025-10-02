@@ -42,6 +42,19 @@ function ensureTables(db) {
       attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(address_id) REFERENCES addresses(id)
     )`);
+
+    // Address choices table - варианты выбора для адресов
+    db.run(`CREATE TABLE IF NOT EXISTS address_choices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      address_id INTEGER NOT NULL,
+      choice_text TEXT NOT NULL,
+      response_text TEXT NOT NULL,
+      choice_order INTEGER NOT NULL DEFAULT 1,
+      is_active BOOLEAN NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(address_id) REFERENCES addresses(id) ON DELETE CASCADE
+    )`);
   });
 }
 

@@ -152,6 +152,24 @@ const init = () => {
         FOREIGN KEY(room_id) REFERENCES rooms(id) ON DELETE CASCADE
       )`);
 
+      // Game choices table - для хранения выборов игроков в основной базе
+      db.run(`CREATE TABLE IF NOT EXISTS game_choices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        room_user_id INTEGER NOT NULL,
+        scenario_id INTEGER NOT NULL,
+        address_id INTEGER NOT NULL,
+        choice_id INTEGER NOT NULL,
+        choice_text TEXT NOT NULL,
+        response_text TEXT NOT NULL,
+        visited_location_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(room_user_id, scenario_id, address_id),
+        FOREIGN KEY(room_user_id) REFERENCES room_users(id) ON DELETE CASCADE,
+        FOREIGN KEY(scenario_id) REFERENCES scenarios(id) ON DELETE CASCADE,
+        FOREIGN KEY(visited_location_id) REFERENCES visited_locations(id) ON DELETE SET NULL
+      )`);
+
       // Create default super admin user
       const bcrypt = require('bcryptjs');
       const hashedPassword = bcrypt.hashSync('admin123', 10);

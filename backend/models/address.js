@@ -49,6 +49,91 @@ const Address = {
                 else resolve({ deletedId: id });
             });
         });
+    },
+
+    // Методы для работы с интерактивными выборами
+    createChoice: (scenario_id, choiceData) => {
+        return new Promise((resolve, reject) => {
+            const { address_id, choice_text, response_text, choice_order } = choiceData;
+            const db = getScenarioDb(scenario_id);
+
+            db.run(
+                `INSERT INTO address_choices (address_id, choice_text, response_text, choice_order, is_active) 
+                 VALUES (?, ?, ?, ?, 1)`,
+                [address_id, choice_text, response_text, choice_order || 1],
+                function(err) {
+                    if (err) reject(err);
+                    else resolve({ 
+                        id: this.lastID, 
+                        address_id, 
+                        choice_text, 
+                        response_text, 
+                        choice_order: choice_order || 1,
+                        is_active: true
+                    });
+                }
+            );
+        });
+    },
+
+    getChoices: (scenario_id, address_id) => {
+        return new Promise((resolve, reject) => {
+            const db = getScenarioDb(scenario_id);
+            db.all(
+                `SELECT * FROM address_choices 
+                 WHERE address_id = ? AND is_active = 1 
+                 ORDER BY choice_order`,
+                [address_id],
+                (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows);
+                }
+            );
+        });
+    },
+
+    updateChoice: (scenario_id, choice_id, choiceData) => {
+        return new Promise((resolve, reject) => {
+            const { choice_text, response_text, choice_order, is_active } = choiceData;
+            const db = getScenarioDb(scenario_id);
+
+            db.run(
+                `UPDATE address_choices 
+                 SET choice_text = ?, response_text = ?, choice_order = ?, is_active = ?
+                 WHERE id = ?`,
+                [choice_text, response_text, choice_order, is_active, choice_id],
+                function(err) {
+                    if (err) reject(err);
+                    else resolve({ id: choice_id, changes: this.changes });
+                }
+            );
+        });
+    },
+
+    deleteChoice: (scenario_id, choice_id) => {
+        return new Promise((resolve, reject) => {
+            const db = getScenarioDb(scenario_id);
+            db.run(`DELETE FROM address_choices WHERE id = ?`, [choice_id], function(err) {
+                if (err) reject(err);
+                else resolve({ deletedId: choice_id });
+            });
+        });
+    },
+
+    // Проверить, есть ли у адреса интерактивные выборы
+    hasChoices: (scenario_id, address_id) => {
+        return new Promise((resolve, reject) => {
+            const db = getScenarioDb(scenario_id);
+            db.get(
+                `SELECT COUNT(*) as count FROM address_choices 
+                 WHERE address_id = ? AND is_active = 1`,
+                [address_id],
+                (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row.count > 0);
+                }
+            );
+        });
     }
 };
 
