@@ -37,24 +37,27 @@ router.get('/admin/scenarios/:scenario_id/addresses/:address_id/has-choices',
 
 // ===== ИГРОВЫЕ МАРШРУТЫ =====
 
-// Получить варианты выбора для игрока (публичный доступ)
+// Получить варианты выбора для игрока
 router.get('/game/scenarios/:scenario_id/addresses/:address_id/choices', 
+    authenticateToken,
     choiceController.getGameChoices
 );
 
-// Сделать выбор игроком (публичный доступ)
+// Сделать выбор игроком
 router.post('/game/make-choice', 
+    authenticateToken,
     choiceController.makePlayerChoice
 );
 
-// Получить историю выборов игрока (публичный доступ)
+// Получить историю выборов игрока
 router.get('/game/players/:room_user_id/choice-history', 
+    authenticateToken,
     choiceController.getPlayerChoiceHistory
 );
 
 // Получить выбор игрока для конкретного адреса
 router.get('/game/players/:room_user_id/scenarios/:scenario_id/addresses/:address_id/choice', 
-    roomUserRequired,
+    authenticateToken,
     choiceController.getPlayerChoiceForAddress
 );
 

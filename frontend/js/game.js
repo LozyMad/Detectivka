@@ -622,7 +622,12 @@ async function checkForInteractiveChoices(addressId, description, visitedLocatio
         currentScenarioId = scenarioId;
         
         console.log('Checking for choices:', { scenarioId: currentScenarioId, addressId });
-        const response = await fetch(`${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`);
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         
         if (!response.ok) {
             console.log('No choices available or error loading choices', response.status);
@@ -778,7 +783,11 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
         }
         
         // Если выбор не был сделан, показываем доступные варианты
-        const response = await fetch(`${API_BASE}/choices/game/scenarios/${scenarioId}/addresses/${addressId}/choices`);
+        const response = await fetch(`${API_BASE}/choices/game/scenarios/${scenarioId}/addresses/${addressId}/choices`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         
         if (response.ok) {
             const data = await response.json();
