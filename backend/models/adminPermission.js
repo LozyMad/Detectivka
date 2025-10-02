@@ -1,6 +1,16 @@
-const { db } = require('../config/database');
+// Определяем тип базы данных из переменной окружения
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
 
-const AdminPermission = {
+let AdminPermission;
+
+if (DB_TYPE === 'postgresql') {
+  // Используем PostgreSQL версию
+  AdminPermission = require('./adminPermissionPostgreSQL');
+} else {
+  // Используем SQLite версию (оригинальная логика)
+  const { db } = require('../config/database');
+
+  AdminPermission = {
   // Предоставить разрешение админу на сценарий
   grant: (admin_id, scenario_id, granted_by) => {
     return new Promise((resolve, reject) => {
@@ -102,7 +112,8 @@ const AdminPermission = {
       );
     });
   }
-};
+  };
+}
 
 module.exports = AdminPermission;
 

@@ -98,7 +98,10 @@ const createScenario = async (req, res) => {
     // Автоматический экспорт сценариев после создания
     try {
       const backupController = require('./backupController');
-      await backupController.exportScenarios({}, { json: () => {} });
+      await backupController.exportScenarios({}, { 
+        json: () => {},
+        status: () => ({ json: () => {} })
+      });
     } catch (exportError) {
       console.error('Auto-export error:', exportError);
       // Не прерываем создание сценария из-за ошибки экспорта
@@ -180,8 +183,13 @@ const deleteScenario = async (req, res) => {
   try {
     const { id } = req.params;
     await Scenario.delete(id);
-    // Delete per-scenario database file
-    deleteScenarioDb(id);
+    // Delete per-scenario database file/schema
+    if (DB_TYPE === 'postgresql') {
+      // For PostgreSQL, we could drop the schema, but it's safer to leave it
+      console.log(`Scenario ${id} deleted, schema preserved`);
+    } else {
+      scenarioDbConfig.deleteScenarioDb(id);
+    }
     res.json({ message: 'Scenario deleted successfully' });
   } catch (error) {
     console.error('Delete scenario error:', error);

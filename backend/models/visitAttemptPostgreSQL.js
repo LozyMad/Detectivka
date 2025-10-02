@@ -64,6 +64,11 @@ class VisitAttempt {
         
         return result.rows[0];
     }
+
+    // Алиас для совместимости
+    static async getStatsByScenario(scenarioId) {
+        return await VisitAttempt.getStats(scenarioId);
+    }
 }
 
 module.exports = VisitAttempt;

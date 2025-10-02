@@ -49,12 +49,18 @@ const backupController = {
         console.log(`Processing scenario: ${scenario.name} (ID: ${scenario.id})`);
         
         // Получаем вопросы для сценария
-        const questions = await new Promise((resolve, reject) => {
-          db.all('SELECT * FROM questions WHERE scenario_id = ? ORDER BY id', [scenario.id], (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
+        let questions;
+        if (DB_TYPE === 'postgresql') {
+          const result = await query('SELECT * FROM questions WHERE scenario_id = $1 ORDER BY id', [scenario.id]);
+          questions = result.rows;
+        } else {
+          questions = await new Promise((resolve, reject) => {
+            db.all('SELECT * FROM questions WHERE scenario_id = ? ORDER BY id', [scenario.id], (err, rows) => {
+              if (err) reject(err);
+              else resolve(rows);
+            });
           });
-        });
+        }
 
         // Получаем адреса для сценария
         const addresses = await new Promise((resolve, reject) => {
