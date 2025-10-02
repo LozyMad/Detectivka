@@ -127,6 +127,11 @@ async function visitLocation() {
             // Clear input
             document.getElementById('houseNumber').value = '';
             
+            // Проверяем, есть ли интерактивные выборы для этого адреса
+            if (data.success && data.address_id) {
+                checkForInteractiveChoices(data.address_id, data.description, data.visited_location_id);
+            }
+            
         } else {
             // Добавляем неудачную поездку в историю
             const trip = {
@@ -586,3 +591,158 @@ async function submitAnswer(questionId) {
         statusDiv.innerHTML = '<div class="alert alert-danger">Ошибка отправки ответа</div>';
     }
 }
+
+// ===== ИНТЕРАКТИВНЫЕ ВЫБОРЫ =====
+
+// Глобальные перемены для выборов
+let currentAddressId = null;
+let currentVisitedLocationId = null;
+let currentScenarioId = null;
+
+// Проверить, есть ли интерактивные выборы для адреса
+async function checkForInteractiveChoices(addressId, description, visitedLocationId) {
+    try {
+        // Получаем ID сценария из состояния комнаты
+        if (!roomState || !roomState.scenario_id) {
+            console.log('No scenario ID available');
+            return;
+        }
+        
+        currentAddressId = addressId;
+        currentVisitedLocationId = visitedLocationId;
+        currentScenarioId = roomState.scenario_id;
+        
+        const response = await fetch(`${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`);
+        
+        if (!response.ok) {
+            console.log('No choices available or error loading choices');
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.choices && data.choices.length > 0) {
+            showInteractiveChoiceModal(data.choices, description);
+        }
+        
+    } catch (error) {
+        console.error('Error checking for interactive choices:', error);
+    }
+}
+
+// Показать модальное окно с интерактивными выборами
+function showInteractiveChoiceModal(choices, description) {
+    // Обновить описание адреса
+    document.getElementById('addressDescription').textContent = description || 'Вы нашли интересное место...';
+    
+    // Создать кнопки выборов
+    const choiceButtons = document.getElementById('choiceButtons');
+    choiceButtons.innerHTML = '';
+    
+    choices.forEach((choice, index) => {
+        const button = document.createElement('button');
+        button.className = 'btn btn-outline-light btn-lg choice-btn';
+        button.style.cssText = `
+            border: 2px solid var(--noir-gold);
+            color: var(--noir-gold);
+            background: transparent;
+            transition: all 0.3s ease;
+        `;
+        button.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span class="badge bg-primary me-3 fs-6">${String.fromCharCode(65 + index)}</span>
+                <span>${choice.choice_text}</span>
+            </div>
+        `;
+        
+        // Добавить hover эффекты
+        button.addEventListener('mouseenter', () => {
+            button.style.background = 'var(--noir-gold)';
+            button.style.color = 'var(--noir-dark)';
+        });
+        
+        button.addEventListener('mouseleave', () => {
+            button.style.background = 'transparent';
+            button.style.color = 'var(--noir-gold)';
+        });
+        
+        button.addEventListener('click', () => makePlayerChoice(choice.id));
+        
+        choiceButtons.appendChild(button);
+    });
+    
+    // Показать модальное окно
+    const modal = new bootstrap.Modal(document.getElementById('choiceModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    modal.show();
+}
+
+// Сделать выбор игрока
+async function makePlayerChoice(choiceId) {
+    try {
+        const token = localStorage.getItem('token');
+        const roomUser = JSON.parse(localStorage.getItem('roomUser'));
+        
+        if (!roomUser || !roomUser.id) {
+            throw new Error('Room user not found');
+        }
+        
+        const response = await fetch(`${API_BASE}/choices/game/make-choice`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                room_user_id: roomUser.id,
+                scenario_id: currentScenarioId,
+                address_id: currentAddressId,
+                choice_id: choiceId,
+                visited_location_id: currentVisitedLocationId
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to make choice');
+        }
+        
+        const data = await response.json();
+        
+        // Показать результат выбора
+        showChoiceResponse(data.response);
+        
+    } catch (error) {
+        console.error('Error making choice:', error);
+        
+        // Показать ошибку
+        document.getElementById('choiceOptions').style.display = 'none';
+        document.getElementById('choiceResponse').style.display = 'block';
+        document.getElementById('responseText').textContent = 'Произошла ошибка при обработке вашего выбора.';
+    }
+}
+
+// Показать результат выбора
+function showChoiceResponse(responseText) {
+    // Скрыть варианты выбора
+    document.getElementById('choiceOptions').style.display = 'none';
+    
+    // Показать результат
+    document.getElementById('choiceResponse').style.display = 'block';
+    document.getElementById('responseText').textContent = responseText;
+}
+
+// Сброс модального окна при закрытии
+document.getElementById('choiceModal').addEventListener('hidden.bs.modal', function () {
+    // Сброс состояния модального окна
+    document.getElementById('choiceOptions').style.display = 'block';
+    document.getElementById('choiceResponse').style.display = 'none';
+    document.getElementById('choiceButtons').innerHTML = '';
+    
+    // Сброс переменных
+    currentAddressId = null;
+    currentVisitedLocationId = null;
+    currentScenarioId = null;
+});

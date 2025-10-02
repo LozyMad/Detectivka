@@ -87,6 +87,8 @@ const visitLocation = async (req, res) => {
         district: address.district,
         house_number: address.house_number
       },
+      address_id: address.id,
+      visited_location_id: visitResult.visit ? visitResult.visit.id : null,
       alreadyVisited: visitResult.alreadyVisited,
       visitedAt: visitResult.alreadyVisited ? visitResult.visit.visited_at : new Date().toISOString()
     });
