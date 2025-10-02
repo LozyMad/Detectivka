@@ -235,6 +235,62 @@
                 padding: 0.6rem 1rem !important;
             }
         }
+
+        /* Адаптивные стили для модального окна выбора */
+        @media (max-width: 767.98px) {
+            #choiceModal .modal-dialog {
+                margin: 0.5rem !important;
+                max-width: calc(100% - 1rem) !important;
+            }
+            
+            #choiceModal .modal-content {
+                border-radius: 15px !important;
+            }
+            
+            #choiceModal .modal-header {
+                padding: 1rem !important;
+            }
+            
+            #choiceModal .modal-title {
+                font-size: 1.3rem !important;
+            }
+            
+            #choiceModal .modal-body {
+                padding: 1rem !important;
+            }
+            
+            #choiceModal .alert {
+                padding: 0.75rem !important;
+                font-size: 0.9rem !important;
+            }
+            
+            #choiceModal .choice-btn {
+                font-size: 0.9rem !important;
+                padding: 1rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            
+            #choiceModal .choice-btn .badge {
+                font-size: 0.8rem !important;
+                padding: 0.4rem 0.6rem !important;
+            }
+            
+            #choiceModal .btn {
+                font-size: 1rem !important;
+                padding: 0.75rem 1.5rem !important;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 991.98px) {
+            #choiceModal .modal-dialog {
+                max-width: 600px !important;
+            }
+            
+            #choiceModal .choice-btn {
+                font-size: 1rem !important;
+                padding: 1.2rem !important;
+            }
+        }
         
         .btn-group .btn:hover:not(.active) {
             background: rgba(212, 175, 55, 0.2);
