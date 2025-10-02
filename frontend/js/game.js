@@ -233,7 +233,9 @@ async function loadTripHistory() {
             success: attempt.found,
             description: attempt.found ? (attempt.address_description || 'Локация найдена') : 'Улик нет',
             timestamp: attempt.attempted_at,
-            alreadyVisited: false
+            alreadyVisited: false,
+            address_id: attempt.address_id || null,
+            visited_location_id: attempt.visited_location_id || null
         }));
         
         updateTripHistory();

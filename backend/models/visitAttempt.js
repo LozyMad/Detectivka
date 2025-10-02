@@ -70,9 +70,14 @@ class VisitAttempt {
     return new Promise((resolve, reject) => {
       const sql = `SELECT 
            va.*,
-           a.description as address_description
+           a.description as address_description,
+           vl.id as visited_location_id
          FROM visit_attempts va
          LEFT JOIN addresses a ON va.address_id = a.id
+         LEFT JOIN visited_locations vl ON va.address_id = vl.address_id 
+           AND va.user_id = vl.user_id 
+           AND va.scenario_id = vl.scenario_id
+           ${roomId !== null ? 'AND va.room_id = vl.room_id' : ''}
          WHERE va.user_id = ? AND va.scenario_id = ? ${roomId !== null ? 'AND va.room_id = ?' : ''}
          ORDER BY va.attempted_at DESC
          LIMIT 100`;
