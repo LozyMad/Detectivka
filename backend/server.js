@@ -37,11 +37,12 @@ app.use(express.static(path.join(__dirname, '../frontend'), {
 app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/questions', questionRoutes); // Админские вопросы
 app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/room', roomPublicRoutes);
 app.use('/api/scenarios', scenarioRoutes);
-app.use('/api/questions', questionRoutes);
+app.use('/api/questions', questionRoutes); // Публичные вопросы
 app.use('/api/backup', backupRoutes);
 app.use('/api/choices', choiceRoutes);
 
