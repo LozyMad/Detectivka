@@ -1,5 +1,5 @@
 const Address = require('../models/address');
-const { db } = require('../config/database');
+const { query } = require('../config/database');
 
 // ===== АДМИНСКИЕ МЕТОДЫ =====
 
@@ -63,7 +63,7 @@ const updateAddressChoice = async (req, res) => {
             is_active
         });
         
-        if (result.changes === 0) {
+        if (!result) {
             return res.status(404).json({ error: 'Choice not found' });
         }
         
@@ -159,17 +159,12 @@ const makePlayerChoice = async (req, res) => {
         }
         
         // Проверяем, не делал ли игрок уже выбор для этого адреса
-        const existingChoice = await new Promise((resolve, reject) => {
-            db.get(
-                `SELECT * FROM game_choices 
-                 WHERE room_user_id = ? AND scenario_id = ? AND address_id = ?`,
-                [room_user_id, scenario_id, address_id],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row);
-                }
-            );
-        });
+        const existingChoiceResult = await query(
+            `SELECT * FROM game_choices 
+             WHERE room_user_id = $1 AND scenario_id = $2 AND address_id = $3`,
+            [room_user_id, scenario_id, address_id]
+        );
+        const existingChoice = existingChoiceResult.rows[0] || null;
         
         if (existingChoice) {
             return res.status(400).json({ 
@@ -178,28 +173,14 @@ const makePlayerChoice = async (req, res) => {
         }
         
         // Сохраняем выбор игрока
-        const gameChoice = await new Promise((resolve, reject) => {
-            db.run(
-                `INSERT INTO game_choices 
-                 (room_user_id, scenario_id, address_id, choice_id, choice_text, response_text, visited_location_id)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [room_user_id, scenario_id, address_id, choice_id, 
-                 selectedChoice.choice_text, selectedChoice.response_text, visited_location_id],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve({
-                        id: this.lastID,
-                        room_user_id,
-                        scenario_id,
-                        address_id,
-                        choice_id,
-                        choice_text: selectedChoice.choice_text,
-                        response_text: selectedChoice.response_text,
-                        visited_location_id
-                    });
-                }
-            );
-        });
+        const gameChoiceResult = await query(
+            `INSERT INTO game_choices 
+             (room_user_id, scenario_id, address_id, choice_id, choice_text, response_text, visited_location_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+            [room_user_id, scenario_id, address_id, choice_id, 
+             selectedChoice.choice_text, selectedChoice.response_text, visited_location_id]
+        );
+        const gameChoice = gameChoiceResult.rows[0];
         
         res.status(201).json({
             success: true,
@@ -218,20 +199,15 @@ const getPlayerChoiceHistory = async (req, res) => {
     try {
         const { room_user_id } = req.params;
         
-        const choices = await new Promise((resolve, reject) => {
-            db.all(
-                `SELECT gc.*, s.name as scenario_name 
-                 FROM game_choices gc
-                 JOIN scenarios s ON gc.scenario_id = s.id
-                 WHERE gc.room_user_id = ?
-                 ORDER BY gc.created_at DESC`,
-                [room_user_id],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows);
-                }
-            );
-        });
+        const choicesResult = await query(
+            `SELECT gc.*, s.name as scenario_name 
+             FROM game_choices gc
+             JOIN scenarios s ON gc.scenario_id = s.id
+             WHERE gc.room_user_id = $1
+             ORDER BY gc.created_at DESC`,
+            [room_user_id]
+        );
+        const choices = choicesResult.rows;
         
         res.json({
             success: true,
@@ -248,17 +224,12 @@ const getPlayerChoiceForAddress = async (req, res) => {
     try {
         const { room_user_id, scenario_id, address_id } = req.params;
         
-        const choice = await new Promise((resolve, reject) => {
-            db.get(
-                `SELECT * FROM game_choices 
-                 WHERE room_user_id = ? AND scenario_id = ? AND address_id = ?`,
-                [room_user_id, scenario_id, address_id],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row);
-                }
-            );
-        });
+        const choiceResult = await query(
+            `SELECT * FROM game_choices 
+             WHERE room_user_id = $1 AND scenario_id = $2 AND address_id = $3`,
+            [room_user_id, scenario_id, address_id]
+        );
+        const choice = choiceResult.rows[0] || null;
         
         console.log('Retrieved player choice:', choice);
         
