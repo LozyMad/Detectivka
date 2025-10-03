@@ -92,6 +92,7 @@ const createTables = async () => {
       id SERIAL PRIMARY KEY,
       room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
       username VARCHAR(255) NOT NULL,
+      password VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
