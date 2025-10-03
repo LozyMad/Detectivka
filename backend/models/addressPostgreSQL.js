@@ -8,6 +8,7 @@ const Address = {
         // Убеждаемся что таблицы созданы
         await ensureTables(scenario_id);
         
+        // Создаем в сценарий-специфичной таблице
         const result = await queryScenario(
             scenario_id,
             `INSERT INTO scenario_${scenario_id}.addresses (district, house_number, description) 
@@ -15,7 +16,16 @@ const Address = {
             [district, house_number, description]
         );
         
-        return { ...result.rows[0], scenario_id };
+        const address = result.rows[0];
+        
+        // Также создаем в главной таблице для совместимости
+        await query(
+            `INSERT INTO addresses (scenario_id, district, house_number, description) 
+             VALUES ($1, $2, $3, $4)`,
+            [scenario_id, district, house_number, description]
+        );
+        
+        return { ...address, scenario_id };
     },
 
     findByScenarioAndAddress: async (scenario_id, district, house_number) => {
@@ -57,6 +67,7 @@ const Address = {
     update: async (scenario_id, id, addressData) => {
         const { district, house_number, description } = addressData;
         
+        // Обновляем в сценарий-специфичной таблице
         const result = await queryScenario(
             scenario_id,
             `UPDATE scenario_${scenario_id}.addresses 
@@ -65,14 +76,29 @@ const Address = {
             [district, house_number, description, id]
         );
         
+        // Также обновляем в главной таблице
+        await query(
+            `UPDATE addresses 
+             SET district = $1, house_number = $2, description = $3 
+             WHERE scenario_id = $4 AND id = $5`,
+            [district, house_number, description, scenario_id, id]
+        );
+        
         return result.rows[0] || null;
     },
 
     delete: async (scenario_id, id) => {
+        // Удаляем из сценарий-специфичной таблицы
         const result = await queryScenario(
             scenario_id,
             `DELETE FROM scenario_${scenario_id}.addresses WHERE id = $1 RETURNING *`,
             [id]
+        );
+        
+        // Также удаляем из главной таблицы
+        await query(
+            `DELETE FROM addresses WHERE scenario_id = $1 AND id = $2`,
+            [scenario_id, id]
         );
         
         return result.rows[0] || null;
@@ -143,6 +169,7 @@ const Address = {
 
     // Алиас для совместимости
     findByScenario: async (scenarioId) => {
+        // Читаем из главной таблицы addresses
         const result = await query('SELECT * FROM addresses WHERE scenario_id = $1 ORDER BY id', [scenarioId]);
         return result.rows;
     }
