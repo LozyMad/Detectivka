@@ -991,7 +991,7 @@
 
     <!-- Edit Scenario Modal -->
     <div class="modal fade" id="editScenarioModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Редактировать сценарий</h5>
@@ -1006,7 +1006,21 @@
                         </div>
                         <div class="mb-3">
                             <label for="editScenarioDescription" class="form-label">Описание</label>
-                            <input type="text" class="form-control" id="editScenarioDescription">
+                            <textarea class="form-control" id="editScenarioDescription" rows="3"></textarea>
+                        </div>
+                        
+                        <!-- Questions Section -->
+                        <div class="mb-3">
+                            <label class="form-label">Вопросы для игроков</label>
+                            <div id="editScenarioQuestions">
+                                <!-- Questions will be loaded here -->
+                            </div>
+                            <div class="input-group mt-2">
+                                <input type="text" class="form-control" id="editNewQuestion" placeholder="Введите вопрос">
+                                <button type="button" class="btn btn-outline-primary" onclick="addEditQuestion()">
+                                    <i class="fas fa-plus"></i> Добавить вопрос
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

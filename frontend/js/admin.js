@@ -426,13 +426,16 @@ async function handleAddScenario(e) {
     }
 }
 
-function editScenario(scenarioId) {
+async function editScenario(scenarioId) {
     const scenario = scenarios.find(s => s.id === scenarioId);
     if (!scenario) return;
 
     document.getElementById('editScenarioId').value = scenario.id;
     document.getElementById('editScenarioName').value = scenario.name;
     document.getElementById('editScenarioDescription').value = scenario.description || '';
+
+    // Load questions for this scenario
+    await loadScenarioQuestions(scenarioId);
 
     const modal = new bootstrap.Modal(document.getElementById('editScenarioModal'));
     modal.show();
@@ -467,6 +470,139 @@ async function updateScenario() {
         }
     } catch (error) {
         console.error('Error updating scenario:', error);
+        showMessage('Ошибка соединения', 'danger');
+    }
+}
+
+// Load questions for scenario editing
+async function loadScenarioQuestions(scenarioId) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/admin/questions?scenario_id=${scenarioId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            displayEditQuestions(data.questions || []);
+        } else {
+            console.error('Error loading questions:', data.error);
+            displayEditQuestions([]);
+        }
+    } catch (error) {
+        console.error('Error loading questions:', error);
+        displayEditQuestions([]);
+    }
+}
+
+// Display questions in edit modal
+function displayEditQuestions(questions) {
+    const container = document.getElementById('editScenarioQuestions');
+    if (!container) return;
+
+    if (questions.length === 0) {
+        container.innerHTML = '<p class="text-muted">Нет вопросов</p>';
+        return;
+    }
+
+    container.innerHTML = questions.map(question => `
+        <div class="input-group mb-2" data-question-id="${question.id}">
+            <input type="text" class="form-control" value="${question.question_text}" 
+                   onchange="updateQuestion(${question.id}, this.value)">
+            <button type="button" class="btn btn-outline-danger" onclick="deleteQuestion(${question.id})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+// Add new question in edit modal
+async function addEditQuestion() {
+    const questionText = document.getElementById('editNewQuestion').value.trim();
+    if (!questionText) return;
+
+    const scenarioId = document.getElementById('editScenarioId').value;
+    if (!scenarioId) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/admin/questions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                scenario_id: scenarioId,
+                question_text: questionText
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage('Вопрос добавлен', 'success');
+            document.getElementById('editNewQuestion').value = '';
+            await loadScenarioQuestions(scenarioId);
+        } else {
+            showMessage(data.error || 'Ошибка добавления вопроса', 'danger');
+        }
+    } catch (error) {
+        console.error('Error adding question:', error);
+        showMessage('Ошибка соединения', 'danger');
+    }
+}
+
+// Update existing question
+async function updateQuestion(questionId, newText) {
+    if (!newText.trim()) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/admin/questions/${questionId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ question_text: newText })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage('Вопрос обновлен', 'success');
+        } else {
+            showMessage(data.error || 'Ошибка обновления вопроса', 'danger');
+        }
+    } catch (error) {
+        console.error('Error updating question:', error);
+        showMessage('Ошибка соединения', 'danger');
+    }
+}
+
+// Delete question
+async function deleteQuestion(questionId) {
+    if (!confirm('Удалить этот вопрос?')) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/admin/questions/${questionId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage('Вопрос удален', 'success');
+            const scenarioId = document.getElementById('editScenarioId').value;
+            await loadScenarioQuestions(scenarioId);
+        } else {
+            showMessage(data.error || 'Ошибка удаления вопроса', 'danger');
+        }
+    } catch (error) {
+        console.error('Error deleting question:', error);
         showMessage('Ошибка соединения', 'danger');
     }
 }
