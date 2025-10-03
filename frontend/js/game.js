@@ -67,13 +67,13 @@ async function visitLocation() {
         return;
     }
     if (!selectedDistrict) {
-        alert('РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІС‹Р±РµСЂРёС‚Рµ СЂР°Р№РѕРЅ');
+        alert('Please select a district');
         return;
     }
     
     const houseNumber = document.getElementById('houseNumber').value.trim();
     if (!houseNumber) {
-        alert('РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІРІРµРґРёС‚Рµ РЅРѕРјРµСЂ РґРѕРјР°');
+        alert('Please enter house number');
         return;
     }
     
@@ -205,7 +205,7 @@ async function loadTripCount() {
 function updateTripCounter() {
     const counter = document.getElementById('tripCounter');
     if (counter) {
-        counter.textContent = `РџРѕРµР·РґРѕРє: ${tripCount}`;
+        counter.textContent = `Trips: ${tripCount}`;
     }
 }
 
