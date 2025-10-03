@@ -100,8 +100,16 @@ const Room = {
         // 4. Удаляем записи из visit_attempts
         await query(`DELETE FROM visit_attempts WHERE room_id = $1`, [id]);
         
-        // 5. Удаляем записи из visited_locations (если есть room_id)
-        await query(`DELETE FROM visited_locations WHERE room_id = $1`, [id]);
+        // 5. Удаляем записи из visited_locations в схеме сценария
+        try {
+            const roomResult = await query(`SELECT scenario_id FROM rooms WHERE id = $1`, [id]);
+            if (roomResult.rows.length > 0) {
+                const scenarioId = roomResult.rows[0].scenario_id;
+                await query(`DELETE FROM scenario_${scenarioId}.visited_locations WHERE room_id = $1`, [id]);
+            }
+        } catch (error) {
+            console.log('Visited locations table does not exist for room', id);
+        }
         
         // 6. Теперь можно безопасно удалить комнату
         const result = await query(

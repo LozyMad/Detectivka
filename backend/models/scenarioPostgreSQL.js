@@ -77,8 +77,12 @@ const Scenario = {
         // 4. Удаляем записи из visit_attempts
         await query(`DELETE FROM visit_attempts WHERE room_id IN (SELECT id FROM rooms WHERE scenario_id = $1)`, [id]);
         
-        // 5. Удаляем записи из visited_locations (если есть room_id)
-        await query(`DELETE FROM visited_locations WHERE room_id IN (SELECT id FROM rooms WHERE scenario_id = $1)`, [id]);
+        // 5. Удаляем записи из visited_locations в схеме сценария
+        try {
+            await query(`DELETE FROM scenario_${id}.visited_locations`);
+        } catch (error) {
+            console.log('Visited locations table does not exist for scenario', id);
+        }
         
         // 6. Удаляем комнаты этого сценария
         await query(`DELETE FROM rooms WHERE scenario_id = $1`, [id]);
