@@ -13,6 +13,140 @@
     --noir-shadow: rgba(0, 0, 0, 0.8);
 }
 
+/* Стили модальных окон в London noir стиле */
+.modal-content {
+    background-color: var(--noir-gray) !important;
+    border: 1px solid var(--noir-gold) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 10px 30px var(--noir-shadow) !important;
+}
+
+.modal-header {
+    background-color: var(--noir-dark) !important;
+    border-bottom: 1px solid var(--noir-gold) !important;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.modal-title {
+    color: var(--noir-cream) !important;
+    font-family: 'Playfair Display', serif !important;
+    font-weight: 600 !important;
+}
+
+.modal-body {
+    background-color: var(--noir-gray) !important;
+    color: var(--noir-text) !important;
+}
+
+.modal-footer {
+    background-color: var(--noir-dark) !important;
+    border-top: 1px solid var(--noir-gold) !important;
+    border-radius: 0 0 10px 10px !important;
+}
+
+/* Стили для полей ввода в модальных окнах */
+.modal-content .form-control {
+    background-color: var(--noir-light-gray) !important;
+    border: 1px solid var(--noir-silver) !important;
+    color: var(--noir-text) !important;
+    border-radius: 5px !important;
+}
+
+.modal-content .form-control:focus {
+    background-color: var(--noir-light-gray) !important;
+    border-color: var(--noir-gold) !important;
+    color: var(--noir-text) !important;
+    box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25) !important;
+}
+
+.modal-content .form-control::placeholder {
+    color: var(--noir-silver) !important;
+}
+
+.modal-content .form-label {
+    color: var(--noir-cream) !important;
+    font-weight: 600 !important;
+}
+
+/* Стили для кнопок в модальных окнах */
+.modal-content .btn-primary {
+    background-color: var(--noir-gold) !important;
+    border-color: var(--noir-gold) !important;
+    color: var(--noir-dark) !important;
+    font-weight: 600 !important;
+}
+
+.modal-content .btn-primary:hover {
+    background-color: var(--noir-copper) !important;
+    border-color: var(--noir-copper) !important;
+    color: var(--noir-cream) !important;
+}
+
+.modal-content .btn-secondary {
+    background-color: var(--noir-light-gray) !important;
+    border-color: var(--noir-silver) !important;
+    color: var(--noir-text) !important;
+}
+
+.modal-content .btn-secondary:hover {
+    background-color: var(--noir-silver) !important;
+    border-color: var(--noir-silver) !important;
+    color: var(--noir-dark) !important;
+}
+
+.modal-content .btn-outline-primary {
+    border-color: var(--noir-gold) !important;
+    color: var(--noir-gold) !important;
+}
+
+.modal-content .btn-outline-primary:hover {
+    background-color: var(--noir-gold) !important;
+    border-color: var(--noir-gold) !important;
+    color: var(--noir-dark) !important;
+}
+
+.modal-content .btn-outline-danger {
+    border-color: var(--noir-danger) !important;
+    color: var(--noir-danger) !important;
+}
+
+.modal-content .btn-outline-danger:hover {
+    background-color: var(--noir-danger) !important;
+    border-color: var(--noir-danger) !important;
+    color: var(--noir-cream) !important;
+}
+
+/* Стили для input-group в модальных окнах */
+.modal-content .input-group {
+    border-radius: 5px !important;
+}
+
+.modal-content .input-group .form-control {
+    border-radius: 5px 0 0 5px !important;
+}
+
+.modal-content .input-group .btn {
+    border-radius: 0 5px 5px 0 !important;
+}
+
+/* Стили для текста в модальных окнах */
+.modal-content .text-muted {
+    color: var(--noir-silver) !important;
+}
+
+/* Стили для иконок в модальных окнах */
+.modal-content .fas {
+    color: var(--noir-gold) !important;
+}
+
+.modal-content .btn-outline-danger .fas {
+    color: var(--noir-danger) !important;
+}
+
+.modal-content .btn-outline-danger:hover .fas {
+    color: var(--noir-cream) !important;
+}
+
 /* Импорт шрифтов */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+Pro:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
