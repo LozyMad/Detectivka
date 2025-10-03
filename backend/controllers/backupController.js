@@ -111,7 +111,7 @@ const backupController = {
       await fs.writeFile(filepath, JSON.stringify(exportData, null, 2), 'utf8');
       
       // Также сохраняем как latest.json
-      const latestPath = path.join(__dirname, '../../backups/scenarios', 'latest.json');
+      const latestPath = path.join(backupDir, 'latest.json');
       await fs.writeFile(latestPath, JSON.stringify(exportData, null, 2), 'utf8');
 
       console.log(`Export completed: ${filename}`);
