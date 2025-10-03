@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+﻿const API_BASE = '/api';
 let selectedDistrict = null;
 let roomState = null;
 let roomTimerInterval = null;
@@ -63,28 +63,28 @@ function setupDistrictButtons() {
 
 async function visitLocation() {
     if (roomState && roomState.state !== 'running') {
-        alert('РРіСЂР° РµС‰С‘ РЅРµ РЅР°С‡Р°Р»Р°СЃСЊ РёР»Рё СѓР¶Рµ Р·Р°РІРµСЂС€РёР»Р°СЃСЊ');
+        alert('Р ВР С–РЎР‚Р В° Р ВµРЎвЂ°РЎвЂ Р Р…Р Вµ Р Р…Р В°РЎвЂЎР В°Р В»Р В°РЎРѓРЎРЉ Р С‘Р В»Р С‘ РЎС“Р В¶Р Вµ Р В·Р В°Р Р†Р ВµРЎР‚РЎв‚¬Р С‘Р В»Р В°РЎРѓРЎРЉ');
         return;
     }
     if (!selectedDistrict) {
-        alert('Please select a district');
+        alert('Пожалуйста, выберите район');
         return;
     }
     
     const houseNumber = document.getElementById('houseNumber').value.trim();
     if (!houseNumber) {
-        alert('Please enter house number');
+        alert('Пожалуйста, введите номер дома');
         return;
     }
     
-    // РџСЂРѕРІРµСЂСЏРµРј, РЅРµ Р±С‹Р»Р° Р»Рё СѓР¶Рµ СЃРѕРІРµСЂС€РµРЅР° РїРѕРµР·РґРєР° РІ СЌС‚Сѓ Р»РѕРєР°С†РёСЋ
+    // Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С, Р Р…Р Вµ Р В±РЎвЂ№Р В»Р В° Р В»Р С‘ РЎС“Р В¶Р Вµ РЎРѓР С•Р Р†Р ВµРЎР‚РЎв‚¬Р ВµР Р…Р В° Р С—Р С•Р ВµР В·Р Т‘Р С”Р В° Р Р† РЎРЊРЎвЂљРЎС“ Р В»Р С•Р С”Р В°РЎвЂ Р С‘РЎР‹
     const existingTrip = tripHistory.find(trip => 
         trip.district === selectedDistrict && 
         trip.houseNumber === houseNumber
     );
     
     if (existingTrip) {
-        alert('Р’С‹ СѓР¶Рµ РїРѕСЃРµС‰Р°Р»Рё СЌС‚Сѓ Р»РѕРєР°С†РёСЋ! РџСЂРѕРІРµСЂСЊС‚Рµ Р·Р°РїРёСЃРё Рѕ РїРѕРµР·РґРєР°С….');
+        alert('Р вЂ™РЎвЂ№ РЎС“Р В¶Р Вµ Р С—Р С•РЎРѓР ВµРЎвЂ°Р В°Р В»Р С‘ РЎРЊРЎвЂљРЎС“ Р В»Р С•Р С”Р В°РЎвЂ Р С‘РЎР‹! Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЉРЎвЂљР Вµ Р В·Р В°Р С—Р С‘РЎРѓР С‘ Р С• Р С—Р С•Р ВµР В·Р Т‘Р С”Р В°РЎвЂ¦.');
         return;
     }
     
@@ -107,41 +107,41 @@ async function visitLocation() {
         
         const data = await response.json();
         
-        // РЈРІРµР»РёС‡РёРІР°РµРј СЃС‡РµС‚С‡РёРє РїРѕРµР·РґРѕРє РЅРµР·Р°РІРёСЃРёРјРѕ РѕС‚ СЂРµР·СѓР»СЊС‚Р°С‚Р°
+        // Р Р€Р Р†Р ВµР В»Р С‘РЎвЂЎР С‘Р Р†Р В°Р ВµР С РЎРѓРЎвЂЎР ВµРЎвЂљРЎвЂЎР С‘Р С” Р С—Р С•Р ВµР В·Р Т‘Р С•Р С” Р Р…Р ВµР В·Р В°Р Р†Р С‘РЎРѓР С‘Р СР С• Р С•РЎвЂљ РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљР В°
         tripCount++;
         updateTripCounter();
         
         if (response.ok) {
-            // Р”РѕР±Р°РІР»СЏРµРј РїРѕРµР·РґРєСѓ РІ РёСЃС‚РѕСЂРёСЋ
+            // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р С—Р С•Р ВµР В·Р Т‘Р С”РЎС“ Р Р† Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘РЎР‹
             const trip = {
                 district: selectedDistrict,
                 houseNumber: houseNumber,
                 success: data.success,
                 description: data.description || null,
                 timestamp: new Date().toISOString(),
-                alreadyVisited: false, // РўРµРїРµСЂСЊ РІСЃРµ РїРѕРµР·РґРєРё СѓРЅРёРєР°Р»СЊРЅС‹Рµ
+                alreadyVisited: false, // Р СћР ВµР С—Р ВµРЎР‚РЎРЉ Р Р†РЎРѓР Вµ Р С—Р С•Р ВµР В·Р Т‘Р С”Р С‘ РЎС“Р Р…Р С‘Р С”Р В°Р В»РЎРЉР Р…РЎвЂ№Р Вµ
                 address_id: data.address_id || null,
                 visited_location_id: data.visited_location_id || null
             };
-            tripHistory.unshift(trip); // Р”РѕР±Р°РІР»СЏРµРј РІ РЅР°С‡Р°Р»Рѕ РјР°СЃСЃРёРІР°
+            tripHistory.unshift(trip); // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р Р† Р Р…Р В°РЎвЂЎР В°Р В»Р С• Р СР В°РЎРѓРЎРѓР С‘Р Р†Р В°
             updateTripHistory();
             
             // Clear input
             document.getElementById('houseNumber').value = '';
             
-            // РџСЂРѕРІРµСЂСЏРµРј, РµСЃС‚СЊ Р»Рё РёРЅС‚РµСЂР°РєС‚РёРІРЅС‹Рµ РІС‹Р±РѕСЂС‹ РґР»СЏ СЌС‚РѕРіРѕ Р°РґСЂРµСЃР°
+            // Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С, Р ВµРЎРѓРЎвЂљРЎРЉ Р В»Р С‘ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р Вµ Р Р†РЎвЂ№Р В±Р С•РЎР‚РЎвЂ№ Р Т‘Р В»РЎРЏ РЎРЊРЎвЂљР С•Р С–Р С• Р В°Р Т‘РЎР‚Р ВµРЎРѓР В°
             if (data.success && data.address_id) {
                 console.log('Visit successful, checking for choices:', data);
                 checkForInteractiveChoices(data.address_id, data.description, data.visited_location_id);
             }
             
         } else {
-            // Р”РѕР±Р°РІР»СЏРµРј РЅРµСѓРґР°С‡РЅСѓСЋ РїРѕРµР·РґРєСѓ РІ РёСЃС‚РѕСЂРёСЋ
+            // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р Р…Р ВµРЎС“Р Т‘Р В°РЎвЂЎР Р…РЎС“РЎР‹ Р С—Р С•Р ВµР В·Р Т‘Р С”РЎС“ Р Р† Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘РЎР‹
             const trip = {
                 district: selectedDistrict,
                 houseNumber: houseNumber,
                 success: false,
-                description: data.error || 'РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР°',
+                description: data.error || 'Р СџРЎР‚Р С•Р С‘Р В·Р С•РЎв‚¬Р В»Р В° Р С•РЎв‚¬Р С‘Р В±Р С”Р В°',
                 timestamp: new Date().toISOString(),
                 alreadyVisited: false
             };
@@ -154,16 +154,16 @@ async function visitLocation() {
     } catch (error) {
         console.error('Error visiting location:', error);
         
-        // РЈРІРµР»РёС‡РёРІР°РµРј СЃС‡РµС‚С‡РёРє РїРѕРµР·РґРѕРє РґР°Р¶Рµ РїСЂРё РѕС€РёР±РєРµ
+        // Р Р€Р Р†Р ВµР В»Р С‘РЎвЂЎР С‘Р Р†Р В°Р ВµР С РЎРѓРЎвЂЎР ВµРЎвЂљРЎвЂЎР С‘Р С” Р С—Р С•Р ВµР В·Р Т‘Р С•Р С” Р Т‘Р В°Р В¶Р Вµ Р С—РЎР‚Р С‘ Р С•РЎв‚¬Р С‘Р В±Р С”Р Вµ
         tripCount++;
         updateTripCounter();
         
-        // Р”РѕР±Р°РІР»СЏРµРј РїРѕРµР·РґРєСѓ СЃ РѕС€РёР±РєРѕР№ РІ РёСЃС‚РѕСЂРёСЋ
+        // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р С—Р С•Р ВµР В·Р Т‘Р С”РЎС“ РЎРѓ Р С•РЎв‚¬Р С‘Р В±Р С”Р С•Р в„– Р Р† Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘РЎР‹
         const trip = {
             district: selectedDistrict,
             houseNumber: houseNumber,
             success: false,
-            description: 'РћС€РёР±РєР° СЃРѕРµРґРёРЅРµРЅРёСЏ',
+            description: 'Р С›РЎв‚¬Р С‘Р В±Р С”Р В° РЎРѓР С•Р ВµР Т‘Р С‘Р Р…Р ВµР Р…Р С‘РЎРЏ',
             timestamp: new Date().toISOString(),
             alreadyVisited: false
         };
@@ -175,7 +175,7 @@ async function visitLocation() {
     }
 }
 
-// Р—Р°РіСЂСѓР·РєР° СЃС‡РµС‚С‡РёРєР° РїРѕРµР·РґРѕРє
+// Р вЂ”Р В°Р С–РЎР‚РЎС“Р В·Р С”Р В° РЎРѓРЎвЂЎР ВµРЎвЂљРЎвЂЎР С‘Р С”Р В° Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
 async function loadTripCount() {
     try {
         const token = localStorage.getItem('token');
@@ -201,15 +201,15 @@ async function loadTripCount() {
     }
 }
 
-// РћР±РЅРѕРІР»РµРЅРёРµ СЃС‡РµС‚С‡РёРєР° РїРѕРµР·РґРѕРє
+// Р С›Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘Р Вµ РЎРѓРЎвЂЎР ВµРЎвЂљРЎвЂЎР С‘Р С”Р В° Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
 function updateTripCounter() {
     const counter = document.getElementById('tripCounter');
     if (counter) {
-        counter.textContent = `Trips: ${tripCount}`;
+        counter.textContent = `Поездок: ${tripCount}`;
     }
 }
 
-// Р—Р°РіСЂСѓР·РєР° РёСЃС‚РѕСЂРёРё РїРѕРµР·РґРѕРє
+// Р вЂ”Р В°Р С–РЎР‚РЎС“Р В·Р С”Р В° Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘Р С‘ Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
 async function loadTripHistory() {
     try {
         const token = localStorage.getItem('token');
@@ -226,11 +226,11 @@ async function loadTripHistory() {
         const data = await response.json();
         const attempts = data.attempts || [];
         
-        // РџСЂРµРѕР±СЂР°Р·СѓРµРј РїРѕРїС‹С‚РєРё РІ С„РѕСЂРјР°С‚ РёСЃС‚РѕСЂРёРё РїРѕРµР·РґРѕРє
+        // Р СџРЎР‚Р ВµР С•Р В±РЎР‚Р В°Р В·РЎС“Р ВµР С Р С—Р С•Р С—РЎвЂ№РЎвЂљР С”Р С‘ Р Р† РЎвЂћР С•РЎР‚Р СР В°РЎвЂљ Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘Р С‘ Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
         tripHistory = await Promise.all(attempts.map(async (attempt) => {
-            let description = attempt.found ? (attempt.address_description || 'Р›РѕРєР°С†РёСЏ РЅР°Р№РґРµРЅР°') : 'РЈР»РёРє РЅРµС‚';
+            let description = attempt.found ? (attempt.address_description || 'Р вЂєР С•Р С”Р В°РЎвЂ Р С‘РЎРЏ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°') : 'Р Р€Р В»Р С‘Р С” Р Р…Р ВµРЎвЂљ';
             
-            // Р•СЃР»Рё СЌС‚Рѕ СѓСЃРїРµС€РЅР°СЏ РїРѕРµР·РґРєР° СЃ address_id, РїСЂРѕРІРµСЂСЏРµРј, РµСЃС‚СЊ Р»Рё СЃРґРµР»Р°РЅРЅС‹Р№ РІС‹Р±РѕСЂ
+            // Р вЂўРЎРѓР В»Р С‘ РЎРЊРЎвЂљР С• РЎС“РЎРѓР С—Р ВµРЎв‚¬Р Р…Р В°РЎРЏ Р С—Р С•Р ВµР В·Р Т‘Р С”Р В° РЎРѓ address_id, Р С—РЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С, Р ВµРЎРѓРЎвЂљРЎРЉ Р В»Р С‘ РЎРѓР Т‘Р ВµР В»Р В°Р Р…Р Р…РЎвЂ№Р в„– Р Р†РЎвЂ№Р В±Р С•РЎР‚
             if (attempt.found && attempt.address_id && attempt.visited_location_id) {
                 try {
                     const roomUser = JSON.parse(localStorage.getItem('roomUser'));
@@ -276,13 +276,13 @@ async function loadTripHistory() {
     }
 }
 
-// РћР±РЅРѕРІР»РµРЅРёРµ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РёСЃС‚РѕСЂРёРё РїРѕРµР·РґРѕРє
+// Р С›Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘Р Вµ Р С•РЎвЂљР С•Р В±РЎР‚Р В°Р В¶Р ВµР Р…Р С‘РЎРЏ Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘Р С‘ Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
 function updateTripHistory() {
     const container = document.getElementById('tripHistory');
     if (!container) return;
     
     if (tripHistory.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center">РСЃС‚РѕСЂРёСЏ РїРѕРµР·РґРѕРє РїСѓСЃС‚Р°</p>';
+        container.innerHTML = '<p class="text-muted text-center">Р ВРЎРѓРЎвЂљР С•РЎР‚Р С‘РЎРЏ Р С—Р С•Р ВµР В·Р Т‘Р С•Р С” Р С—РЎС“РЎРѓРЎвЂљР В°</p>';
         return;
     }
 
@@ -290,18 +290,18 @@ function updateTripHistory() {
         <div class="trip-item ${trip.success ? 'success' : 'failure'}">
             <div class="trip-info">
                 <span class="badge district-badge bg-primary">${trip.district}</span>
-                <span class="ms-2">Р”РѕРј ${trip.houseNumber}</span>
+                <span class="ms-2">Р вЂќР С•Р С ${trip.houseNumber}</span>
                 <span class="ms-2 text-muted">${formatTripTime(trip.timestamp)}</span>
                 ${trip.success && trip.address_id ? 
-                    `<button class="btn btn-sm btn-outline-warning ms-2" onclick="openChoiceHistory(${trip.address_id}, '${trip.description}', ${trip.visited_location_id || 'null'})" title="РРЅС‚РµСЂР°РєС‚РёРІРЅС‹Рµ РІС‹Р±РѕСЂС‹">
+                    `<button class="btn btn-sm btn-outline-warning ms-2" onclick="openChoiceHistory(${trip.address_id}, '${trip.description}', ${trip.visited_location_id || 'null'})" title="Р ВР Р…РЎвЂљР ВµРЎР‚Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р Вµ Р Р†РЎвЂ№Р В±Р С•РЎР‚РЎвЂ№">
                         <i class="fas fa-question-circle"></i>
                     </button>` : ''
                 }
             </div>
             <div class="trip-description">
                 ${trip.success ? 
-                    `<strong>РќР°Р№РґРµРЅРѕ:</strong> ${trip.description}` : 
-                    `<strong>РЈР»РёРє РЅРµС‚</strong>`
+                    `<strong>Р СњР В°Р в„–Р Т‘Р ВµР Р…Р С•:</strong> ${trip.description}` : 
+                    `<strong>Р Р€Р В»Р С‘Р С” Р Р…Р ВµРЎвЂљ</strong>`
                 }
             </div>
         </div>
@@ -310,7 +310,7 @@ function updateTripHistory() {
     container.innerHTML = items;
 }
 
-// Р¤РѕСЂРјР°С‚РёСЂРѕРІР°РЅРёРµ РІСЂРµРјРµРЅРё РїРѕРµР·РґРєРё
+// Р В¤Р С•РЎР‚Р СР В°РЎвЂљР С‘РЎР‚Р С•Р Р†Р В°Р Р…Р С‘Р Вµ Р Р†РЎР‚Р ВµР СР ВµР Р…Р С‘ Р С—Р С•Р ВµР В·Р Т‘Р С”Р С‘
 function formatTripTime(timestamp) {
     const date = new Date(timestamp);
     const now = new Date();
@@ -318,9 +318,9 @@ function formatTripTime(timestamp) {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
 
-    if (diffMins < 1) return 'С‚РѕР»СЊРєРѕ С‡С‚Рѕ';
-    if (diffMins < 60) return `${diffMins} РјРёРЅ. РЅР°Р·Р°Рґ`;
-    if (diffHours < 24) return `${diffHours} С‡. РЅР°Р·Р°Рґ`;
+    if (diffMins < 1) return 'РЎвЂљР С•Р В»РЎРЉР С”Р С• РЎвЂЎРЎвЂљР С•';
+    if (diffMins < 60) return `${diffMins} Р СР С‘Р Р…. Р Р…Р В°Р В·Р В°Р Т‘`;
+    if (diffHours < 24) return `${diffHours} РЎвЂЎ. Р Р…Р В°Р В·Р В°Р Т‘`;
     
     return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', {
         hour: '2-digit',
@@ -328,14 +328,14 @@ function formatTripTime(timestamp) {
     });
 }
 
-// Р—Р°РіСЂСѓР·РєР° РёРЅС„РѕСЂРјР°С†РёРё Рѕ СЃС†РµРЅР°СЂРёРё
+// Р вЂ”Р В°Р С–РЎР‚РЎС“Р В·Р С”Р В° Р С‘Р Р…РЎвЂћР С•РЎР‚Р СР В°РЎвЂ Р С‘Р С‘ Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р С‘
 async function loadScenarioInfo() {
     try {
         const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
         const room = JSON.parse(localStorage.getItem('room') || 'null');
         
         if (roomUser && roomUser.room_id) {
-            // Р”Р»СЏ РёРіСЂРѕРєРѕРІ РєРѕРјРЅР°С‚С‹ РїРѕР»СѓС‡Р°РµРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ СЃС†РµРЅР°СЂРёРё РёР· РєРѕРјРЅР°С‚С‹
+            // Р вЂќР В»РЎРЏ Р С‘Р С–РЎР‚Р С•Р С”Р С•Р Р† Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№ Р С—Р С•Р В»РЎС“РЎвЂЎР В°Р ВµР С Р С‘Р Р…РЎвЂћР С•РЎР‚Р СР В°РЎвЂ Р С‘РЎР‹ Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р С‘ Р С‘Р В· Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
                 headers: {
@@ -347,7 +347,7 @@ async function loadScenarioInfo() {
                 const data = await response.json();
                 console.log('Room state data:', data);
                 
-                // РџСЂРѕРІРµСЂСЏРµРј РЅРµСЃРєРѕР»СЊРєРѕ РІРѕР·РјРѕР¶РЅС‹С… РёСЃС‚РѕС‡РЅРёРєРѕРІ РЅР°Р·РІР°РЅРёСЏ СЃС†РµРЅР°СЂРёСЏ
+                // Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С Р Р…Р ВµРЎРѓР С”Р С•Р В»РЎРЉР С”Р С• Р Р†Р С•Р В·Р СР С•Р В¶Р Р…РЎвЂ№РЎвЂ¦ Р С‘РЎРѓРЎвЂљР С•РЎвЂЎР Р…Р С‘Р С”Р С•Р Р† Р Р…Р В°Р В·Р Р†Р В°Р Р…Р С‘РЎРЏ РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ
                 let scenarioName = null;
                 if (data.scenario_name) {
                     scenarioName = data.scenario_name;
@@ -370,34 +370,34 @@ async function loadScenarioInfo() {
                     document.getElementById('scenarioTitle').textContent = scenarioName;
                     console.log('Scenario name loaded:', scenarioName);
                 } else {
-                    document.getElementById('scenarioTitle').textContent = 'РЎС†РµРЅР°СЂРёР№ РЅРµ РѕРїСЂРµРґРµР»РµРЅ';
+                    document.getElementById('scenarioTitle').textContent = 'Р РЋРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р в„– Р Р…Р Вµ Р С•Р С—РЎР‚Р ВµР Т‘Р ВµР В»Р ВµР Р…';
                     console.log('No scenario name found in data:', data);
                 }
             } else {
-                document.getElementById('scenarioTitle').textContent = 'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РєРѕРјРЅР°С‚С‹';
+                document.getElementById('scenarioTitle').textContent = 'Р С›РЎв‚¬Р С‘Р В±Р С”Р В° Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р С‘ Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№';
                 console.error('Failed to load room state:', response.status);
             }
         } else {
-            // Р”Р»СЏ РѕР±С‹С‡РЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РїРѕР»СѓС‡Р°РµРј Р°РєС‚РёРІРЅС‹Р№ СЃС†РµРЅР°СЂРёР№
+            // Р вЂќР В»РЎРЏ Р С•Р В±РЎвЂ№РЎвЂЎР Р…РЎвЂ№РЎвЂ¦ Р С—Р С•Р В»РЎРЉР В·Р С•Р Р†Р В°РЎвЂљР ВµР В»Р ВµР в„– Р С—Р С•Р В»РЎС“РЎвЂЎР В°Р ВµР С Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р в„– РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р в„–
             const response = await fetch(`${API_BASE}/scenarios/active`);
             
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('scenarioTitle').textContent = data.scenario.name;
             } else {
-                document.getElementById('scenarioTitle').textContent = 'РќРµС‚ Р°РєС‚РёРІРЅРѕРіРѕ СЃС†РµРЅР°СЂРёСЏ';
+                document.getElementById('scenarioTitle').textContent = 'Р СњР ВµРЎвЂљ Р В°Р С”РЎвЂљР С‘Р Р†Р Р…Р С•Р С–Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ';
             }
         }
     } catch (error) {
         console.error('Error loading scenario info:', error);
-        document.getElementById('scenarioTitle').textContent = 'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё';
+        document.getElementById('scenarioTitle').textContent = 'Р С›РЎв‚¬Р С‘Р В±Р С”Р В° Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р С‘';
     }
 }
 
 // ===== Room timer =====
 async function initRoomTimer() {
     await refreshRoomState();
-    await loadScenarioInfo(); // Р—Р°РіСЂСѓР¶Р°РµРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ СЃС†РµРЅР°СЂРёРё РїСЂРё РёРЅРёС†РёР°Р»РёР·Р°С†РёРё С‚Р°Р№РјРµСЂР°
+    await loadScenarioInfo(); // Р вЂ”Р В°Р С–РЎР‚РЎС“Р В¶Р В°Р ВµР С Р С‘Р Р…РЎвЂћР С•РЎР‚Р СР В°РЎвЂ Р С‘РЎР‹ Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р С‘ Р С—РЎР‚Р С‘ Р С‘Р Р…Р С‘РЎвЂ Р С‘Р В°Р В»Р С‘Р В·Р В°РЎвЂ Р С‘Р С‘ РЎвЂљР В°Р в„–Р СР ВµРЎР‚Р В°
     renderTimer();
     if (roomTimerInterval) clearInterval(roomTimerInterval);
     roomTimerInterval = setInterval(async () => {
@@ -419,7 +419,7 @@ async function refreshRoomState() {
         if (!res.ok) return;
         roomState = await res.json();
         
-        // РћР±РЅРѕРІР»СЏРµРј РЅР°Р·РІР°РЅРёРµ СЃС†РµРЅР°СЂРёСЏ РїСЂРё РєР°Р¶РґРѕРј РѕР±РЅРѕРІР»РµРЅРёРё СЃРѕСЃС‚РѕСЏРЅРёСЏ РєРѕРјРЅР°С‚С‹
+        // Р С›Р В±Р Р…Р С•Р Р†Р В»РЎРЏР ВµР С Р Р…Р В°Р В·Р Р†Р В°Р Р…Р С‘Р Вµ РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ Р С—РЎР‚Р С‘ Р С”Р В°Р В¶Р Т‘Р С•Р С Р С•Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘Р С‘ РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘РЎРЏ Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№
         if (roomState) {
             let scenarioName = null;
             if (roomState.scenario_name) {
@@ -449,7 +449,7 @@ function renderTimer() {
     const remaining = roomState.remaining;
     
     if (state === 'pending') {
-        timerDisplay.textContent = 'РћР¶РёРґР°РЅРёРµ';
+        timerDisplay.textContent = 'Р С›Р В¶Р С‘Р Т‘Р В°Р Р…Р С‘Р Вµ';
         roomTimer.style.display = 'block';
         timerDisplay.className = 'badge bg-secondary text-dark fs-6';
     } else if (state === 'running') {
@@ -461,11 +461,11 @@ function renderTimer() {
     } else if (state === 'paused') {
         const minutes = Math.floor((remaining || 0) / 60);
         const seconds = (remaining || 0) % 60;
-        timerDisplay.textContent = `РџР°СѓР·Р° ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        timerDisplay.textContent = `Р СџР В°РЎС“Р В·Р В° ${minutes}:${seconds.toString().padStart(2, '0')}`;
         roomTimer.style.display = 'block';
         timerDisplay.className = 'badge bg-warning text-dark fs-6';
     } else if (state === 'finished') {
-        timerDisplay.textContent = 'Р—Р°РІРµСЂС€РµРЅРѕ';
+        timerDisplay.textContent = 'Р вЂ”Р В°Р Р†Р ВµРЎР‚РЎв‚¬Р ВµР Р…Р С•';
         roomTimer.style.display = 'block';
         timerDisplay.className = 'badge bg-danger text-dark fs-6';
     }
@@ -480,7 +480,7 @@ function logout() {
 
 // ===== Tab Switching =====
 function setupTabSwitching() {
-    // Р”РѕР±Р°РІР»СЏРµРј РѕР±СЂР°Р±РѕС‚С‡РёРєРё РґР»СЏ РїРµСЂРµРєР»СЋС‡РµРЅРёСЏ РІРєР»Р°РґРѕРє
+    // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р С•Р В±РЎР‚Р В°Р В±Р С•РЎвЂљРЎвЂЎР С‘Р С”Р С‘ Р Т‘Р В»РЎРЏ Р С—Р ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР ВµР Р…Р С‘РЎРЏ Р Р†Р С”Р В»Р В°Р Т‘Р С•Р С”
     const gameTab = document.getElementById('game-tab');
     const questionsTab = document.getElementById('questions-tab');
     const gameContent = document.getElementById('game');
@@ -489,11 +489,11 @@ function setupTabSwitching() {
     if (gameTab && questionsTab && gameContent && questionsContent) {
         gameTab.addEventListener('click', (e) => {
             e.preventDefault();
-            // РџРµСЂРµРєР»СЋС‡Р°РµРј Р°РєС‚РёРІРЅС‹Рµ СЃРѕСЃС‚РѕСЏРЅРёСЏ РєРЅРѕРїРѕРє
+            // Р СџР ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР В°Р ВµР С Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р Вµ РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘РЎРЏ Р С”Р Р…Р С•Р С—Р С•Р С”
             gameTab.classList.add('active');
             questionsTab.classList.remove('active');
             
-            // РџРµСЂРµРєР»СЋС‡Р°РµРј РІРёРґРёРјРѕСЃС‚СЊ РєРѕРЅС‚РµРЅС‚Р°
+            // Р СџР ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР В°Р ВµР С Р Р†Р С‘Р Т‘Р С‘Р СР С•РЎРѓРЎвЂљРЎРЉ Р С”Р С•Р Р…РЎвЂљР ВµР Р…РЎвЂљР В°
             gameContent.classList.add('show', 'active');
             gameContent.classList.remove('fade');
             questionsContent.classList.remove('show', 'active');
@@ -502,17 +502,17 @@ function setupTabSwitching() {
         
         questionsTab.addEventListener('click', (e) => {
             e.preventDefault();
-            // РџРµСЂРµРєР»СЋС‡Р°РµРј Р°РєС‚РёРІРЅС‹Рµ СЃРѕСЃС‚РѕСЏРЅРёСЏ РєРЅРѕРїРѕРє
+            // Р СџР ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР В°Р ВµР С Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р Вµ РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘РЎРЏ Р С”Р Р…Р С•Р С—Р С•Р С”
             questionsTab.classList.add('active');
             gameTab.classList.remove('active');
             
-            // РџРµСЂРµРєР»СЋС‡Р°РµРј РІРёРґРёРјРѕСЃС‚СЊ РєРѕРЅС‚РµРЅС‚Р°
+            // Р СџР ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР В°Р ВµР С Р Р†Р С‘Р Т‘Р С‘Р СР С•РЎРѓРЎвЂљРЎРЉ Р С”Р С•Р Р…РЎвЂљР ВµР Р…РЎвЂљР В°
             questionsContent.classList.add('show', 'active');
             questionsContent.classList.remove('fade');
             gameContent.classList.remove('show', 'active');
             gameContent.classList.add('fade');
             
-            // Р—Р°РіСЂСѓР¶Р°РµРј РІРѕРїСЂРѕСЃС‹
+            // Р вЂ”Р В°Р С–РЎР‚РЎС“Р В¶Р В°Р ВµР С Р Р†Р С•Р С—РЎР‚Р С•РЎРѓРЎвЂ№
             loadQuestions();
         });
     }
@@ -527,13 +527,13 @@ async function loadQuestions() {
             return;
         }
         
-        questionsListElement.innerHTML = '<p class="text-muted text-center">Р—Р°РіСЂСѓР·РєР° РІРѕРїСЂРѕСЃРѕРІ...</p>';
+        questionsListElement.innerHTML = '<p class="text-muted text-center">Р вЂ”Р В°Р С–РЎР‚РЎС“Р В·Р С”Р В° Р Р†Р С•Р С—РЎР‚Р С•РЎРѓР С•Р Р†...</p>';
         
         const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
         let scenarioId;
         
         if (roomUser && roomUser.room_id) {
-            // Р”Р»СЏ РёРіСЂРѕРєРѕРІ РєРѕРјРЅР°С‚С‹ РїРѕР»СѓС‡Р°РµРј scenario_id РёР· РєРѕРјРЅР°С‚С‹
+            // Р вЂќР В»РЎРЏ Р С‘Р С–РЎР‚Р С•Р С”Р С•Р Р† Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№ Р С—Р С•Р В»РЎС“РЎвЂЎР В°Р ВµР С scenario_id Р С‘Р В· Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
                 headers: {
@@ -546,7 +546,7 @@ async function loadQuestions() {
                 scenarioId = data.room.scenario_id;
             }
         } else {
-            // Р”Р»СЏ РѕР±С‹С‡РЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РїРѕР»СѓС‡Р°РµРј Р°РєС‚РёРІРЅС‹Р№ СЃС†РµРЅР°СЂРёР№
+            // Р вЂќР В»РЎРЏ Р С•Р В±РЎвЂ№РЎвЂЎР Р…РЎвЂ№РЎвЂ¦ Р С—Р С•Р В»РЎРЉР В·Р С•Р Р†Р В°РЎвЂљР ВµР В»Р ВµР в„– Р С—Р С•Р В»РЎС“РЎвЂЎР В°Р ВµР С Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р в„– РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р в„–
             const response = await fetch(`${API_BASE}/scenarios/active`);
             if (response.ok) {
                 const data = await response.json();
@@ -555,23 +555,23 @@ async function loadQuestions() {
         }
         
         if (!scenarioId) {
-            questionsListElement.innerHTML = '<p class="text-muted text-center">РќРµС‚ Р°РєС‚РёРІРЅРѕРіРѕ СЃС†РµРЅР°СЂРёСЏ</p>';
+            questionsListElement.innerHTML = '<p class="text-muted text-center">Р СњР ВµРЎвЂљ Р В°Р С”РЎвЂљР С‘Р Р†Р Р…Р С•Р С–Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ</p>';
             return;
         }
         
-        // Р—Р°РіСЂСѓР¶Р°РµРј РІРѕРїСЂРѕСЃС‹ РґР»СЏ СЃС†РµРЅР°СЂРёСЏ
+        // Р вЂ”Р В°Р С–РЎР‚РЎС“Р В¶Р В°Р ВµР С Р Р†Р С•Р С—РЎР‚Р С•РЎРѓРЎвЂ№ Р Т‘Р В»РЎРЏ РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ
         const questionsResponse = await fetch(`${API_BASE}/questions/scenario/${scenarioId}`);
         if (questionsResponse.ok) {
             const questionsData = await questionsResponse.json();
             displayQuestions(questionsData.questions);
         } else {
-            questionsListElement.innerHTML = '<p class="text-muted text-center">РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РІРѕРїСЂРѕСЃРѕРІ</p>';
+            questionsListElement.innerHTML = '<p class="text-muted text-center">Р С›РЎв‚¬Р С‘Р В±Р С”Р В° Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р С‘ Р Р†Р С•Р С—РЎР‚Р С•РЎРѓР С•Р Р†</p>';
         }
     } catch (error) {
         console.error('Error loading questions:', error);
         const questionsListElement = document.getElementById('questionsList');
         if (questionsListElement) {
-            questionsListElement.innerHTML = '<p class="text-muted text-center">РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РІРѕРїСЂРѕСЃРѕРІ</p>';
+            questionsListElement.innerHTML = '<p class="text-muted text-center">Р С›РЎв‚¬Р С‘Р В±Р С”Р В° Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р С‘ Р Р†Р С•Р С—РЎР‚Р С•РЎРѓР С•Р Р†</p>';
         }
     }
 }
@@ -580,7 +580,7 @@ function displayQuestions(questions) {
     const container = document.getElementById('questionsList');
     
     if (!questions || questions.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center">РќРµС‚ РІРѕРїСЂРѕСЃРѕРІ РґР»СЏ СЌС‚РѕРіРѕ СЃС†РµРЅР°СЂРёСЏ</p>';
+        container.innerHTML = '<p class="text-muted text-center">Р СњР ВµРЎвЂљ Р Р†Р С•Р С—РЎР‚Р С•РЎРѓР С•Р Р† Р Т‘Р В»РЎРЏ РЎРЊРЎвЂљР С•Р С–Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ</p>';
         return;
     }
     
@@ -588,11 +588,11 @@ function displayQuestions(questions) {
         <div class="question-item mb-4 p-3 border rounded">
             <h5 class="mb-3">${question.question_text}</h5>
             <div class="mb-3">
-                <label for="answer_${question.id}" class="form-label">Р’Р°С€ РѕС‚РІРµС‚:</label>
-                <textarea class="form-control" id="answer_${question.id}" rows="3" placeholder="Р’РІРµРґРёС‚Рµ РІР°С€ РѕС‚РІРµС‚..."></textarea>
+                <label for="answer_${question.id}" class="form-label">Р вЂ™Р В°РЎв‚¬ Р С•РЎвЂљР Р†Р ВµРЎвЂљ:</label>
+                <textarea class="form-control" id="answer_${question.id}" rows="3" placeholder="Р вЂ™Р Р†Р ВµР Т‘Р С‘РЎвЂљР Вµ Р Р†Р В°РЎв‚¬ Р С•РЎвЂљР Р†Р ВµРЎвЂљ..."></textarea>
             </div>
             <button class="btn btn-primary" onclick="submitAnswer(${question.id})">
-                <i class="fas fa-paper-plane me-1"></i>РћС‚РїСЂР°РІРёС‚СЊ РѕС‚РІРµС‚
+                <i class="fas fa-paper-plane me-1"></i>Р С›РЎвЂљР С—РЎР‚Р В°Р Р†Р С‘РЎвЂљРЎРЉ Р С•РЎвЂљР Р†Р ВµРЎвЂљ
             </button>
             <div id="answer_status_${question.id}" class="mt-2"></div>
         </div>
@@ -604,7 +604,7 @@ async function submitAnswer(questionId) {
     const statusDiv = document.getElementById(`answer_status_${questionId}`);
     
     if (!answerText) {
-        statusDiv.innerHTML = '<div class="alert alert-warning">Р’РІРµРґРёС‚Рµ РѕС‚РІРµС‚</div>';
+        statusDiv.innerHTML = '<div class="alert alert-warning">Р вЂ™Р Р†Р ВµР Т‘Р С‘РЎвЂљР Вµ Р С•РЎвЂљР Р†Р ВµРЎвЂљ</div>';
         return;
     }
     
@@ -623,30 +623,30 @@ async function submitAnswer(questionId) {
         });
         
         if (response.ok) {
-            statusDiv.innerHTML = '<div class="alert alert-success">РћС‚РІРµС‚ СЃРѕС…СЂР°РЅРµРЅ!</div>';
+            statusDiv.innerHTML = '<div class="alert alert-success">Р С›РЎвЂљР Р†Р ВµРЎвЂљ РЎРѓР С•РЎвЂ¦РЎР‚Р В°Р Р…Р ВµР Р…!</div>';
             document.getElementById(`answer_${questionId}`).disabled = true;
             document.querySelector(`button[onclick="submitAnswer(${questionId})"]`).disabled = true;
         } else {
             const error = await response.json();
-            statusDiv.innerHTML = `<div class="alert alert-danger">РћС€РёР±РєР°: ${error.error}</div>`;
+            statusDiv.innerHTML = `<div class="alert alert-danger">Р С›РЎв‚¬Р С‘Р В±Р С”Р В°: ${error.error}</div>`;
         }
     } catch (error) {
         console.error('Error submitting answer:', error);
-        statusDiv.innerHTML = '<div class="alert alert-danger">РћС€РёР±РєР° РѕС‚РїСЂР°РІРєРё РѕС‚РІРµС‚Р°</div>';
+        statusDiv.innerHTML = '<div class="alert alert-danger">Р С›РЎв‚¬Р С‘Р В±Р С”Р В° Р С•РЎвЂљР С—РЎР‚Р В°Р Р†Р С”Р С‘ Р С•РЎвЂљР Р†Р ВµРЎвЂљР В°</div>';
     }
 }
 
-// ===== РРќРўР•Р РђРљРўРР’РќР«Р• Р’Р«Р‘РћР Р« =====
+// ===== Р ВР СњР СћР вЂўР В Р С’Р С™Р СћР ВР вЂ™Р СњР В«Р вЂў Р вЂ™Р В«Р вЂР С›Р В Р В« =====
 
-// Р“Р»РѕР±Р°Р»СЊРЅС‹Рµ РїРµСЂРµРјРµРЅС‹ РґР»СЏ РІС‹Р±РѕСЂРѕРІ
+// Р вЂњР В»Р С•Р В±Р В°Р В»РЎРЉР Р…РЎвЂ№Р Вµ Р С—Р ВµРЎР‚Р ВµР СР ВµР Р…РЎвЂ№ Р Т‘Р В»РЎРЏ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р С•Р Р†
 let currentAddressId = null;
 let currentVisitedLocationId = null;
 let currentScenarioId = null;
 
-// РџСЂРѕРІРµСЂРёС‚СЊ, РµСЃС‚СЊ Р»Рё РёРЅС‚РµСЂР°РєС‚РёРІРЅС‹Рµ РІС‹Р±РѕСЂС‹ РґР»СЏ Р°РґСЂРµСЃР°
+// Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚Р С‘РЎвЂљРЎРЉ, Р ВµРЎРѓРЎвЂљРЎРЉ Р В»Р С‘ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р Вµ Р Р†РЎвЂ№Р В±Р С•РЎР‚РЎвЂ№ Р Т‘Р В»РЎРЏ Р В°Р Т‘РЎР‚Р ВµРЎРѓР В°
 async function checkForInteractiveChoices(addressId, description, visitedLocationId) {
     try {
-        // РџРѕР»СѓС‡Р°РµРј ID СЃС†РµРЅР°СЂРёСЏ РёР· СЃРѕСЃС‚РѕСЏРЅРёСЏ РєРѕРјРЅР°С‚С‹
+        // Р СџР С•Р В»РЎС“РЎвЂЎР В°Р ВµР С ID РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ Р С‘Р В· РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘РЎРЏ Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№
         const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
         if (!roomState || !scenarioId) {
             console.log('No scenario ID available', roomState);
@@ -683,12 +683,12 @@ async function checkForInteractiveChoices(addressId, description, visitedLocatio
     }
 }
 
-// РџРѕРєР°Р·Р°С‚СЊ РјРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ СЃ РёРЅС‚РµСЂР°РєС‚РёРІРЅС‹РјРё РІС‹Р±РѕСЂР°РјРё
+// Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ Р СР С•Р Т‘Р В°Р В»РЎРЉР Р…Р С•Р Вµ Р С•Р С”Р Р…Р С• РЎРѓ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р СР С‘ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°Р СР С‘
 function showInteractiveChoiceModal(choices, description) {
-    // РћР±РЅРѕРІРёС‚СЊ РѕРїРёСЃР°РЅРёРµ Р°РґСЂРµСЃР°
-    document.getElementById('addressDescription').textContent = description || 'Р’С‹ РЅР°С€Р»Рё РёРЅС‚РµСЂРµСЃРЅРѕРµ РјРµСЃС‚Рѕ...';
+    // Р С›Р В±Р Р…Р С•Р Р†Р С‘РЎвЂљРЎРЉ Р С•Р С—Р С‘РЎРѓР В°Р Р…Р С‘Р Вµ Р В°Р Т‘РЎР‚Р ВµРЎРѓР В°
+    document.getElementById('addressDescription').textContent = description || 'Р вЂ™РЎвЂ№ Р Р…Р В°РЎв‚¬Р В»Р С‘ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р ВµРЎРѓР Р…Р С•Р Вµ Р СР ВµРЎРѓРЎвЂљР С•...';
     
-    // РЎРѕР·РґР°С‚СЊ РєРЅРѕРїРєРё РІС‹Р±РѕСЂРѕРІ
+    // Р РЋР С•Р В·Р Т‘Р В°РЎвЂљРЎРЉ Р С”Р Р…Р С•Р С—Р С”Р С‘ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р С•Р Р†
     const choiceButtons = document.getElementById('choiceButtons');
     choiceButtons.innerHTML = '';
     
@@ -708,7 +708,7 @@ function showInteractiveChoiceModal(choices, description) {
             </div>
         `;
         
-        // Р”РѕР±Р°РІРёС‚СЊ hover СЌС„С„РµРєС‚С‹
+        // Р вЂќР С•Р В±Р В°Р Р†Р С‘РЎвЂљРЎРЉ hover РЎРЊРЎвЂћРЎвЂћР ВµР С”РЎвЂљРЎвЂ№
         button.addEventListener('mouseenter', () => {
             button.style.background = 'var(--noir-gold)';
             button.style.color = 'var(--noir-dark)';
@@ -724,7 +724,7 @@ function showInteractiveChoiceModal(choices, description) {
         choiceButtons.appendChild(button);
     });
     
-    // РџРѕРєР°Р·Р°С‚СЊ РјРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ
+    // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ Р СР С•Р Т‘Р В°Р В»РЎРЉР Р…Р С•Р Вµ Р С•Р С”Р Р…Р С•
     const modal = new bootstrap.Modal(document.getElementById('choiceModal'), {
         backdrop: 'static',
         keyboard: false
@@ -732,7 +732,7 @@ function showInteractiveChoiceModal(choices, description) {
     modal.show();
 }
 
-// РЎРґРµР»Р°С‚СЊ РІС‹Р±РѕСЂ РёРіСЂРѕРєР°
+// Р РЋР Т‘Р ВµР В»Р В°РЎвЂљРЎРЉ Р Р†РЎвЂ№Р В±Р С•РЎР‚ Р С‘Р С–РЎР‚Р С•Р С”Р В°
 async function makePlayerChoice(choiceId) {
     try {
         const token = localStorage.getItem('token');
@@ -764,30 +764,30 @@ async function makePlayerChoice(choiceId) {
         
         const data = await response.json();
         
-        // РџРѕРєР°Р·Р°С‚СЊ СЂРµР·СѓР»СЊС‚Р°С‚ РІС‹Р±РѕСЂР°
+        // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°
         showChoiceResponse(data.response);
         
     } catch (error) {
         console.error('Error making choice:', error);
         
-        // РџРѕРєР°Р·Р°С‚СЊ РѕС€РёР±РєСѓ
+        // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ Р С•РЎв‚¬Р С‘Р В±Р С”РЎС“
         document.getElementById('choiceOptions').style.display = 'none';
         document.getElementById('choiceResponse').style.display = 'block';
-        document.getElementById('responseText').textContent = 'РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР° РїСЂРё РѕР±СЂР°Р±РѕС‚РєРµ РІР°С€РµРіРѕ РІС‹Р±РѕСЂР°.';
+        document.getElementById('responseText').textContent = 'Р СџРЎР‚Р С•Р С‘Р В·Р С•РЎв‚¬Р В»Р В° Р С•РЎв‚¬Р С‘Р В±Р С”Р В° Р С—РЎР‚Р С‘ Р С•Р В±РЎР‚Р В°Р В±Р С•РЎвЂљР С”Р Вµ Р Р†Р В°РЎв‚¬Р ВµР С–Р С• Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°.';
     }
 }
 
-// РџРѕРєР°Р·Р°С‚СЊ СЂРµР·СѓР»СЊС‚Р°С‚ РІС‹Р±РѕСЂР°
+// Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°
 function showChoiceResponse(responseText) {
-    // РЎРєСЂС‹С‚СЊ РІР°СЂРёР°РЅС‚С‹ РІС‹Р±РѕСЂР°
+    // Р РЋР С”РЎР‚РЎвЂ№РЎвЂљРЎРЉ Р Р†Р В°РЎР‚Р С‘Р В°Р Р…РЎвЂљРЎвЂ№ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°
     document.getElementById('choiceOptions').style.display = 'none';
     
-    // РџРѕРєР°Р·Р°С‚СЊ СЂРµР·СѓР»СЊС‚Р°С‚
+    // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљ
     document.getElementById('choiceResponse').style.display = 'block';
     document.getElementById('responseText').textContent = responseText;
 }
 
-// РћС‚РєСЂС‹С‚СЊ РІС‹Р±РѕСЂС‹ РёР· РёСЃС‚РѕСЂРёРё РїРѕРµР·РґРѕРє
+// Р С›РЎвЂљР С”РЎР‚РЎвЂ№РЎвЂљРЎРЉ Р Р†РЎвЂ№Р В±Р С•РЎР‚РЎвЂ№ Р С‘Р В· Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘Р С‘ Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
 async function openChoiceHistory(addressId, description, visitedLocationId) {
     try {
         const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
@@ -802,7 +802,7 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
             return;
         }
         
-        // РџСЂРѕРІРµСЂСЏРµРј, РµСЃС‚СЊ Р»Рё СѓР¶Рµ СЃРґРµР»Р°РЅРЅС‹Р№ РІС‹Р±РѕСЂ
+        // Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С, Р ВµРЎРѓРЎвЂљРЎРЉ Р В»Р С‘ РЎС“Р В¶Р Вµ РЎРѓР Т‘Р ВµР В»Р В°Р Р…Р Р…РЎвЂ№Р в„– Р Р†РЎвЂ№Р В±Р С•РЎР‚
         const token = localStorage.getItem('token');
         const choiceResponse = await fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${addressId}/choice`, {
             headers: {
@@ -814,13 +814,13 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
             const choiceData = await choiceResponse.json();
             
             if (choiceData.choice) {
-                // РџРѕРєР°Р·С‹РІР°РµРј СѓР¶Рµ СЃРґРµР»Р°РЅРЅС‹Р№ РІС‹Р±РѕСЂ
+                // Р СџР С•Р С”Р В°Р В·РЎвЂ№Р Р†Р В°Р ВµР С РЎС“Р В¶Р Вµ РЎРѓР Т‘Р ВµР В»Р В°Р Р…Р Р…РЎвЂ№Р в„– Р Р†РЎвЂ№Р В±Р С•РЎР‚
                 showExistingChoice(choiceData.choice, description);
                 return;
             }
         }
         
-        // Р•СЃР»Рё РІС‹Р±РѕСЂ РЅРµ Р±С‹Р» СЃРґРµР»Р°РЅ, РїРѕРєР°Р·С‹РІР°РµРј РґРѕСЃС‚СѓРїРЅС‹Рµ РІР°СЂРёР°РЅС‚С‹
+        // Р вЂўРЎРѓР В»Р С‘ Р Р†РЎвЂ№Р В±Р С•РЎР‚ Р Р…Р Вµ Р В±РЎвЂ№Р В» РЎРѓР Т‘Р ВµР В»Р В°Р Р…, Р С—Р С•Р С”Р В°Р В·РЎвЂ№Р Р†Р В°Р ВµР С Р Т‘Р С•РЎРѓРЎвЂљРЎС“Р С—Р Р…РЎвЂ№Р Вµ Р Р†Р В°РЎР‚Р С‘Р В°Р Р…РЎвЂљРЎвЂ№
         const response = await fetch(`${API_BASE}/choices/game/scenarios/${scenarioId}/addresses/${addressId}/choices`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -836,47 +836,48 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
                 currentScenarioId = scenarioId;
                 showInteractiveChoiceModal(data.choices, description);
             } else {
-                alert('Р”Р»СЏ СЌС‚РѕР№ Р»РѕРєР°С†РёРё РЅРµС‚ РёРЅС‚РµСЂР°РєС‚РёРІРЅС‹С… РІС‹Р±РѕСЂРѕРІ');
+                alert('Р вЂќР В»РЎРЏ РЎРЊРЎвЂљР С•Р в„– Р В»Р С•Р С”Р В°РЎвЂ Р С‘Р С‘ Р Р…Р ВµРЎвЂљ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№РЎвЂ¦ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р С•Р Р†');
             }
         } else {
-            alert('РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РІР°СЂРёР°РЅС‚С‹ РІС‹Р±РѕСЂР°');
+            alert('Р СњР Вµ РЎС“Р Т‘Р В°Р В»Р С•РЎРѓРЎРЉ Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С‘РЎвЂљРЎРЉ Р Р†Р В°РЎР‚Р С‘Р В°Р Р…РЎвЂљРЎвЂ№ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°');
         }
         
     } catch (error) {
         console.error('Error opening choice history:', error);
-        alert('РџСЂРѕРёР·РѕС€Р»Р° РѕС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ РІС‹Р±РѕСЂРѕРІ');
+        alert('Р СџРЎР‚Р С•Р С‘Р В·Р С•РЎв‚¬Р В»Р В° Р С•РЎв‚¬Р С‘Р В±Р С”Р В° Р С—РЎР‚Р С‘ Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р Вµ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р С•Р Р†');
     }
 }
 
-// РџРѕРєР°Р·Р°С‚СЊ СѓР¶Рµ СЃРґРµР»Р°РЅРЅС‹Р№ РІС‹Р±РѕСЂ
+// Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ РЎС“Р В¶Р Вµ РЎРѓР Т‘Р ВµР В»Р В°Р Р…Р Р…РЎвЂ№Р в„– Р Р†РЎвЂ№Р В±Р С•РЎР‚
 function showExistingChoice(choice, description) {
-    // РћР±РЅРѕРІРёС‚СЊ РѕРїРёСЃР°РЅРёРµ Р°РґСЂРµСЃР°
-    document.getElementById('addressDescription').textContent = description || 'Р›РѕРєР°С†РёСЏ РЅР°Р№РґРµРЅР°';
+    // Р С›Р В±Р Р…Р С•Р Р†Р С‘РЎвЂљРЎРЉ Р С•Р С—Р С‘РЎРѓР В°Р Р…Р С‘Р Вµ Р В°Р Т‘РЎР‚Р ВµРЎРѓР В°
+    document.getElementById('addressDescription').textContent = description || 'Р вЂєР С•Р С”Р В°РЎвЂ Р С‘РЎРЏ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°';
     
-    // РЎРєСЂС‹С‚СЊ РІР°СЂРёР°РЅС‚С‹ РІС‹Р±РѕСЂР°
+    // Р РЋР С”РЎР‚РЎвЂ№РЎвЂљРЎРЉ Р Р†Р В°РЎР‚Р С‘Р В°Р Р…РЎвЂљРЎвЂ№ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°
     document.getElementById('choiceOptions').style.display = 'none';
     
-    // РџРѕРєР°Р·Р°С‚СЊ СЂРµР·СѓР»СЊС‚Р°С‚
+    // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљ
     document.getElementById('choiceResponse').style.display = 'block';
     document.getElementById('responseText').innerHTML = `
-        <strong>Р’Р°С€ РІС‹Р±РѕСЂ:</strong> ${choice.choice_text}<br>
-        <strong>Р РµР·СѓР»СЊС‚Р°С‚:</strong> ${choice.response_text}
+        <strong>Р вЂ™Р В°РЎв‚¬ Р Р†РЎвЂ№Р В±Р С•РЎР‚:</strong> ${choice.choice_text}<br>
+        <strong>Р В Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљ:</strong> ${choice.response_text}
     `;
     
-    // РџРѕРєР°Р·Р°С‚СЊ РјРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ
+    // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ Р СР С•Р Т‘Р В°Р В»РЎРЉР Р…Р С•Р Вµ Р С•Р С”Р Р…Р С•
     const modal = new bootstrap.Modal(document.getElementById('choiceModal'));
     modal.show();
 }
 
-// РЎР±СЂРѕСЃ РјРѕРґР°Р»СЊРЅРѕРіРѕ РѕРєРЅР° РїСЂРё Р·Р°РєСЂС‹С‚РёРё
+// Р РЋР В±РЎР‚Р С•РЎРѓ Р СР С•Р Т‘Р В°Р В»РЎРЉР Р…Р С•Р С–Р С• Р С•Р С”Р Р…Р В° Р С—РЎР‚Р С‘ Р В·Р В°Р С”РЎР‚РЎвЂ№РЎвЂљР С‘Р С‘
 document.getElementById('choiceModal').addEventListener('hidden.bs.modal', function () {
-    // РЎР±СЂРѕСЃ СЃРѕСЃС‚РѕСЏРЅРёСЏ РјРѕРґР°Р»СЊРЅРѕРіРѕ РѕРєРЅР°
+    // Р РЋР В±РЎР‚Р С•РЎРѓ РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘РЎРЏ Р СР С•Р Т‘Р В°Р В»РЎРЉР Р…Р С•Р С–Р С• Р С•Р С”Р Р…Р В°
     document.getElementById('choiceOptions').style.display = 'block';
     document.getElementById('choiceResponse').style.display = 'none';
     document.getElementById('choiceButtons').innerHTML = '';
     
-    // РЎР±СЂРѕСЃ РїРµСЂРµРјРµРЅРЅС‹С…
+    // Р РЋР В±РЎР‚Р С•РЎРѓ Р С—Р ВµРЎР‚Р ВµР СР ВµР Р…Р Р…РЎвЂ№РЎвЂ¦
     currentAddressId = null;
     currentVisitedLocationId = null;
     currentScenarioId = null;
 });
+
