@@ -65,8 +65,8 @@ const Scenario = {
 
     delete: async (id) => {
         // Сначала удаляем связанные записи в правильном порядке
-        // 1. Удаляем записи из game_choices (если есть room_id)
-        await query(`DELETE FROM game_choices WHERE room_id IN (SELECT id FROM rooms WHERE scenario_id = $1)`, [id]);
+        // 1. Удаляем записи из game_choices (используем scenario_id)
+        await query(`DELETE FROM game_choices WHERE scenario_id = $1`, [id]);
         
         // 2. Удаляем записи из question_answers (если есть room_user_id)
         await query(`DELETE FROM question_answers WHERE room_user_id IN (SELECT id FROM room_users WHERE room_id IN (SELECT id FROM rooms WHERE scenario_id = $1))`, [id]);
