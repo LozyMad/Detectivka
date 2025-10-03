@@ -73,13 +73,18 @@ const createScenario = async (req, res) => {
 
     // If setting as active, deactivate all other scenarios
     if (is_active) {
-      const { db } = require('../config/database');
-      await new Promise((resolve, reject) => {
-        db.run(`UPDATE scenarios SET is_active = FALSE`, (err) => {
-          if (err) reject(err);
-          else resolve();
+      if (DB_TYPE === 'postgresql') {
+        const { query } = require('../config/database');
+        await query(`UPDATE scenarios SET is_active = FALSE`);
+      } else {
+        const { db } = require('../config/database');
+        await new Promise((resolve, reject) => {
+          db.run(`UPDATE scenarios SET is_active = FALSE`, (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
         });
-      });
+      }
     }
 
     const scenario = await Scenario.create({
@@ -159,13 +164,18 @@ const updateScenario = async (req, res) => {
 
     // If setting as active, deactivate all other scenarios
     if (is_active) {
-      const { db } = require('../config/database');
-      await new Promise((resolve, reject) => {
-        db.run(`UPDATE scenarios SET is_active = FALSE WHERE id != ?`, [id], (err) => {
-          if (err) reject(err);
-          else resolve();
+      if (DB_TYPE === 'postgresql') {
+        const { query } = require('../config/database');
+        await query(`UPDATE scenarios SET is_active = FALSE WHERE id != $1`, [id]);
+      } else {
+        const { db } = require('../config/database');
+        await new Promise((resolve, reject) => {
+          db.run(`UPDATE scenarios SET is_active = FALSE WHERE id != ?`, [id], (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
         });
-      });
+      }
     }
 
     const scenario = await Scenario.update(id, { name, description, is_active });

@@ -87,6 +87,23 @@ const Room = {
     },
 
     delete: async (id) => {
+        // Сначала удаляем связанные записи в правильном порядке
+        // 1. Удаляем записи из game_choices
+        await query(`DELETE FROM game_choices WHERE room_id = $1`, [id]);
+        
+        // 2. Удаляем записи из question_answers (если есть room_user_id)
+        await query(`DELETE FROM question_answers WHERE room_user_id IN (SELECT id FROM room_users WHERE room_id = $1)`, [id]);
+        
+        // 3. Удаляем пользователей комнаты
+        await query(`DELETE FROM room_users WHERE room_id = $1`, [id]);
+        
+        // 4. Удаляем записи из visit_attempts
+        await query(`DELETE FROM visit_attempts WHERE room_id = $1`, [id]);
+        
+        // 5. Удаляем записи из visited_locations (если есть room_id)
+        await query(`DELETE FROM visited_locations WHERE room_id = $1`, [id]);
+        
+        // 6. Теперь можно безопасно удалить комнату
         const result = await query(
             `DELETE FROM rooms WHERE id = $1 RETURNING *`,
             [id]

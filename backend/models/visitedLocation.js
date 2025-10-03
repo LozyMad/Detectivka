@@ -1,7 +1,17 @@
-const { getScenarioDb } = require('../config/scenarioDatabase');
+// Определяем тип базы данных из переменной окружения
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
 
-// Model for visited locations history (successful finds)
-const VisitedLocation = {
+let VisitedLocation;
+
+if (DB_TYPE === 'postgresql') {
+  // Используем PostgreSQL версию
+  VisitedLocation = require('./visitedLocationPostgreSQL');
+} else {
+  // Используем SQLite версию (оригинальная логика)
+  const { getScenarioDb } = require('../config/scenarioDatabase');
+
+  // Model for visited locations history (successful finds)
+  VisitedLocation = {
   // Idempotently mark an address as visited by a user within a scenario
   visitLocation: (userId, scenarioId, addressId, roomId = null) => {
     return new Promise((resolve, reject) => {
@@ -58,6 +68,7 @@ const VisitedLocation = {
       );
     });
   }
-};
+  };
+}
 
 module.exports = VisitedLocation;
