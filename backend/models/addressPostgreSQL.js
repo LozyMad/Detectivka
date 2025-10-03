@@ -88,14 +88,35 @@ const Address = {
     },
 
     delete: async (scenario_id, id) => {
-        // Удаляем из сценарий-специфичной таблицы
+        // Сначала удаляем связанные записи
+        // 1. Удаляем записи из visit_attempts для этого адреса
+        await query(`DELETE FROM visit_attempts WHERE address_id = $1`, [id]);
+        
+        // 2. Удаляем записи из visited_locations для этого адреса
+        await query(`DELETE FROM visited_locations WHERE address_id = $1`, [id]);
+        
+        // 3. Удаляем записи из game_choices для этого адреса
+        await query(`DELETE FROM game_choices WHERE address_id = $1`, [id]);
+        
+        // 4. Удаляем выборы для этого адреса из сценарий-специфичной таблицы
+        try {
+            await queryScenario(
+                scenario_id,
+                `DELETE FROM scenario_${scenario_id}.address_choices WHERE address_id = $1`,
+                [id]
+            );
+        } catch (error) {
+            console.log('Address choices table does not exist for scenario', scenario_id);
+        }
+        
+        // 5. Удаляем из сценарий-специфичной таблицы
         const result = await queryScenario(
             scenario_id,
             `DELETE FROM scenario_${scenario_id}.addresses WHERE id = $1 RETURNING *`,
             [id]
         );
         
-        // Также удаляем из главной таблицы
+        // 6. Также удаляем из главной таблицы
         await query(
             `DELETE FROM addresses WHERE scenario_id = $1 AND id = $2`,
             [scenario_id, id]
