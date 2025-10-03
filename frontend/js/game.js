@@ -227,15 +227,44 @@ async function loadTripHistory() {
         const attempts = data.attempts || [];
         
         // Преобразуем попытки в формат истории поездок
-        tripHistory = attempts.map(attempt => ({
-            district: attempt.district,
-            houseNumber: attempt.house_number,
-            success: attempt.found,
-            description: attempt.found ? (attempt.address_description || 'Локация найдена') : 'Улик нет',
-            timestamp: attempt.attempted_at,
-            alreadyVisited: false,
-            address_id: attempt.address_id || null,
-            visited_location_id: attempt.visited_location_id || null
+        tripHistory = await Promise.all(attempts.map(async (attempt) => {
+            let description = attempt.found ? (attempt.address_description || 'Локация найдена') : 'Улик нет';
+            
+            // Если это успешная поездка с address_id, проверяем, есть ли сделанный выбор
+            if (attempt.found && attempt.address_id && attempt.visited_location_id) {
+                try {
+                    const roomUser = JSON.parse(localStorage.getItem('roomUser'));
+                    const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
+                    
+                    if (roomUser && roomUser.id && scenarioId) {
+                        const choiceResponse = await fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${attempt.address_id}/choice`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                        });
+                        
+                        if (choiceResponse.ok) {
+                            const choiceData = await choiceResponse.json();
+                            if (choiceData.choice && choiceData.choice.response_text) {
+                                description = choiceData.choice.response_text;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.log('Could not load choice for address:', attempt.address_id, error);
+                }
+            }
+            
+            return {
+                district: attempt.district,
+                houseNumber: attempt.house_number,
+                success: attempt.found,
+                description: description,
+                timestamp: attempt.attempted_at,
+                alreadyVisited: false,
+                address_id: attempt.address_id || null,
+                visited_location_id: attempt.visited_location_id || null
+            };
         }));
         
         updateTripHistory();
