@@ -881,3 +881,4 @@ document.getElementById('choiceModal').addEventListener('hidden.bs.modal', funct
     currentScenarioId = null;
 });
 
+
