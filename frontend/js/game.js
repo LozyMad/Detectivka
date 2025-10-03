@@ -630,11 +630,13 @@ async function checkForInteractiveChoices(addressId, description, visitedLocatio
         
         console.log('Checking for choices:', { scenarioId: currentScenarioId, addressId });
         const token = localStorage.getItem('token');
+        console.log('Making request to:', `${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`);
         const response = await fetch(`${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
+        console.log('Response status:', response.status);
         
         if (!response.ok) {
             console.log('No choices available or error loading choices', response.status);
