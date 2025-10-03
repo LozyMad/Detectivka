@@ -139,6 +139,48 @@ const Room = {
         return result.rows[0];
     },
 
+    // Методы управления игрой
+    startGame: async (roomId) => {
+        const now = new Date();
+        const endTime = new Date(now.getTime() + 3600 * 1000); // по умолчанию 1 час
+        
+        const result = await query(
+            `UPDATE rooms 
+             SET game_start_time = $1, game_end_time = $2, state = 'running'
+             WHERE id = $3 RETURNING *`,
+            [now.toISOString(), endTime.toISOString(), roomId]
+        );
+        
+        return result.rows[0] || { id: roomId, game_start_time: now.toISOString(), game_end_time: endTime.toISOString() };
+    },
+
+    pauseGame: async (roomId) => {
+        const result = await query(
+            `UPDATE rooms SET state = 'paused' WHERE id = $1 RETURNING *`,
+            [roomId]
+        );
+        
+        return result.rows[0] || { id: roomId, state: 'paused' };
+    },
+
+    resumeGame: async (roomId) => {
+        const result = await query(
+            `UPDATE rooms SET state = 'running' WHERE id = $1 RETURNING *`,
+            [roomId]
+        );
+        
+        return result.rows[0] || { id: roomId, state: 'running' };
+    },
+
+    stopGame: async (roomId) => {
+        const result = await query(
+            `UPDATE rooms SET state = 'finished', game_end_time = $1 WHERE id = $2 RETURNING *`,
+            [new Date().toISOString(), roomId]
+        );
+        
+        return result.rows[0] || { id: roomId, state: 'finished' };
+    },
+
     // Алиас для совместимости
     listByAdmin: async (adminId, adminLevel) => {
         if (adminLevel === 'super_admin') {
