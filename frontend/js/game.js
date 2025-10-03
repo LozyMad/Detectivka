@@ -1,4 +1,4 @@
-﻿const API_BASE = '/api';
+const API_BASE = '/api';
 let selectedDistrict = null;
 let roomState = null;
 let roomTimerInterval = null;
