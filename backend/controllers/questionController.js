@@ -33,7 +33,13 @@ const createQuestion = async (req, res) => {
 // Получение вопросов по сценарию
 const getQuestionsByScenario = async (req, res) => {
     try {
-        const { scenario_id } = req.params;
+        // Поддерживаем как параметр URL, так и query параметр
+        const scenario_id = req.params.scenario_id || req.query.scenario_id;
+        
+        if (!scenario_id) {
+            return res.status(400).json({ error: 'Scenario ID required' });
+        }
+        
         const questions = await Question.getByScenario(scenario_id);
         res.json({ questions });
     } catch (error) {

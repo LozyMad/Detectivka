@@ -21,6 +21,7 @@ router.get('/my-answers', authenticateToken, getUserAnswers);
 router.use(authenticateToken);
 router.use(adminRequired);
 
+router.get('/', getQuestionsByScenario); // GET /admin/questions?scenario_id=1
 router.post('/', createQuestion);
 router.put('/:id', updateQuestion);
 router.delete('/:id', deleteQuestion);
