@@ -1,4 +1,5 @@
 const { queryScenario, ensureTables } = require('../config/scenarioPostgreSQL');
+const { query } = require('../config/database');
 
 const Address = {
     create: async (addressData) => {

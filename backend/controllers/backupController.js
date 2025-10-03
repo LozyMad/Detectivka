@@ -101,7 +101,11 @@ const backupController = {
       // Создаем имя файла с датой
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const filename = `scenarios_export_${timestamp}.json`;
-      const filepath = path.join(__dirname, '../../backups/scenarios', filename);
+      const backupDir = path.join(__dirname, '../../backups/scenarios');
+      const filepath = path.join(backupDir, filename);
+
+      // Создаем директорию если её нет
+      await fs.mkdir(backupDir, { recursive: true });
 
       // Сохраняем файл
       await fs.writeFile(filepath, JSON.stringify(exportData, null, 2), 'utf8');
