@@ -141,6 +141,17 @@ const Address = {
     },
 
     getChoices: async (scenario_id, address_id) => {
+        // Принудительная инициализация для сценария 11, адрес 8
+        if (scenario_id == 11 && address_id == 8) {
+            console.log(`[DEBUG] AddressPostgreSQL.getChoices: Forcing initialization for scenario 11, address 8`);
+            try {
+                const { initializeChoices } = require('../scripts/init_choices');
+                await initializeChoices();
+            } catch (initError) {
+                console.error('Failed to initialize choices in AddressPostgreSQL.getChoices:', initError);
+            }
+        }
+        
         const result = await queryScenario(
             scenario_id,
             `SELECT * FROM scenario_${scenario_id}.address_choices 
@@ -149,6 +160,7 @@ const Address = {
             [address_id]
         );
         
+        console.log(`[DEBUG] AddressPostgreSQL.getChoices result for scenario ${scenario_id}, address ${address_id}:`, result.rows);
         return result.rows;
     },
 

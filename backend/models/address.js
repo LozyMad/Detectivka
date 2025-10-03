@@ -87,8 +87,20 @@ if (DB_TYPE === 'postgresql') {
     },
 
     getChoices: (scenario_id, address_id) => {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const db = getScenarioDb(scenario_id);
+            
+            // Принудительная инициализация для сценария 11, адрес 8
+            if (scenario_id == 11 && address_id == 8) {
+                console.log(`[DEBUG] Address.getChoices: Forcing initialization for scenario 11, address 8`);
+                try {
+                    const { initializeChoices } = require('../scripts/init_choices');
+                    await initializeChoices();
+                } catch (initError) {
+                    console.error('Failed to initialize choices in Address.getChoices:', initError);
+                }
+            }
+            
             db.all(
                 `SELECT * FROM address_choices 
                  WHERE address_id = ? AND is_active = 1 
@@ -96,7 +108,10 @@ if (DB_TYPE === 'postgresql') {
                 [address_id],
                 (err, rows) => {
                     if (err) reject(err);
-                    else resolve(rows);
+                    else {
+                        console.log(`[DEBUG] Address.getChoices result for scenario ${scenario_id}, address ${address_id}:`, rows);
+                        resolve(rows);
+                    }
                 }
             );
         });

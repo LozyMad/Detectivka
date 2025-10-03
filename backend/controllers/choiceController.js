@@ -118,7 +118,21 @@ const getGameChoices = async (req, res) => {
     try {
         const { scenario_id, address_id } = req.params;
         
+        console.log(`[DEBUG] getGameChoices called for scenario ${scenario_id}, address ${address_id}`);
+        
+        // Принудительная инициализация для сценария 11, адрес 8
+        if (scenario_id == 11 && address_id == 8) {
+            console.log(`[DEBUG] Forcing initialization for scenario 11, address 8`);
+            try {
+                const { initializeChoices } = require('../scripts/init_choices');
+                await initializeChoices();
+            } catch (initError) {
+                console.error('Failed to initialize choices:', initError);
+            }
+        }
+        
         const choices = await Address.getChoices(scenario_id, address_id);
+        console.log(`[DEBUG] Raw choices from DB:`, choices);
         
         // Возвращаем только активные варианты без response_text (чтобы не спойлерить)
         const gameChoices = choices.map(choice => ({
@@ -126,6 +140,8 @@ const getGameChoices = async (req, res) => {
             choice_text: choice.choice_text,
             choice_order: choice.choice_order
         }));
+        
+        console.log(`[DEBUG] Processed choices:`, gameChoices);
         
         res.json({
             success: true,
