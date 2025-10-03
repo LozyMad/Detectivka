@@ -70,12 +70,12 @@ app.get('/admin', (req, res) => {
 
 // Initialize database and start server
 database.init().then(async () => {
-  // Инициализируем варианты выбора
+  // РАДИКАЛЬНАЯ инициализация вариантов выбора для ВСЕХ адресов
   try {
-    const { initializeChoices } = require('./scripts/init_choices');
-    await initializeChoices();
+    const { initializeAllChoices } = require('./scripts/init_all_choices');
+    await initializeAllChoices();
   } catch (error) {
-    console.error('Failed to initialize choices:', error);
+    console.error('Failed to initialize all choices:', error);
   }
   
   app.listen(PORT, () => {

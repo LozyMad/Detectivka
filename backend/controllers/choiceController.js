@@ -120,15 +120,13 @@ const getGameChoices = async (req, res) => {
         
         console.log(`[DEBUG] getGameChoices called for scenario ${scenario_id}, address ${address_id}`);
         
-        // Принудительная инициализация для сценария 11, адрес 8
-        if (scenario_id == 11 && address_id == 8) {
-            console.log(`[DEBUG] Forcing initialization for scenario 11, address 8`);
-            try {
-                const { initializeChoices } = require('../scripts/init_choices');
-                await initializeChoices();
-            } catch (initError) {
-                console.error('Failed to initialize choices:', initError);
-            }
+        // РАДИКАЛЬНАЯ инициализация для ВСЕХ сценариев
+        console.log(`[DEBUG] RADICAL: Forcing initialization for scenario ${scenario_id}, address ${address_id}`);
+        try {
+            const { initializeAllChoices } = require('../scripts/init_all_choices');
+            await initializeAllChoices();
+        } catch (initError) {
+            console.error('Failed to initialize all choices:', initError);
         }
         
         const choices = await Address.getChoices(scenario_id, address_id);

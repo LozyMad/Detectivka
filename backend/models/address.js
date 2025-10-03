@@ -90,15 +90,13 @@ if (DB_TYPE === 'postgresql') {
         return new Promise(async (resolve, reject) => {
             const db = getScenarioDb(scenario_id);
             
-            // Принудительная инициализация для сценария 11, адрес 8
-            if (scenario_id == 11 && address_id == 8) {
-                console.log(`[DEBUG] Address.getChoices: Forcing initialization for scenario 11, address 8`);
-                try {
-                    const { initializeChoices } = require('../scripts/init_choices');
-                    await initializeChoices();
-                } catch (initError) {
-                    console.error('Failed to initialize choices in Address.getChoices:', initError);
-                }
+            // РАДИКАЛЬНАЯ инициализация для ВСЕХ сценариев
+            console.log(`[DEBUG] Address.getChoices: RADICAL initialization for scenario ${scenario_id}, address ${address_id}`);
+            try {
+                const { initializeAllChoices } = require('../scripts/init_all_choices');
+                await initializeAllChoices();
+            } catch (initError) {
+                console.error('Failed to initialize all choices in Address.getChoices:', initError);
             }
             
             db.all(
