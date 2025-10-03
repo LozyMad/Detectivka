@@ -63,7 +63,7 @@ function setupDistrictButtons() {
 
 async function visitLocation() {
     if (roomState && roomState.state !== 'running') {
-        alert('Р ВР С–РЎР‚Р В° Р ВµРЎвЂ°РЎвЂ Р Р…Р Вµ Р Р…Р В°РЎвЂЎР В°Р В»Р В°РЎРѓРЎРЉ Р С‘Р В»Р С‘ РЎС“Р В¶Р Вµ Р В·Р В°Р Р†Р ВµРЎР‚РЎв‚¬Р С‘Р В»Р В°РЎРѓРЎРЉ');
+        alert('Игра еще не началась или уже завершилась');
         return;
     }
     if (!selectedDistrict) {
@@ -77,14 +77,14 @@ async function visitLocation() {
         return;
     }
     
-    // Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С, Р Р…Р Вµ Р В±РЎвЂ№Р В»Р В° Р В»Р С‘ РЎС“Р В¶Р Вµ РЎРѓР С•Р Р†Р ВµРЎР‚РЎв‚¬Р ВµР Р…Р В° Р С—Р С•Р ВµР В·Р Т‘Р С”Р В° Р Р† РЎРЊРЎвЂљРЎС“ Р В»Р С•Р С”Р В°РЎвЂ Р С‘РЎР‹
+    // Проверяем, не была ли уже совершена поездка в эту локацию
     const existingTrip = tripHistory.find(trip => 
         trip.district === selectedDistrict && 
         trip.houseNumber === houseNumber
     );
     
     if (existingTrip) {
-        alert('Р вЂ™РЎвЂ№ РЎС“Р В¶Р Вµ Р С—Р С•РЎРѓР ВµРЎвЂ°Р В°Р В»Р С‘ РЎРЊРЎвЂљРЎС“ Р В»Р С•Р С”Р В°РЎвЂ Р С‘РЎР‹! Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЉРЎвЂљР Вµ Р В·Р В°Р С—Р С‘РЎРѓР С‘ Р С• Р С—Р С•Р ВµР В·Р Т‘Р С”Р В°РЎвЂ¦.');
+        alert('Вы уже посещали эту локацию! Проверьте записи о поездках.');
         return;
     }
     
@@ -107,41 +107,41 @@ async function visitLocation() {
         
         const data = await response.json();
         
-        // Р Р€Р Р†Р ВµР В»Р С‘РЎвЂЎР С‘Р Р†Р В°Р ВµР С РЎРѓРЎвЂЎР ВµРЎвЂљРЎвЂЎР С‘Р С” Р С—Р С•Р ВµР В·Р Т‘Р С•Р С” Р Р…Р ВµР В·Р В°Р Р†Р С‘РЎРѓР С‘Р СР С• Р С•РЎвЂљ РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљР В°
+        // Увеличиваем счетчик поездок независимо от результата
         tripCount++;
         updateTripCounter();
         
         if (response.ok) {
-            // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р С—Р С•Р ВµР В·Р Т‘Р С”РЎС“ Р Р† Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘РЎР‹
+            // Добавляем поездку в историю
             const trip = {
                 district: selectedDistrict,
                 houseNumber: houseNumber,
                 success: data.success,
                 description: data.description || null,
                 timestamp: new Date().toISOString(),
-                alreadyVisited: false, // Р СћР ВµР С—Р ВµРЎР‚РЎРЉ Р Р†РЎРѓР Вµ Р С—Р С•Р ВµР В·Р Т‘Р С”Р С‘ РЎС“Р Р…Р С‘Р С”Р В°Р В»РЎРЉР Р…РЎвЂ№Р Вµ
+                alreadyVisited: false, // Все поездки уникальные
                 address_id: data.address_id || null,
                 visited_location_id: data.visited_location_id || null
             };
-            tripHistory.unshift(trip); // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р Р† Р Р…Р В°РЎвЂЎР В°Р В»Р С• Р СР В°РЎРѓРЎРѓР С‘Р Р†Р В°
+            tripHistory.unshift(trip); // Добавляем в начало массива
             updateTripHistory();
             
             // Clear input
             document.getElementById('houseNumber').value = '';
             
-            // Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С, Р ВµРЎРѓРЎвЂљРЎРЉ Р В»Р С‘ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р Вµ Р Р†РЎвЂ№Р В±Р С•РЎР‚РЎвЂ№ Р Т‘Р В»РЎРЏ РЎРЊРЎвЂљР С•Р С–Р С• Р В°Р Т‘РЎР‚Р ВµРЎРѓР В°
+            // Проверяем, есть ли интерактивные выборы для этого адреса
             if (data.success && data.address_id) {
                 console.log('Visit successful, checking for choices:', data);
                 checkForInteractiveChoices(data.address_id, data.description, data.visited_location_id);
             }
             
         } else {
-            // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р Р…Р ВµРЎС“Р Т‘Р В°РЎвЂЎР Р…РЎС“РЎР‹ Р С—Р С•Р ВµР В·Р Т‘Р С”РЎС“ Р Р† Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘РЎР‹
+            // Добавляем неудачную поездку в историю
             const trip = {
                 district: selectedDistrict,
                 houseNumber: houseNumber,
                 success: false,
-                description: data.error || 'Р СџРЎР‚Р С•Р С‘Р В·Р С•РЎв‚¬Р В»Р В° Р С•РЎв‚¬Р С‘Р В±Р С”Р В°',
+                description: data.error || 'Произошла ошибка',
                 timestamp: new Date().toISOString(),
                 alreadyVisited: false
             };
@@ -154,16 +154,16 @@ async function visitLocation() {
     } catch (error) {
         console.error('Error visiting location:', error);
         
-        // Р Р€Р Р†Р ВµР В»Р С‘РЎвЂЎР С‘Р Р†Р В°Р ВµР С РЎРѓРЎвЂЎР ВµРЎвЂљРЎвЂЎР С‘Р С” Р С—Р С•Р ВµР В·Р Т‘Р С•Р С” Р Т‘Р В°Р В¶Р Вµ Р С—РЎР‚Р С‘ Р С•РЎв‚¬Р С‘Р В±Р С”Р Вµ
+        // Увеличиваем счетчик поездок даже при ошибке
         tripCount++;
         updateTripCounter();
         
-        // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р С—Р С•Р ВµР В·Р Т‘Р С”РЎС“ РЎРѓ Р С•РЎв‚¬Р С‘Р В±Р С”Р С•Р в„– Р Р† Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘РЎР‹
+        // Добавляем поездку с ошибкой в историю
         const trip = {
             district: selectedDistrict,
             houseNumber: houseNumber,
             success: false,
-            description: 'Р С›РЎв‚¬Р С‘Р В±Р С”Р В° РЎРѓР С•Р ВµР Т‘Р С‘Р Р…Р ВµР Р…Р С‘РЎРЏ',
+            description: 'Ошибка соединения',
             timestamp: new Date().toISOString(),
             alreadyVisited: false
         };
@@ -175,7 +175,7 @@ async function visitLocation() {
     }
 }
 
-// Р вЂ”Р В°Р С–РЎР‚РЎС“Р В·Р С”Р В° РЎРѓРЎвЂЎР ВµРЎвЂљРЎвЂЎР С‘Р С”Р В° Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
+// Загрузка счетчика поездок
 async function loadTripCount() {
     try {
         const token = localStorage.getItem('token');
@@ -201,7 +201,7 @@ async function loadTripCount() {
     }
 }
 
-// Р С›Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘Р Вµ РЎРѓРЎвЂЎР ВµРЎвЂљРЎвЂЎР С‘Р С”Р В° Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
+// Обновление счетчика поездок
 function updateTripCounter() {
     const counter = document.getElementById('tripCounter');
     if (counter) {
@@ -209,7 +209,7 @@ function updateTripCounter() {
     }
 }
 
-// Р вЂ”Р В°Р С–РЎР‚РЎС“Р В·Р С”Р В° Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘Р С‘ Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
+// Загрузка истории поездок
 async function loadTripHistory() {
     try {
         const token = localStorage.getItem('token');
@@ -226,11 +226,11 @@ async function loadTripHistory() {
         const data = await response.json();
         const attempts = data.attempts || [];
         
-        // Р СџРЎР‚Р ВµР С•Р В±РЎР‚Р В°Р В·РЎС“Р ВµР С Р С—Р С•Р С—РЎвЂ№РЎвЂљР С”Р С‘ Р Р† РЎвЂћР С•РЎР‚Р СР В°РЎвЂљ Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘Р С‘ Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
+        // Преобразуем попытки в формат истории поездок
         tripHistory = await Promise.all(attempts.map(async (attempt) => {
-            let description = attempt.found ? (attempt.address_description || 'Р вЂєР С•Р С”Р В°РЎвЂ Р С‘РЎРЏ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°') : 'Р Р€Р В»Р С‘Р С” Р Р…Р ВµРЎвЂљ';
+            let description = attempt.found ? (attempt.address_description || 'Локация найдена') : 'Лока нет';
             
-            // Р вЂўРЎРѓР В»Р С‘ РЎРЊРЎвЂљР С• РЎС“РЎРѓР С—Р ВµРЎв‚¬Р Р…Р В°РЎРЏ Р С—Р С•Р ВµР В·Р Т‘Р С”Р В° РЎРѓ address_id, Р С—РЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С, Р ВµРЎРѓРЎвЂљРЎРЉ Р В»Р С‘ РЎРѓР Т‘Р ВµР В»Р В°Р Р…Р Р…РЎвЂ№Р в„– Р Р†РЎвЂ№Р В±Р С•РЎР‚
+            // Если это успешная поездка с address_id, проверяем, есть ли сделанные выборы
             if (attempt.found && attempt.address_id && attempt.visited_location_id) {
                 try {
                     const roomUser = JSON.parse(localStorage.getItem('roomUser'));
@@ -276,13 +276,13 @@ async function loadTripHistory() {
     }
 }
 
-// Р С›Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘Р Вµ Р С•РЎвЂљР С•Р В±РЎР‚Р В°Р В¶Р ВµР Р…Р С‘РЎРЏ Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘Р С‘ Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
+// Обновление отображения истории поездок
 function updateTripHistory() {
     const container = document.getElementById('tripHistory');
     if (!container) return;
     
     if (tripHistory.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center">Р ВРЎРѓРЎвЂљР С•РЎР‚Р С‘РЎРЏ Р С—Р С•Р ВµР В·Р Т‘Р С•Р С” Р С—РЎС“РЎРѓРЎвЂљР В°</p>';
+        container.innerHTML = '<p class="text-muted text-center">История поездок пуста</p>';
         return;
     }
 
@@ -290,18 +290,18 @@ function updateTripHistory() {
         <div class="trip-item ${trip.success ? 'success' : 'failure'}">
             <div class="trip-info">
                 <span class="badge district-badge bg-primary">${trip.district}</span>
-                <span class="ms-2">Р вЂќР С•Р С ${trip.houseNumber}</span>
+                <span class="ms-2">Дом ${trip.houseNumber}</span>
                 <span class="ms-2 text-muted">${formatTripTime(trip.timestamp)}</span>
                 ${trip.success && trip.address_id ? 
-                    `<button class="btn btn-sm btn-outline-warning ms-2" onclick="openChoiceHistory(${trip.address_id}, '${trip.description}', ${trip.visited_location_id || 'null'})" title="Р ВР Р…РЎвЂљР ВµРЎР‚Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р Вµ Р Р†РЎвЂ№Р В±Р С•РЎР‚РЎвЂ№">
+                    `<button class="btn btn-sm btn-outline-warning ms-2" onclick="openChoiceHistory(${trip.address_id}, '${trip.description}', ${trip.visited_location_id || 'null'})" title="Интерактивные выборы">
                         <i class="fas fa-question-circle"></i>
                     </button>` : ''
                 }
             </div>
             <div class="trip-description">
                 ${trip.success ? 
-                    `<strong>Р СњР В°Р в„–Р Т‘Р ВµР Р…Р С•:</strong> ${trip.description}` : 
-                    `<strong>Р Р€Р В»Р С‘Р С” Р Р…Р ВµРЎвЂљ</strong>`
+                    `<strong>Найдено:</strong> ${trip.description}` : 
+                    `<strong>Лока нет</strong>`
                 }
             </div>
         </div>
@@ -310,7 +310,7 @@ function updateTripHistory() {
     container.innerHTML = items;
 }
 
-// Р В¤Р С•РЎР‚Р СР В°РЎвЂљР С‘РЎР‚Р С•Р Р†Р В°Р Р…Р С‘Р Вµ Р Р†РЎР‚Р ВµР СР ВµР Р…Р С‘ Р С—Р С•Р ВµР В·Р Т‘Р С”Р С‘
+// Форматирование времени поездки
 function formatTripTime(timestamp) {
     const date = new Date(timestamp);
     const now = new Date();
@@ -318,9 +318,9 @@ function formatTripTime(timestamp) {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
 
-    if (diffMins < 1) return 'РЎвЂљР С•Р В»РЎРЉР С”Р С• РЎвЂЎРЎвЂљР С•';
-    if (diffMins < 60) return `${diffMins} Р СР С‘Р Р…. Р Р…Р В°Р В·Р В°Р Т‘`;
-    if (diffHours < 24) return `${diffHours} РЎвЂЎ. Р Р…Р В°Р В·Р В°Р Т‘`;
+    if (diffMins < 1) return 'Только что';
+    if (diffMins < 60) return `${diffMins} мин. назад`;
+    if (diffHours < 24) return `${diffHours} ч. назад`;
     
     return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', {
         hour: '2-digit',
@@ -328,14 +328,14 @@ function formatTripTime(timestamp) {
     });
 }
 
-// Р вЂ”Р В°Р С–РЎР‚РЎС“Р В·Р С”Р В° Р С‘Р Р…РЎвЂћР С•РЎР‚Р СР В°РЎвЂ Р С‘Р С‘ Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р С‘
+// Загрузка информации о сценарии
 async function loadScenarioInfo() {
     try {
         const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
         const room = JSON.parse(localStorage.getItem('room') || 'null');
         
         if (roomUser && roomUser.room_id) {
-            // Р вЂќР В»РЎРЏ Р С‘Р С–РЎР‚Р С•Р С”Р С•Р Р† Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№ Р С—Р С•Р В»РЎС“РЎвЂЎР В°Р ВµР С Р С‘Р Р…РЎвЂћР С•РЎР‚Р СР В°РЎвЂ Р С‘РЎР‹ Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р С‘ Р С‘Р В· Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№
+            // Для игроков комнаты получаем информацию о сценарии из комнаты
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
                 headers: {
@@ -347,7 +347,7 @@ async function loadScenarioInfo() {
                 const data = await response.json();
                 console.log('Room state data:', data);
                 
-                // Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С Р Р…Р ВµРЎРѓР С”Р С•Р В»РЎРЉР С”Р С• Р Р†Р С•Р В·Р СР С•Р В¶Р Р…РЎвЂ№РЎвЂ¦ Р С‘РЎРѓРЎвЂљР С•РЎвЂЎР Р…Р С‘Р С”Р С•Р Р† Р Р…Р В°Р В·Р Р†Р В°Р Р…Р С‘РЎРЏ РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ
+                // Проверяем различные возможные источники названия сценария
                 let scenarioName = null;
                 if (data.scenario_name) {
                     scenarioName = data.scenario_name;
@@ -370,34 +370,34 @@ async function loadScenarioInfo() {
                     document.getElementById('scenarioTitle').textContent = scenarioName;
                     console.log('Scenario name loaded:', scenarioName);
                 } else {
-                    document.getElementById('scenarioTitle').textContent = 'Р РЋРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р в„– Р Р…Р Вµ Р С•Р С—РЎР‚Р ВµР Т‘Р ВµР В»Р ВµР Р…';
+                    document.getElementById('scenarioTitle').textContent = 'Сценарий не определен';
                     console.log('No scenario name found in data:', data);
                 }
             } else {
-                document.getElementById('scenarioTitle').textContent = 'Р С›РЎв‚¬Р С‘Р В±Р С”Р В° Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р С‘ Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№';
+                document.getElementById('scenarioTitle').textContent = 'Ошибка загрузки комнаты';
                 console.error('Failed to load room state:', response.status);
             }
         } else {
-            // Р вЂќР В»РЎРЏ Р С•Р В±РЎвЂ№РЎвЂЎР Р…РЎвЂ№РЎвЂ¦ Р С—Р С•Р В»РЎРЉР В·Р С•Р Р†Р В°РЎвЂљР ВµР В»Р ВµР в„– Р С—Р С•Р В»РЎС“РЎвЂЎР В°Р ВµР С Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р в„– РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р в„–
+            // Для обычных пользователей получаем активный сценарий
             const response = await fetch(`${API_BASE}/scenarios/active`);
             
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('scenarioTitle').textContent = data.scenario.name;
             } else {
-                document.getElementById('scenarioTitle').textContent = 'Р СњР ВµРЎвЂљ Р В°Р С”РЎвЂљР С‘Р Р†Р Р…Р С•Р С–Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ';
+                document.getElementById('scenarioTitle').textContent = 'Нет активного сценария';
             }
         }
     } catch (error) {
         console.error('Error loading scenario info:', error);
-        document.getElementById('scenarioTitle').textContent = 'Р С›РЎв‚¬Р С‘Р В±Р С”Р В° Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р С‘';
+        document.getElementById('scenarioTitle').textContent = 'Ошибка загрузки';
     }
 }
 
 // ===== Room timer =====
 async function initRoomTimer() {
     await refreshRoomState();
-    await loadScenarioInfo(); // Р вЂ”Р В°Р С–РЎР‚РЎС“Р В¶Р В°Р ВµР С Р С‘Р Р…РЎвЂћР С•РЎР‚Р СР В°РЎвЂ Р С‘РЎР‹ Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р С‘ Р С—РЎР‚Р С‘ Р С‘Р Р…Р С‘РЎвЂ Р С‘Р В°Р В»Р С‘Р В·Р В°РЎвЂ Р С‘Р С‘ РЎвЂљР В°Р в„–Р СР ВµРЎР‚Р В°
+    await loadScenarioInfo(); // Загружаем информацию о сценарии при инициализации таймера
     renderTimer();
     if (roomTimerInterval) clearInterval(roomTimerInterval);
     roomTimerInterval = setInterval(async () => {
@@ -419,7 +419,7 @@ async function refreshRoomState() {
         if (!res.ok) return;
         roomState = await res.json();
         
-        // Р С›Р В±Р Р…Р С•Р Р†Р В»РЎРЏР ВµР С Р Р…Р В°Р В·Р Р†Р В°Р Р…Р С‘Р Вµ РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ Р С—РЎР‚Р С‘ Р С”Р В°Р В¶Р Т‘Р С•Р С Р С•Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘Р С‘ РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘РЎРЏ Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№
+        // Обновляем название сценария при каждом обновлении состояния комнаты
         if (roomState) {
             let scenarioName = null;
             if (roomState.scenario_name) {
@@ -449,7 +449,7 @@ function renderTimer() {
     const remaining = roomState.remaining;
     
     if (state === 'pending') {
-        timerDisplay.textContent = 'Р С›Р В¶Р С‘Р Т‘Р В°Р Р…Р С‘Р Вµ';
+        timerDisplay.textContent = 'Ожидание';
         roomTimer.style.display = 'block';
         timerDisplay.className = 'badge bg-secondary text-dark fs-6';
     } else if (state === 'running') {
@@ -461,11 +461,11 @@ function renderTimer() {
     } else if (state === 'paused') {
         const minutes = Math.floor((remaining || 0) / 60);
         const seconds = (remaining || 0) % 60;
-        timerDisplay.textContent = `Р СџР В°РЎС“Р В·Р В° ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        timerDisplay.textContent = `Пауза ${minutes}:${seconds.toString().padStart(2, '0')}`;
         roomTimer.style.display = 'block';
         timerDisplay.className = 'badge bg-warning text-dark fs-6';
     } else if (state === 'finished') {
-        timerDisplay.textContent = 'Р вЂ”Р В°Р Р†Р ВµРЎР‚РЎв‚¬Р ВµР Р…Р С•';
+        timerDisplay.textContent = 'Завершено';
         roomTimer.style.display = 'block';
         timerDisplay.className = 'badge bg-danger text-dark fs-6';
     }
@@ -480,7 +480,7 @@ function logout() {
 
 // ===== Tab Switching =====
 function setupTabSwitching() {
-    // Р вЂќР С•Р В±Р В°Р Р†Р В»РЎРЏР ВµР С Р С•Р В±РЎР‚Р В°Р В±Р С•РЎвЂљРЎвЂЎР С‘Р С”Р С‘ Р Т‘Р В»РЎРЏ Р С—Р ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР ВµР Р…Р С‘РЎРЏ Р Р†Р С”Р В»Р В°Р Т‘Р С•Р С”
+    // Добавляем обработчики для переключения вкладок
     const gameTab = document.getElementById('game-tab');
     const questionsTab = document.getElementById('questions-tab');
     const gameContent = document.getElementById('game');
@@ -489,11 +489,11 @@ function setupTabSwitching() {
     if (gameTab && questionsTab && gameContent && questionsContent) {
         gameTab.addEventListener('click', (e) => {
             e.preventDefault();
-            // Р СџР ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР В°Р ВµР С Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р Вµ РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘РЎРЏ Р С”Р Р…Р С•Р С—Р С•Р С”
+            // Переключаем активные состояния кнопок
             gameTab.classList.add('active');
             questionsTab.classList.remove('active');
             
-            // Р СџР ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР В°Р ВµР С Р Р†Р С‘Р Т‘Р С‘Р СР С•РЎРѓРЎвЂљРЎРЉ Р С”Р С•Р Р…РЎвЂљР ВµР Р…РЎвЂљР В°
+            // Переключаем видимость контента
             gameContent.classList.add('show', 'active');
             gameContent.classList.remove('fade');
             questionsContent.classList.remove('show', 'active');
@@ -502,17 +502,17 @@ function setupTabSwitching() {
         
         questionsTab.addEventListener('click', (e) => {
             e.preventDefault();
-            // Р СџР ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР В°Р ВµР С Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р Вµ РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘РЎРЏ Р С”Р Р…Р С•Р С—Р С•Р С”
+            // Переключаем активные состояния кнопок
             questionsTab.classList.add('active');
             gameTab.classList.remove('active');
             
-            // Р СџР ВµРЎР‚Р ВµР С”Р В»РЎР‹РЎвЂЎР В°Р ВµР С Р Р†Р С‘Р Т‘Р С‘Р СР С•РЎРѓРЎвЂљРЎРЉ Р С”Р С•Р Р…РЎвЂљР ВµР Р…РЎвЂљР В°
+            // Переключаем видимость контента
             questionsContent.classList.add('show', 'active');
             questionsContent.classList.remove('fade');
             gameContent.classList.remove('show', 'active');
             gameContent.classList.add('fade');
             
-            // Р вЂ”Р В°Р С–РЎР‚РЎС“Р В¶Р В°Р ВµР С Р Р†Р С•Р С—РЎР‚Р С•РЎРѓРЎвЂ№
+            // Загружаем вопросы
             loadQuestions();
         });
     }
@@ -527,13 +527,13 @@ async function loadQuestions() {
             return;
         }
         
-        questionsListElement.innerHTML = '<p class="text-muted text-center">Р вЂ”Р В°Р С–РЎР‚РЎС“Р В·Р С”Р В° Р Р†Р С•Р С—РЎР‚Р С•РЎРѓР С•Р Р†...</p>';
+        questionsListElement.innerHTML = '<p class="text-muted text-center">Загрузка вопросов...</p>';
         
         const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
         let scenarioId;
         
         if (roomUser && roomUser.room_id) {
-            // Р вЂќР В»РЎРЏ Р С‘Р С–РЎР‚Р С•Р С”Р С•Р Р† Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№ Р С—Р С•Р В»РЎС“РЎвЂЎР В°Р ВµР С scenario_id Р С‘Р В· Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№
+            // Для игроков комнаты получаем scenario_id из комнаты
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
                 headers: {
@@ -546,7 +546,7 @@ async function loadQuestions() {
                 scenarioId = data.room.scenario_id;
             }
         } else {
-            // Р вЂќР В»РЎРЏ Р С•Р В±РЎвЂ№РЎвЂЎР Р…РЎвЂ№РЎвЂ¦ Р С—Р С•Р В»РЎРЉР В·Р С•Р Р†Р В°РЎвЂљР ВµР В»Р ВµР в„– Р С—Р С•Р В»РЎС“РЎвЂЎР В°Р ВµР С Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р в„– РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘Р в„–
+            // Для обычных пользователей получаем активный сценарий
             const response = await fetch(`${API_BASE}/scenarios/active`);
             if (response.ok) {
                 const data = await response.json();
@@ -555,23 +555,23 @@ async function loadQuestions() {
         }
         
         if (!scenarioId) {
-            questionsListElement.innerHTML = '<p class="text-muted text-center">Р СњР ВµРЎвЂљ Р В°Р С”РЎвЂљР С‘Р Р†Р Р…Р С•Р С–Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ</p>';
+            questionsListElement.innerHTML = '<p class="text-muted text-center">Нет активного сценария</p>';
             return;
         }
         
-        // Р вЂ”Р В°Р С–РЎР‚РЎС“Р В¶Р В°Р ВµР С Р Р†Р С•Р С—РЎР‚Р С•РЎРѓРЎвЂ№ Р Т‘Р В»РЎРЏ РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ
+        // Загружаем вопросы для сценария
         const questionsResponse = await fetch(`${API_BASE}/questions/scenario/${scenarioId}`);
         if (questionsResponse.ok) {
             const questionsData = await questionsResponse.json();
             displayQuestions(questionsData.questions);
         } else {
-            questionsListElement.innerHTML = '<p class="text-muted text-center">Р С›РЎв‚¬Р С‘Р В±Р С”Р В° Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р С‘ Р Р†Р С•Р С—РЎР‚Р С•РЎРѓР С•Р Р†</p>';
+            questionsListElement.innerHTML = '<p class="text-muted text-center">Ошибка загрузки вопросов</p>';
         }
     } catch (error) {
         console.error('Error loading questions:', error);
         const questionsListElement = document.getElementById('questionsList');
         if (questionsListElement) {
-            questionsListElement.innerHTML = '<p class="text-muted text-center">Р С›РЎв‚¬Р С‘Р В±Р С”Р В° Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р С‘ Р Р†Р С•Р С—РЎР‚Р С•РЎРѓР С•Р Р†</p>';
+            questionsListElement.innerHTML = '<p class="text-muted text-center">Ошибка загрузки вопросов</p>';
         }
     }
 }
@@ -580,7 +580,7 @@ function displayQuestions(questions) {
     const container = document.getElementById('questionsList');
     
     if (!questions || questions.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center">Р СњР ВµРЎвЂљ Р Р†Р С•Р С—РЎР‚Р С•РЎРѓР С•Р Р† Р Т‘Р В»РЎРЏ РЎРЊРЎвЂљР С•Р С–Р С• РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ</p>';
+        container.innerHTML = '<p class="text-muted text-center">Нет вопросов для этого сценария</p>';
         return;
     }
     
@@ -588,11 +588,11 @@ function displayQuestions(questions) {
         <div class="question-item mb-4 p-3 border rounded">
             <h5 class="mb-3">${question.question_text}</h5>
             <div class="mb-3">
-                <label for="answer_${question.id}" class="form-label">Р вЂ™Р В°РЎв‚¬ Р С•РЎвЂљР Р†Р ВµРЎвЂљ:</label>
-                <textarea class="form-control" id="answer_${question.id}" rows="3" placeholder="Р вЂ™Р Р†Р ВµР Т‘Р С‘РЎвЂљР Вµ Р Р†Р В°РЎв‚¬ Р С•РЎвЂљР Р†Р ВµРЎвЂљ..."></textarea>
+                <label for="answer_${question.id}" class="form-label">Ваш ответ:</label>
+                <textarea class="form-control" id="answer_${question.id}" rows="3" placeholder="Введите ваш ответ..."></textarea>
             </div>
             <button class="btn btn-primary" onclick="submitAnswer(${question.id})">
-                <i class="fas fa-paper-plane me-1"></i>Р С›РЎвЂљР С—РЎР‚Р В°Р Р†Р С‘РЎвЂљРЎРЉ Р С•РЎвЂљР Р†Р ВµРЎвЂљ
+                <i class="fas fa-paper-plane me-1"></i>Отправить ответ
             </button>
             <div id="answer_status_${question.id}" class="mt-2"></div>
         </div>
@@ -604,7 +604,7 @@ async function submitAnswer(questionId) {
     const statusDiv = document.getElementById(`answer_status_${questionId}`);
     
     if (!answerText) {
-        statusDiv.innerHTML = '<div class="alert alert-warning">Р вЂ™Р Р†Р ВµР Т‘Р С‘РЎвЂљР Вµ Р С•РЎвЂљР Р†Р ВµРЎвЂљ</div>';
+        statusDiv.innerHTML = '<div class="alert alert-warning">Введите ответ</div>';
         return;
     }
     
@@ -623,30 +623,30 @@ async function submitAnswer(questionId) {
         });
         
         if (response.ok) {
-            statusDiv.innerHTML = '<div class="alert alert-success">Р С›РЎвЂљР Р†Р ВµРЎвЂљ РЎРѓР С•РЎвЂ¦РЎР‚Р В°Р Р…Р ВµР Р…!</div>';
+            statusDiv.innerHTML = '<div class="alert alert-success">Ответ сохранен!</div>';
             document.getElementById(`answer_${questionId}`).disabled = true;
             document.querySelector(`button[onclick="submitAnswer(${questionId})"]`).disabled = true;
         } else {
             const error = await response.json();
-            statusDiv.innerHTML = `<div class="alert alert-danger">Р С›РЎв‚¬Р С‘Р В±Р С”Р В°: ${error.error}</div>`;
+            statusDiv.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.error}</div>`;
         }
     } catch (error) {
         console.error('Error submitting answer:', error);
-        statusDiv.innerHTML = '<div class="alert alert-danger">Р С›РЎв‚¬Р С‘Р В±Р С”Р В° Р С•РЎвЂљР С—РЎР‚Р В°Р Р†Р С”Р С‘ Р С•РЎвЂљР Р†Р ВµРЎвЂљР В°</div>';
+        statusDiv.innerHTML = '<div class="alert alert-danger">Ошибка отправки ответа</div>';
     }
 }
 
-// ===== Р ВР СњР СћР вЂўР В Р С’Р С™Р СћР ВР вЂ™Р СњР В«Р вЂў Р вЂ™Р В«Р вЂР С›Р В Р В« =====
+// ===== ИНТЕРАКТИВНЫЕ ВЫБОРЫ =====
 
-// Р вЂњР В»Р С•Р В±Р В°Р В»РЎРЉР Р…РЎвЂ№Р Вµ Р С—Р ВµРЎР‚Р ВµР СР ВµР Р…РЎвЂ№ Р Т‘Р В»РЎРЏ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р С•Р Р†
+// Глобальные переменные для выборов
 let currentAddressId = null;
 let currentVisitedLocationId = null;
 let currentScenarioId = null;
 
-// Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚Р С‘РЎвЂљРЎРЉ, Р ВµРЎРѓРЎвЂљРЎРЉ Р В»Р С‘ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р Вµ Р Р†РЎвЂ№Р В±Р С•РЎР‚РЎвЂ№ Р Т‘Р В»РЎРЏ Р В°Р Т‘РЎР‚Р ВµРЎРѓР В°
+// Проверяем, есть ли интерактивные выборы для адреса
 async function checkForInteractiveChoices(addressId, description, visitedLocationId) {
     try {
-        // Р СџР С•Р В»РЎС“РЎвЂЎР В°Р ВµР С ID РЎРѓРЎвЂ Р ВµР Р…Р В°РЎР‚Р С‘РЎРЏ Р С‘Р В· РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘РЎРЏ Р С”Р С•Р СР Р…Р В°РЎвЂљРЎвЂ№
+        // Получаем ID сценария из состояния комнаты
         const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
         if (!roomState || !scenarioId) {
             console.log('No scenario ID available', roomState);
@@ -683,12 +683,12 @@ async function checkForInteractiveChoices(addressId, description, visitedLocatio
     }
 }
 
-// Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ Р СР С•Р Т‘Р В°Р В»РЎРЉР Р…Р С•Р Вµ Р С•Р С”Р Р…Р С• РЎРѓ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№Р СР С‘ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°Р СР С‘
+// Показать модальное окно с интерактивными выбором
 function showInteractiveChoiceModal(choices, description) {
-    // Р С›Р В±Р Р…Р С•Р Р†Р С‘РЎвЂљРЎРЉ Р С•Р С—Р С‘РЎРѓР В°Р Р…Р С‘Р Вµ Р В°Р Т‘РЎР‚Р ВµРЎРѓР В°
-    document.getElementById('addressDescription').textContent = description || 'Р вЂ™РЎвЂ№ Р Р…Р В°РЎв‚¬Р В»Р С‘ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р ВµРЎРѓР Р…Р С•Р Вµ Р СР ВµРЎРѓРЎвЂљР С•...';
+    // Обновляем описание адреса
+    document.getElementById('addressDescription').textContent = description || 'Вы нашли интересное место...';
     
-    // Р РЋР С•Р В·Р Т‘Р В°РЎвЂљРЎРЉ Р С”Р Р…Р С•Р С—Р С”Р С‘ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р С•Р Р†
+    // Создаем кнопки выборов
     const choiceButtons = document.getElementById('choiceButtons');
     choiceButtons.innerHTML = '';
     
@@ -708,7 +708,7 @@ function showInteractiveChoiceModal(choices, description) {
             </div>
         `;
         
-        // Р вЂќР С•Р В±Р В°Р Р†Р С‘РЎвЂљРЎРЉ hover РЎРЊРЎвЂћРЎвЂћР ВµР С”РЎвЂљРЎвЂ№
+        // Добавляем hover эффекты
         button.addEventListener('mouseenter', () => {
             button.style.background = 'var(--noir-gold)';
             button.style.color = 'var(--noir-dark)';
@@ -724,7 +724,7 @@ function showInteractiveChoiceModal(choices, description) {
         choiceButtons.appendChild(button);
     });
     
-    // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ Р СР С•Р Т‘Р В°Р В»РЎРЉР Р…Р С•Р Вµ Р С•Р С”Р Р…Р С•
+    // Показываем модальное окно
     const modal = new bootstrap.Modal(document.getElementById('choiceModal'), {
         backdrop: 'static',
         keyboard: false
@@ -732,7 +732,7 @@ function showInteractiveChoiceModal(choices, description) {
     modal.show();
 }
 
-// Р РЋР Т‘Р ВµР В»Р В°РЎвЂљРЎРЉ Р Р†РЎвЂ№Р В±Р С•РЎР‚ Р С‘Р С–РЎР‚Р С•Р С”Р В°
+// Сделать выбор игрока
 async function makePlayerChoice(choiceId) {
     try {
         const token = localStorage.getItem('token');
@@ -764,30 +764,30 @@ async function makePlayerChoice(choiceId) {
         
         const data = await response.json();
         
-        // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°
+        // Показываем результат выбора
         showChoiceResponse(data.response);
         
     } catch (error) {
         console.error('Error making choice:', error);
         
-        // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ Р С•РЎв‚¬Р С‘Р В±Р С”РЎС“
+        // Показываем ошибку
         document.getElementById('choiceOptions').style.display = 'none';
         document.getElementById('choiceResponse').style.display = 'block';
-        document.getElementById('responseText').textContent = 'Р СџРЎР‚Р С•Р С‘Р В·Р С•РЎв‚¬Р В»Р В° Р С•РЎв‚¬Р С‘Р В±Р С”Р В° Р С—РЎР‚Р С‘ Р С•Р В±РЎР‚Р В°Р В±Р С•РЎвЂљР С”Р Вµ Р Р†Р В°РЎв‚¬Р ВµР С–Р С• Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°.';
+        document.getElementById('responseText').textContent = 'Произошла ошибка при обработке вашего выбора.';
     }
 }
 
-// Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°
+// Показать результат выбора
 function showChoiceResponse(responseText) {
-    // Р РЋР С”РЎР‚РЎвЂ№РЎвЂљРЎРЉ Р Р†Р В°РЎР‚Р С‘Р В°Р Р…РЎвЂљРЎвЂ№ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°
+    // Скрываем варианты выбора
     document.getElementById('choiceOptions').style.display = 'none';
     
-    // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљ
+    // Показываем результат
     document.getElementById('choiceResponse').style.display = 'block';
     document.getElementById('responseText').textContent = responseText;
 }
 
-// Р С›РЎвЂљР С”РЎР‚РЎвЂ№РЎвЂљРЎРЉ Р Р†РЎвЂ№Р В±Р С•РЎР‚РЎвЂ№ Р С‘Р В· Р С‘РЎРѓРЎвЂљР С•РЎР‚Р С‘Р С‘ Р С—Р С•Р ВµР В·Р Т‘Р С•Р С”
+// Открыть выборы из истории поездок
 async function openChoiceHistory(addressId, description, visitedLocationId) {
     try {
         const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
@@ -802,7 +802,7 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
             return;
         }
         
-        // Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЏР ВµР С, Р ВµРЎРѓРЎвЂљРЎРЉ Р В»Р С‘ РЎС“Р В¶Р Вµ РЎРѓР Т‘Р ВµР В»Р В°Р Р…Р Р…РЎвЂ№Р в„– Р Р†РЎвЂ№Р В±Р С•РЎР‚
+        // Проверяем, есть ли уже сделанные выборы
         const token = localStorage.getItem('token');
         const choiceResponse = await fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${addressId}/choice`, {
             headers: {
@@ -814,13 +814,13 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
             const choiceData = await choiceResponse.json();
             
             if (choiceData.choice) {
-                // Р СџР С•Р С”Р В°Р В·РЎвЂ№Р Р†Р В°Р ВµР С РЎС“Р В¶Р Вµ РЎРѓР Т‘Р ВµР В»Р В°Р Р…Р Р…РЎвЂ№Р в„– Р Р†РЎвЂ№Р В±Р С•РЎР‚
+                // Показываем уже сделанные выборы
                 showExistingChoice(choiceData.choice, description);
                 return;
             }
         }
         
-        // Р вЂўРЎРѓР В»Р С‘ Р Р†РЎвЂ№Р В±Р С•РЎР‚ Р Р…Р Вµ Р В±РЎвЂ№Р В» РЎРѓР Т‘Р ВµР В»Р В°Р Р…, Р С—Р С•Р С”Р В°Р В·РЎвЂ№Р Р†Р В°Р ВµР С Р Т‘Р С•РЎРѓРЎвЂљРЎС“Р С—Р Р…РЎвЂ№Р Вµ Р Р†Р В°РЎР‚Р С‘Р В°Р Р…РЎвЂљРЎвЂ№
+        // Если выбор не был сделан, показываем доступные варианты
         const response = await fetch(`${API_BASE}/choices/game/scenarios/${scenarioId}/addresses/${addressId}/choices`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -836,49 +836,48 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
                 currentScenarioId = scenarioId;
                 showInteractiveChoiceModal(data.choices, description);
             } else {
-                alert('Р вЂќР В»РЎРЏ РЎРЊРЎвЂљР С•Р в„– Р В»Р С•Р С”Р В°РЎвЂ Р С‘Р С‘ Р Р…Р ВµРЎвЂљ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р В°Р С”РЎвЂљР С‘Р Р†Р Р…РЎвЂ№РЎвЂ¦ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р С•Р Р†');
+                alert('Для этой локации нет интерактивных выборов');
             }
         } else {
-            alert('Р СњР Вµ РЎС“Р Т‘Р В°Р В»Р С•РЎРѓРЎРЉ Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С‘РЎвЂљРЎРЉ Р Р†Р В°РЎР‚Р С‘Р В°Р Р…РЎвЂљРЎвЂ№ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°');
+            alert('Не удалось загрузить варианты выбора');
         }
         
     } catch (error) {
         console.error('Error opening choice history:', error);
-        alert('Р СџРЎР‚Р С•Р С‘Р В·Р С•РЎв‚¬Р В»Р В° Р С•РЎв‚¬Р С‘Р В±Р С”Р В° Р С—РЎР‚Р С‘ Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р Вµ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р С•Р Р†');
+        alert('Произошла ошибка при загрузке выборов');
     }
 }
 
-// Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ РЎС“Р В¶Р Вµ РЎРѓР Т‘Р ВµР В»Р В°Р Р…Р Р…РЎвЂ№Р в„– Р Р†РЎвЂ№Р В±Р С•РЎР‚
+// Показать уже сделанные выборы
 function showExistingChoice(choice, description) {
-    // Р С›Р В±Р Р…Р С•Р Р†Р С‘РЎвЂљРЎРЉ Р С•Р С—Р С‘РЎРѓР В°Р Р…Р С‘Р Вµ Р В°Р Т‘РЎР‚Р ВµРЎРѓР В°
-    document.getElementById('addressDescription').textContent = description || 'Р вЂєР С•Р С”Р В°РЎвЂ Р С‘РЎРЏ Р Р…Р В°Р в„–Р Т‘Р ВµР Р…Р В°';
+    // Обновляем описание адреса
+    document.getElementById('addressDescription').textContent = description || 'Локация найдена';
     
-    // Р РЋР С”РЎР‚РЎвЂ№РЎвЂљРЎРЉ Р Р†Р В°РЎР‚Р С‘Р В°Р Р…РЎвЂљРЎвЂ№ Р Р†РЎвЂ№Р В±Р С•РЎР‚Р В°
+    // Скрываем варианты выбора
     document.getElementById('choiceOptions').style.display = 'none';
     
-    // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ РЎР‚Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљ
+    // Показываем результат
     document.getElementById('choiceResponse').style.display = 'block';
     document.getElementById('responseText').innerHTML = `
-        <strong>Р вЂ™Р В°РЎв‚¬ Р Р†РЎвЂ№Р В±Р С•РЎР‚:</strong> ${choice.choice_text}<br>
-        <strong>Р В Р ВµР В·РЎС“Р В»РЎРЉРЎвЂљР В°РЎвЂљ:</strong> ${choice.response_text}
+        <strong>Ваш выбор:</strong> ${choice.choice_text}<br>
+        <strong>Результат:</strong> ${choice.response_text}
     `;
     
-    // Р СџР С•Р С”Р В°Р В·Р В°РЎвЂљРЎРЉ Р СР С•Р Т‘Р В°Р В»РЎРЉР Р…Р С•Р Вµ Р С•Р С”Р Р…Р С•
+    // Показываем модальное окно
     const modal = new bootstrap.Modal(document.getElementById('choiceModal'));
     modal.show();
 }
 
-// Р РЋР В±РЎР‚Р С•РЎРѓ Р СР С•Р Т‘Р В°Р В»РЎРЉР Р…Р С•Р С–Р С• Р С•Р С”Р Р…Р В° Р С—РЎР‚Р С‘ Р В·Р В°Р С”РЎР‚РЎвЂ№РЎвЂљР С‘Р С‘
+// Сброс модального окна при закрытии
 document.getElementById('choiceModal').addEventListener('hidden.bs.modal', function () {
-    // Р РЋР В±РЎР‚Р С•РЎРѓ РЎРѓР С•РЎРѓРЎвЂљР С•РЎРЏР Р…Р С‘РЎРЏ Р СР С•Р Т‘Р В°Р В»РЎРЉР Р…Р С•Р С–Р С• Р С•Р С”Р Р…Р В°
+    // Сброс состояния модального окна
     document.getElementById('choiceOptions').style.display = 'block';
     document.getElementById('choiceResponse').style.display = 'none';
     document.getElementById('choiceButtons').innerHTML = '';
     
-    // Р РЋР В±РЎР‚Р С•РЎРѓ Р С—Р ВµРЎР‚Р ВµР СР ВµР Р…Р Р…РЎвЂ№РЎвЂ¦
+    // Сброс переменных
     currentAddressId = null;
     currentVisitedLocationId = null;
     currentScenarioId = null;
 });
-
 
