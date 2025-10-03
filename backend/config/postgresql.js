@@ -97,6 +97,17 @@ const createTables = async () => {
     )
   `);
 
+  // Миграция: Добавляем колонку password в room_users, если её нет
+  await query(`
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'room_users' AND column_name = 'password') THEN
+            ALTER TABLE room_users ADD COLUMN password VARCHAR(255) NOT NULL DEFAULT '';
+        END IF;
+    END
+    $$;
+  `);
+
   // Visited locations table
   await query(`
     CREATE TABLE IF NOT EXISTS visited_locations (
