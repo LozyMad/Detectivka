@@ -673,9 +673,13 @@ async function checkForInteractiveChoices(addressId, description, visitedLocatio
         }
         
         const data = await response.json();
+        console.log('Choices data received:', data);
         
         if (data.choices && data.choices.length > 0) {
+            console.log('Showing choice modal with', data.choices.length, 'choices');
             showInteractiveChoiceModal(data.choices, description);
+        } else {
+            console.log('No choices available for this address');
         }
         
     } catch (error) {
@@ -685,11 +689,21 @@ async function checkForInteractiveChoices(addressId, description, visitedLocatio
 
 // Показать модальное окно с интерактивными выбором
 function showInteractiveChoiceModal(choices, description) {
+    console.log('showInteractiveChoiceModal called with:', { choices, description });
+    
     // Обновляем описание адреса
-    document.getElementById('addressDescription').textContent = description || 'Вы нашли интересное место...';
+    const addressDescElement = document.getElementById('addressDescription');
+    if (addressDescElement) {
+        addressDescElement.textContent = description || 'Вы нашли интересное место...';
+    }
     
     // Создаем кнопки выборов
     const choiceButtons = document.getElementById('choiceButtons');
+    if (!choiceButtons) {
+        console.error('choiceButtons element not found');
+        return;
+    }
+    
     choiceButtons.innerHTML = '';
     
     choices.forEach((choice, index) => {
@@ -725,11 +739,18 @@ function showInteractiveChoiceModal(choices, description) {
     });
     
     // Показываем модальное окно
-    const modal = new bootstrap.Modal(document.getElementById('choiceModal'), {
+    const modalElement = document.getElementById('choiceModal');
+    if (!modalElement) {
+        console.error('choiceModal element not found');
+        return;
+    }
+    
+    const modal = new bootstrap.Modal(modalElement, {
         backdrop: 'static',
         keyboard: false
     });
     modal.show();
+    console.log('Modal shown successfully');
 }
 
 // Сделать выбор игрока
@@ -880,4 +901,3 @@ document.getElementById('choiceModal').addEventListener('hidden.bs.modal', funct
     currentVisitedLocationId = null;
     currentScenarioId = null;
 });
-
