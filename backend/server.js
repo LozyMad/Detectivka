@@ -69,7 +69,15 @@ app.get('/admin', (req, res) => {
 
 
 // Initialize database and start server
-database.init().then(() => {
+database.init().then(async () => {
+  // Инициализируем варианты выбора
+  try {
+    const { initializeChoices } = require('./scripts/init_choices');
+    await initializeChoices();
+  } catch (error) {
+    console.error('Failed to initialize choices:', error);
+  }
+  
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
