@@ -77,8 +77,8 @@
 }
 
 .modal-content .btn-primary:hover {
-    background-color: var(--noir-copper) !important;
-    border-color: var(--noir-copper) !important;
+    background-color: #b8941f !important;
+    border-color: #b8941f !important;
     color: var(--noir-cream) !important;
 }
 
@@ -381,8 +381,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-primary:hover {
-    background: var(--noir-copper);
-    border-color: var(--noir-copper);
+    background: #b8941f;
+    border-color: #b8941f;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px var(--noir-shadow);
 }
