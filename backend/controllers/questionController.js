@@ -185,15 +185,24 @@ const getAnswersByRoom = async (req, res) => {
                 });
             }
             
-            // Получаем статистику поездок для пользователя
+            // Получаем статистику поездок для конкретного пользователя
             const VisitAttempt = require('../models/visitAttempt');
             let tripStats;
             try {
-                // Ищем поездки по room_id, так как user_id может быть разным
-                tripStats = await VisitAttempt.getStatsByRoom(room.id, room.scenario_id);
+                // Получаем статистику поездок для конкретного пользователя в комнате
+                tripStats = await VisitAttempt.getStatsByUser(roomUser.id, room.scenario_id, room.id);
             } catch (error) {
                 console.error('Error getting trip stats for user:', roomUser.id, error);
                 tripStats = { total_trips: 0, successful_trips: 0, failed_trips: 0 };
+            }
+            
+            // Получаем детальную информацию о поездках пользователя
+            let tripDetails = [];
+            try {
+                tripDetails = await VisitAttempt.getByUserAndScenario(roomUser.id, room.scenario_id, room.id);
+            } catch (error) {
+                console.error('Error getting trip details for user:', roomUser.id, error);
+                tripDetails = [];
             }
             
             answersByUser.push({
@@ -204,7 +213,16 @@ const getAnswersByRoom = async (req, res) => {
                     total_trips: tripStats?.total_trips || 0,
                     successful_trips: tripStats?.successful_trips || 0,
                     failed_trips: tripStats?.failed_trips || 0
-                }
+                },
+                trip_details: tripDetails.map(trip => ({
+                    id: trip.id,
+                    district: trip.district,
+                    house_number: trip.house_number,
+                    found: trip.found,
+                    address_description: trip.address_description,
+                    attempted_at: trip.attempted_at,
+                    visited_location_id: trip.visited_location_id
+                }))
             });
         }
 

@@ -69,6 +69,51 @@ class VisitAttempt {
     static async getStatsByScenario(scenarioId) {
         return await VisitAttempt.getStats(scenarioId);
     }
+
+    // Статистика поездок пользователя
+    static async getStatsByUser(userId, scenarioId, roomId = null) {
+        try {
+            let sql = `SELECT 
+                COUNT(*) as total_trips,
+                COUNT(CASE WHEN found = true THEN 1 END) as successful_trips,
+                COUNT(CASE WHEN found = false THEN 1 END) as failed_trips
+              FROM visit_attempts 
+              WHERE user_id = $1 AND scenario_id = $2`;
+            
+            let params = [userId, scenarioId];
+            
+            if (roomId !== null) {
+                sql += ' AND room_id = $3';
+                params.push(roomId);
+            }
+            
+            const result = await query(sql, params);
+            return result.rows[0] || { total_trips: 0, successful_trips: 0, failed_trips: 0 };
+        } catch (error) {
+            console.error('Error in getStatsByUser:', error);
+            return { total_trips: 0, successful_trips: 0, failed_trips: 0 };
+        }
+    }
+
+    // Статистика поездок по комнате (для всех пользователей в комнате)
+    static async getStatsByRoom(roomId, scenarioId) {
+        try {
+            const result = await query(
+                `SELECT 
+                    COUNT(*) as total_trips,
+                    COUNT(CASE WHEN found = true THEN 1 END) as successful_trips,
+                    COUNT(CASE WHEN found = false THEN 1 END) as failed_trips
+                  FROM visit_attempts 
+                  WHERE room_id = $1 AND scenario_id = $2`,
+                [roomId, scenarioId]
+            );
+            
+            return result.rows[0] || { total_trips: 0, successful_trips: 0, failed_trips: 0 };
+        } catch (error) {
+            console.error('Error in getStatsByRoom:', error);
+            return { total_trips: 0, successful_trips: 0, failed_trips: 0 };
+        }
+    }
 }
 
 module.exports = VisitAttempt;

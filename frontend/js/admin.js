@@ -3149,6 +3149,57 @@ function displayRoomAnswers(data) {
             html += '</div>';
         }
         
+        // Добавляем детальную информацию о поездках
+        if (user.trip_details && user.trip_details.length > 0) {
+            html += `
+                <div class="mt-3">
+                    <h6 class="text-primary">
+                        <i class="fas fa-car me-2"></i>Детали поездок:
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Время</th>
+                                    <th>Адрес</th>
+                                    <th>Результат</th>
+                                    <th>Описание</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            user.trip_details.forEach(trip => {
+                const resultClass = trip.found ? 'text-success' : 'text-danger';
+                const resultIcon = trip.found ? 'fa-check-circle' : 'fa-times-circle';
+                const resultText = trip.found ? 'Найдено' : 'Не найдено';
+                
+                html += `
+                    <tr>
+                        <td>${new Date(trip.attempted_at).toLocaleString('ru-RU')}</td>
+                        <td><span class="badge bg-primary">${trip.district}</span> ${trip.house_number}</td>
+                        <td><i class="fas ${resultIcon} ${resultClass}"></i> ${resultText}</td>
+                        <td>${trip.address_description || '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="mt-3">
+                    <p class="text-muted">
+                        <i class="fas fa-car me-2"></i>Поездок пока не было
+                    </p>
+                </div>
+            `;
+        }
+        
         html += `
                 </div>
             </div>
