@@ -4,6 +4,8 @@ let roomState = null;
 let roomTimerInterval = null;
 let tripCount = 0;
 let tripHistory = [];
+let cachedScenarioName = null; // Кэш для имени сценария
+let lastScenarioCheck = 0; // Время последней проверки сценария
 
 // Initialize game
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,6 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshRoomState();
         }
     }, 30000);
+    
+    // Принудительно обновляем имя сценария каждые 10 минут (на случай изменений админом)
+    setInterval(() => {
+        if (localStorage.getItem('roomUser')) {
+            lastScenarioCheck = 0; // Сбрасываем кэш для принудительного обновления
+        }
+    }, 10 * 60 * 1000); // 10 минут
 });
 
 function checkAuth() {
@@ -368,6 +377,8 @@ async function loadScenarioInfo() {
                 
                 if (scenarioName) {
                     document.getElementById('scenarioTitle').textContent = scenarioName;
+                    cachedScenarioName = scenarioName;
+                    lastScenarioCheck = Date.now();
                     console.log('Scenario name loaded:', scenarioName);
                 } else {
                     document.getElementById('scenarioTitle').textContent = 'Сценарий не определен';
@@ -384,6 +395,8 @@ async function loadScenarioInfo() {
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('scenarioTitle').textContent = data.scenario.name;
+                cachedScenarioName = data.scenario.name;
+                lastScenarioCheck = Date.now();
             } else {
                 document.getElementById('scenarioTitle').textContent = 'Нет активного сценария';
             }
@@ -419,8 +432,11 @@ async function refreshRoomState() {
         if (!res.ok) return;
         roomState = await res.json();
         
-        // Обновляем название сценария при каждом обновлении состояния комнаты
-        if (roomState) {
+        // Проверяем имя сценария только если прошло больше 5 минут с последней проверки
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000; // 5 минут в миллисекундах
+        
+        if (roomState && (now - lastScenarioCheck > fiveMinutes || !cachedScenarioName)) {
             let scenarioName = null;
             if (roomState.scenario_name) {
                 scenarioName = roomState.scenario_name;
@@ -428,9 +444,18 @@ async function refreshRoomState() {
                 scenarioName = roomState.room.scenario_name;
             }
             
-            if (scenarioName) {
+            // Обновляем только если имя сценария изменилось
+            if (scenarioName && scenarioName !== cachedScenarioName) {
                 document.getElementById('scenarioTitle').textContent = scenarioName;
+                cachedScenarioName = scenarioName;
+                lastScenarioCheck = now;
                 console.log('Scenario name updated from room state:', scenarioName);
+            } else if (!cachedScenarioName && scenarioName) {
+                // Первоначальная загрузка
+                document.getElementById('scenarioTitle').textContent = scenarioName;
+                cachedScenarioName = scenarioName;
+                lastScenarioCheck = now;
+                console.log('Scenario name initially loaded:', scenarioName);
             }
         }
     } catch (e) {
