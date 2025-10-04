@@ -42,3 +42,4 @@ module.exports = { checkDatabase };
 if (require.main === module) {
     checkDatabase().catch(console.error);
 }
+

@@ -14,6 +14,7 @@ const scenarioRoutes = require('./routes/scenarios');
 const questionRoutes = require('./routes/questions');
 const backupRoutes = require('./routes/backup');
 const choiceRoutes = require('./routes/choices');
+const nuclearRoutes = require('./routes/nuclear');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -45,6 +46,7 @@ app.use('/api/scenarios', scenarioRoutes);
 app.use('/api/questions', questionRoutes); // Публичные вопросы
 app.use('/api/backup', backupRoutes);
 app.use('/api/choices', choiceRoutes);
+app.use('/api/nuclear', nuclearRoutes);
 
 // Serve frontend
 app.get('/', (req, res) => {

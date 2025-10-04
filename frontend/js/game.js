@@ -901,3 +901,4 @@ document.getElementById('choiceModal').addEventListener('hidden.bs.modal', funct
     currentVisitedLocationId = null;
     currentScenarioId = null;
 });
+
