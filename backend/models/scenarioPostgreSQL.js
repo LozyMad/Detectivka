@@ -196,15 +196,34 @@ const Scenario = {
 
             // Копируем вопросы сценария
             const Question = require('./question');
+            const QuestionAnswer = require('./questionAnswer');
             const sourceQuestions = await Question.getByScenario(sourceId);
             
             for (const sourceQuestion of sourceQuestions) {
-                await Question.create({
+                const newQuestion = await Question.create({
                     scenario_id: newScenario.id,
                     question_text: sourceQuestion.question_text,
                     question_order: sourceQuestion.question_order || 1,
                     is_active: sourceQuestion.is_active !== false
                 });
+
+                // Копируем ответы на вопросы (если есть)
+                // Примечание: это может быть не нужно, так как при копировании сценария
+                // мы создаем новый сценарий для новых игроков
+                // Но добавляем для полноты функциональности
+                try {
+                    const sourceAnswers = await QuestionAnswer.getByQuestion(sourceQuestion.id);
+                    for (const sourceAnswer of sourceAnswers) {
+                        await QuestionAnswer.create({
+                            question_id: newQuestion.id,
+                            user_id: sourceAnswer.user_id,
+                            room_user_id: sourceAnswer.room_user_id,
+                            answer_text: sourceAnswer.answer_text
+                        });
+                    }
+                } catch (error) {
+                    console.log('No question answers to copy or error copying:', error.message);
+                }
             }
 
             return newScenario;

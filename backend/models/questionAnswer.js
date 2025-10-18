@@ -49,6 +49,16 @@ if (DB_TYPE === 'postgresql') {
         });
     },
 
+    getByQuestion: (question_id) => {
+        return new Promise((resolve, reject) => {
+            db.all(
+                `SELECT * FROM question_answers WHERE question_id = ?`,
+                [question_id],
+                (err, rows) => (err ? reject(err) : resolve(rows))
+            );
+        });
+    },
+
     update: (id, { answer_text }) => {
         return new Promise((resolve, reject) => {
             db.run(

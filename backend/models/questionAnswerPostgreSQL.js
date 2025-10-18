@@ -49,6 +49,15 @@ const QuestionAnswer = {
         return result.rows;
     },
 
+    getByQuestion: async (question_id) => {
+        const result = await query(
+            `SELECT * FROM question_answers WHERE question_id = $1`,
+            [question_id]
+        );
+        
+        return result.rows;
+    },
+
     update: async (id, { answer_text }) => {
         const result = await query(
             `UPDATE question_answers SET answer_text = $1 WHERE id = $2 RETURNING *`,
