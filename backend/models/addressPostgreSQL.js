@@ -18,11 +18,11 @@ const Address = {
         
         const address = result.rows[0];
         
-        // Также создаем в главной таблице для совместимости
+        // Также создаем в главной таблице для совместимости с тем же ID
         await query(
-            `INSERT INTO addresses (scenario_id, district, house_number, description) 
-             VALUES ($1, $2, $3, $4)`,
-            [scenario_id, district, house_number, description]
+            `INSERT INTO addresses (id, scenario_id, district, house_number, description) 
+             VALUES ($1, $2, $3, $4, $5)`,
+            [address.id, scenario_id, district, house_number, description]
         );
         
         return { ...address, scenario_id };
@@ -193,8 +193,11 @@ const Address = {
 
     // Алиас для совместимости
     findByScenario: async (scenarioId) => {
-        // Читаем из главной таблицы addresses
-        const result = await query('SELECT * FROM addresses WHERE scenario_id = $1 ORDER BY id', [scenarioId]);
+        // Читаем из схемы сценария, а не из основной таблицы
+        const result = await queryScenario(
+            scenarioId,
+            `SELECT * FROM scenario_${scenarioId}.addresses ORDER BY id`
+        );
         return result.rows;
     }
 };
