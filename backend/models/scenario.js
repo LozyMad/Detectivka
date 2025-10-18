@@ -159,6 +159,8 @@ if (DB_TYPE === 'postgresql') {
 
                 // Копируем адреса и их выборы
                 for (const sourceAddress of sourceAddresses) {
+                    console.log(`[COPY] Processing source address: ID ${sourceAddress.id}, ${sourceAddress.district}-${sourceAddress.house_number}`);
+                    
                     // Создаем новый адрес
                     const newAddress = await Address.create({
                         scenario_id: newScenario.id,
@@ -166,6 +168,8 @@ if (DB_TYPE === 'postgresql') {
                         house_number: sourceAddress.house_number,
                         description: sourceAddress.description
                     });
+                    
+                    console.log(`[COPY] Created new address: ID ${newAddress.id}, ${newAddress.district}-${newAddress.house_number}`);
 
                     // Получаем выборы для исходного адреса
                     const sourceChoices = await Address.getChoices(sourceId, sourceAddress.id);
