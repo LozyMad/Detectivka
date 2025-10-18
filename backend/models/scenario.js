@@ -167,6 +167,17 @@ if (DB_TYPE === 'postgresql') {
                     }
                 }
 
+                // Копируем вопросы сценария
+                const Question = require('./question');
+                const sourceQuestions = await Question.getByScenario(sourceId);
+                
+                for (const sourceQuestion of sourceQuestions) {
+                    await Question.create({
+                        scenario_id: newScenario.id,
+                        question_text: sourceQuestion.question_text
+                    });
+                }
+
                 resolve(newScenario);
             } catch (error) {
                 reject(error);

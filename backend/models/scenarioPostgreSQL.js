@@ -194,6 +194,19 @@ const Scenario = {
                 }
             }
 
+            // Копируем вопросы сценария
+            const Question = require('./question');
+            const sourceQuestions = await Question.getByScenario(sourceId);
+            
+            for (const sourceQuestion of sourceQuestions) {
+                await Question.create({
+                    scenario_id: newScenario.id,
+                    question_text: sourceQuestion.question_text,
+                    question_order: sourceQuestion.question_order || 1,
+                    is_active: sourceQuestion.is_active !== false
+                });
+            }
+
             return newScenario;
         } catch (error) {
             throw error;
