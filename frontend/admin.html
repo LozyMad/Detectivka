@@ -536,6 +536,33 @@
                         </form>
                     </div>
 
+                    <!-- Copy Scenario Form -->
+                    <div class="form-section">
+                        <h5 class="mb-3">Копировать сценарий</h5>
+                        <form id="copyScenarioForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="sourceScenarioSelect" class="form-label">Исходный сценарий</label>
+                                        <select class="form-select" id="sourceScenarioSelect" required>
+                                            <option value="">Выберите сценарий для копирования</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="newScenarioName" class="form-label">Название нового сценария</label>
+                                        <input type="text" class="form-control" id="newScenarioName" required placeholder="Введите название для копии">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-copy me-1"></i>Копировать сценарий
+                            </button>
+                        </form>
+                    </div>
+
                     <!-- Scenarios Table -->
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">

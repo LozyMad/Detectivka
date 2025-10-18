@@ -147,6 +147,57 @@ const Scenario = {
     // Алиас для совместимости
     getAvailableForAdmin: async (adminId, adminLevel) => {
         return await Scenario.getByAdmin(adminId, adminLevel);
+    },
+
+    // Копировать сценарий со всеми адресами и выборами
+    copy: async (sourceId, newName, createdBy) => {
+        try {
+            // Получаем исходный сценарий
+            const sourceScenario = await Scenario.getById(sourceId);
+            if (!sourceScenario) {
+                throw new Error('Source scenario not found');
+            }
+
+            // Создаем новый сценарий
+            const newScenario = await Scenario.create({
+                name: newName,
+                description: sourceScenario.description,
+                is_active: false, // Копия всегда неактивна
+                created_by: createdBy
+            });
+
+            // Получаем все адреса из исходного сценария
+            const Address = require('./address');
+            const sourceAddresses = await Address.findByScenario(sourceId);
+
+            // Копируем адреса и их выборы
+            for (const sourceAddress of sourceAddresses) {
+                // Создаем новый адрес
+                const newAddress = await Address.create({
+                    scenario_id: newScenario.id,
+                    district: sourceAddress.district,
+                    house_number: sourceAddress.house_number,
+                    description: sourceAddress.description
+                });
+
+                // Получаем выборы для исходного адреса
+                const sourceChoices = await Address.getChoices(sourceId, sourceAddress.id);
+
+                // Копируем выборы
+                for (const sourceChoice of sourceChoices) {
+                    await Address.createChoice(newScenario.id, {
+                        address_id: newAddress.id,
+                        choice_text: sourceChoice.choice_text,
+                        response_text: sourceChoice.response_text,
+                        choice_order: sourceChoice.choice_order
+                    });
+                }
+            }
+
+            return newScenario;
+        } catch (error) {
+            throw error;
+        }
     }
 };
 

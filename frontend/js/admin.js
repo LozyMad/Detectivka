@@ -163,6 +163,7 @@ function setupEventListeners() {
     // Forms
     document.getElementById('addUserForm').addEventListener('submit', handleAddUser);
     document.getElementById('addScenarioForm').addEventListener('submit', handleAddScenario);
+    document.getElementById('copyScenarioForm').addEventListener('submit', handleCopyScenario);
     document.getElementById('addAddressForm').addEventListener('submit', handleAddAddress);
     
     // Permissions form
@@ -770,6 +771,48 @@ async function handleAddScenario(e) {
         }
     } catch (error) {
         console.error('Error creating scenario:', error);
+        showMessage('Ошибка соединения', 'danger');
+    }
+}
+
+async function handleCopyScenario(e) {
+    e.preventDefault();
+    
+    const sourceId = document.getElementById('sourceScenarioSelect').value;
+    const newName = document.getElementById('newScenarioName').value;
+    
+    if (!sourceId || !newName) {
+        showMessage('Пожалуйста, выберите исходный сценарий и введите название для копии', 'warning');
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('token');
+        
+        const response = await fetch(`${API_BASE}/admin/scenarios/copy`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                source_id: parseInt(sourceId), 
+                new_name: newName 
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage(`Сценарий "${newName}" успешно скопирован со всеми адресами и выборами`, 'success');
+            e.target.reset();
+            await loadScenarios();
+            populateScenarioDropdowns();
+        } else {
+            showMessage(data.error || 'Ошибка копирования сценария', 'danger');
+        }
+    } catch (error) {
+        console.error('Error copying scenario:', error);
         showMessage('Ошибка соединения', 'danger');
     }
 }
@@ -1524,6 +1567,7 @@ async function nuclearReset() {
 function populateScenarioDropdowns() {
     const addDropdown = document.getElementById('addressScenario');
     const viewDropdown = document.getElementById('viewAddressScenario');
+    const copyDropdown = document.getElementById('sourceScenarioSelect');
     
     const options = scenarios.map(scenario => 
         `<option value="${scenario.id}">${scenario.name}</option>`
@@ -1531,6 +1575,10 @@ function populateScenarioDropdowns() {
     
     addDropdown.innerHTML = '<option value="">Выберите сценарий...</option>' + options;
     viewDropdown.innerHTML = '<option value="">Выберите сценарий для просмотра...</option>' + options;
+    
+    if (copyDropdown) {
+        copyDropdown.innerHTML = '<option value="">Выберите сценарий для копирования</option>' + options;
+    }
 
     // Populate statistics select as well
     ensureStatsScenarioOptions();

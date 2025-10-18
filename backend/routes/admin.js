@@ -7,6 +7,7 @@ const {
   getScenarios,
   updateScenario,
   deleteScenario,
+  copyScenario,
   createAddress,
   getAddresses,
   deleteAddress,
@@ -26,6 +27,7 @@ router.delete('/users/:user_id', deleteUser);
 
 // Scenario routes
 router.post('/scenarios', createScenario);
+router.post('/scenarios/copy', copyScenario);
 router.get('/scenarios', getScenarios);
 router.put('/scenarios/:id', updateScenario);
 router.delete('/scenarios/:id', deleteScenario);

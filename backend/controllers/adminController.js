@@ -207,6 +207,49 @@ const deleteScenario = async (req, res) => {
   }
 };
 
+const copyScenario = async (req, res) => {
+  try {
+    const { source_id, new_name } = req.body;
+
+    if (!source_id || !new_name) {
+      return res.status(400).json({ error: 'Source scenario ID and new name are required' });
+    }
+
+    // Проверяем права доступа к исходному сценарию
+    if (req.user.admin_level !== 'super_admin') {
+      const AdminPermission = require('../models/adminPermission');
+      const hasPermission = await AdminPermission.hasPermission(req.user.id, source_id);
+      
+      if (!hasPermission) {
+        return res.status(403).json({ error: 'Access denied to source scenario' });
+      }
+    }
+
+    // Копируем сценарий
+    const newScenario = await Scenario.copy(source_id, new_name, req.user.id);
+    
+    // Автоматический экспорт сценариев после копирования
+    try {
+      const backupController = require('./backupController');
+      await backupController.exportScenarios({}, { 
+        json: () => {},
+        status: () => ({ json: () => {} })
+      });
+    } catch (exportError) {
+      console.error('Auto-export error after copy:', exportError);
+      // Не прерываем копирование из-за ошибки экспорта
+    }
+
+    res.status(201).json({ 
+      message: 'Scenario copied successfully',
+      scenario: newScenario 
+    });
+  } catch (error) {
+    console.error('Copy scenario error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Address management
 const createAddress = async (req, res) => {
   try {
@@ -268,6 +311,7 @@ module.exports = {
   getScenarios,
   updateScenario,
   deleteScenario,
+  copyScenario,
   createAddress,
   getAddresses,
   deleteAddress,
