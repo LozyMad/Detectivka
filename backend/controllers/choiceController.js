@@ -120,14 +120,7 @@ const getGameChoices = async (req, res) => {
         
         console.log(`[DEBUG] getGameChoices called for scenario ${scenario_id}, address ${address_id}`);
         
-        // РАДИКАЛЬНАЯ инициализация для ВСЕХ сценариев
-        console.log(`[DEBUG] RADICAL: Forcing initialization for scenario ${scenario_id}, address ${address_id}`);
-        try {
-            const { initializeAllChoices } = require('../scripts/init_all_choices');
-            await initializeAllChoices();
-        } catch (initError) {
-            console.error('Failed to initialize all choices:', initError);
-        }
+        console.log(`[DEBUG] Getting choices for scenario ${scenario_id}, address ${address_id}`);
         
         const choices = await Address.getChoices(scenario_id, address_id);
         console.log(`[DEBUG] Raw choices from DB:`, choices);

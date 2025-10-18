@@ -141,14 +141,7 @@ const Address = {
     },
 
     getChoices: async (scenario_id, address_id) => {
-        // РАДИКАЛЬНАЯ инициализация для ВСЕХ сценариев
-        console.log(`[DEBUG] AddressPostgreSQL.getChoices: RADICAL initialization for scenario ${scenario_id}, address ${address_id}`);
-        try {
-            const { initializeAllChoices } = require('../scripts/init_all_choices');
-            await initializeAllChoices();
-        } catch (initError) {
-            console.error('Failed to initialize all choices in AddressPostgreSQL.getChoices:', initError);
-        }
+        console.log(`[DEBUG] AddressPostgreSQL.getChoices: Getting choices for scenario ${scenario_id}, address ${address_id}`);
         
         const result = await queryScenario(
             scenario_id,
