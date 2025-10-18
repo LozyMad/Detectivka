@@ -8,7 +8,7 @@ const Address = {
         // Убеждаемся что таблицы созданы
         await ensureTables(scenario_id);
         
-        // Создаем в сценарий-специфичной таблице
+        // Создаем только в сценарий-специфичной таблице
         const result = await queryScenario(
             scenario_id,
             `INSERT INTO scenario_${scenario_id}.addresses (district, house_number, description) 
@@ -17,13 +17,6 @@ const Address = {
         );
         
         const address = result.rows[0];
-        
-        // Также создаем в главной таблице для совместимости с тем же ID
-        await query(
-            `INSERT INTO addresses (id, scenario_id, district, house_number, description) 
-             VALUES ($1, $2, $3, $4, $5)`,
-            [address.id, scenario_id, district, house_number, description]
-        );
         
         return { ...address, scenario_id };
     },
@@ -193,7 +186,10 @@ const Address = {
 
     // Алиас для совместимости
     findByScenario: async (scenarioId) => {
-        // Читаем из схемы сценария, а не из основной таблицы
+        // Убеждаемся что таблицы созданы
+        await ensureTables(scenarioId);
+        
+        // Читаем из схемы сценария
         const result = await queryScenario(
             scenarioId,
             `SELECT * FROM scenario_${scenarioId}.addresses ORDER BY id`
