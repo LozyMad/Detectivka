@@ -18,9 +18,23 @@ if (DB_TYPE === 'postgresql') {
             db.run(
                 `INSERT INTO scenarios (name, description, is_active, created_by) VALUES (?, ?, ?, ?)`,
                 [name, description, is_active, created_by],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve({ id: this.lastID, name, description, is_active, created_by });
+                async function(err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        const scenario = { id: this.lastID, name, description, is_active, created_by };
+                        
+                        // Создаем таблицы для нового сценария
+                        try {
+                            const { getScenarioDb } = require('../config/scenarioDatabase');
+                            getScenarioDb(scenario.id); // Это автоматически создаст таблицы
+                            console.log(`Tables created for new scenario ${scenario.id}`);
+                        } catch (tableError) {
+                            console.error('Error creating tables for scenario:', tableError);
+                        }
+                        
+                        resolve(scenario);
+                    }
                 }
             );
         });
@@ -155,9 +169,11 @@ if (DB_TYPE === 'postgresql') {
 
                     // Получаем выборы для исходного адреса
                     const sourceChoices = await Address.getChoices(sourceId, sourceAddress.id);
+                    console.log(`[COPY] Found ${sourceChoices.length} choices for address ${sourceAddress.id} in scenario ${sourceId}`);
 
                     // Копируем выборы
                     for (const sourceChoice of sourceChoices) {
+                        console.log(`[COPY] Copying choice: "${sourceChoice.choice_text}" to new address ${newAddress.id}`);
                         await Address.createChoice(newScenario.id, {
                             address_id: newAddress.id,
                             choice_text: sourceChoice.choice_text,

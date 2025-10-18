@@ -182,9 +182,11 @@ const Scenario = {
 
                 // Получаем выборы для исходного адреса
                 const sourceChoices = await Address.getChoices(sourceId, sourceAddress.id);
+                console.log(`[COPY] Found ${sourceChoices.length} choices for address ${sourceAddress.id} in scenario ${sourceId}`);
 
                 // Копируем выборы
                 for (const sourceChoice of sourceChoices) {
+                    console.log(`[COPY] Copying choice: "${sourceChoice.choice_text}" to new address ${newAddress.id}`);
                     await Address.createChoice(newScenario.id, {
                         address_id: newAddress.id,
                         choice_text: sourceChoice.choice_text,
