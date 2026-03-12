@@ -3,7 +3,15 @@ const { Pool } = require('pg');
 // Конфигурация подключения к PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/detectivka',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  allowExitOnIdle: false
+});
+
+// Ошибки пула (обрыв соединения и т.д.) — логируем, не даём процессу упасть
+pool.on('error', (err) => {
+  console.error('[PostgreSQL pool error]', err.message);
 });
 
 // Функция для выполнения запросов

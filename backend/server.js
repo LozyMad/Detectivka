@@ -4,6 +4,19 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const database = require('./config/database');
 
+// --- Глобальная обработка ошибок (чтобы процесс не падал молча) ---
+process.on('uncaughtException', (err) => {
+  console.error('[CRASH] uncaughtException:', err);
+  console.error(err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRASH] unhandledRejection at:', promise);
+  console.error('Reason:', reason);
+  process.exit(1);
+});
+
 const authRoutes = require('./routes/auth');
 const gameRoutes = require('./routes/game');
 const adminRoutes = require('./routes/admin');
@@ -22,6 +35,16 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+
+// Логирование запросов (для диагностики)
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    console.log(`${new Date().toISOString()} ${req.method} ${req.originalUrl} ${res.statusCode} ${ms}ms`);
+  });
+  next();
+});
 
 // Serve static files from frontend directory with proper MIME types
 app.use(express.static(path.join(__dirname, '../frontend'), {
@@ -69,6 +92,14 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin.html'));
 });
 
+// Централизованная обработка ошибок маршрутов (любая ошибка из роутов попадёт сюда)
+app.use((err, req, res, next) => {
+  console.error('[Express error]', err);
+  console.error(err.stack);
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Initialize database and start server
 database.init().then(async () => {
@@ -80,8 +111,8 @@ database.init().then(async () => {
     console.error('Failed to initialize all choices:', error);
   }
   
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on http://0.0.0.0:${PORT}`);
   });
 }).catch(err => {
   console.error('Failed to initialize database:', err);

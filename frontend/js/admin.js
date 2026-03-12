@@ -5,6 +5,22 @@ let roomsCache = null;
 let roomsCacheTime = 0;
 const CACHE_DURATION = 5000; // 5 секунд кэш
 
+/** Запрос с токеном; при 401/403 — выход и редирект на страницу входа */
+async function authFetch(url, options = {}) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(url, {
+        ...options,
+        headers: { ...(options.headers || {}), 'Authorization': `Bearer ${token}` }
+    });
+    if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/admin-login?session=expired';
+        throw new Error('Session expired');
+    }
+    return res;
+}
+
 // Initialize admin panel
 document.addEventListener('DOMContentLoaded', () => {
     checkAdminAuth();
@@ -330,12 +346,7 @@ async function loadInitialData() {
 // Users management
 async function loadUsers() {
     try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/admin/users`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        const response = await authFetch(`${API_BASE}/admin/users`);
 
         if (!response.ok) {
             throw new Error('Failed to load users');
@@ -344,6 +355,7 @@ async function loadUsers() {
         const data = await response.json();
         displayUsers(data.users);
     } catch (error) {
+        if (error.message === 'Session expired') return;
         console.error('Error loading users:', error);
         showMessage('Ошибка загрузки пользователей', 'danger');
     }
@@ -610,12 +622,7 @@ async function nuclearReset() {
 // Scenarios management
 async function loadScenarios() {
     try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/admin/scenarios`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        const response = await authFetch(`${API_BASE}/admin/scenarios`);
 
         if (!response.ok) {
             throw new Error('Failed to load scenarios');
@@ -625,6 +632,7 @@ async function loadScenarios() {
         scenarios = data.scenarios;
         displayScenarios(scenarios);
     } catch (error) {
+        if (error.message === 'Session expired') return;
         console.error('Error loading scenarios:', error);
         showMessage('Ошибка загрузки сценариев', 'danger');
     }
@@ -1804,18 +1812,18 @@ async function loadRooms(forceRefresh = false) {
             return;
         }
         
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/rooms`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await authFetch(`${API_BASE}/rooms`);
         if (!res.ok) throw new Error('Failed to load rooms');
         const data = await res.json();
-        
+
         // Обновляем кэш
         roomsCache = data.rooms || [];
         roomsCacheTime = now;
-        
+
         displayRooms(roomsCache);
         populateRoomsForUsers(roomsCache);
     } catch (err) {
+        if (err.message === 'Session expired') return;
         console.error(err);
         // Показываем пустой список вместо ошибки для лучшего UX
         displayRooms([]);

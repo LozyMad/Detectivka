@@ -3,6 +3,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminLoginForm = document.getElementById('adminLoginForm');
     const messageDiv = document.getElementById('message');
 
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('session') === 'expired') {
+        messageDiv.innerHTML = '<div class="alert alert-warning alert-dismissible fade show" role="alert">Сессия истекла. Войдите снова.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        history.replaceState({}, '', '/admin-login');
+    }
+
     adminLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
