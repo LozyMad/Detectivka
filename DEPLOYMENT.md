@@ -5,7 +5,7 @@
 1. **Node.js** (версия 16 или выше)
 2. **Git** установлен и настроен
 3. **GitHub аккаунт** с созданным репозиторием
-4. **Платформа для деплоя** (Railway, Render, Heroku, или другая)
+4. **Платформа для деплоя** (Timeweb, Render, Heroku, или другая)
 
 ## 🔧 Локальная настройка
 
@@ -50,24 +50,12 @@ git push -u origin main
 
 ## 🚀 Деплой на платформы
 
-### Railway (Рекомендуется)
+### Timeweb
 
-1. **Подключение к Railway:**
-   - Перейдите на [railway.app](https://railway.app)
-   - Войдите через GitHub
-   - Нажмите "New Project" → "Deploy from GitHub repo"
-   - Выберите ваш репозиторий
-
-2. **Настройка переменных окружения:**
-   ```
-   NODE_ENV=production
-   PORT=3000
-   ```
-
-3. **Настройка команды запуска:**
-   - В настройках проекта установите:
-   - **Build Command:** `cd backend && npm install`
-   - **Start Command:** `cd backend && npm start`
+1. Создайте приложение/сервис в панели Timeweb
+2. Подключите репозиторий (Git) и настройте автодеплой при push
+3. Задайте переменные окружения (NODE_ENV, PORT, JWT_SECRET, DB_TYPE, DATABASE_URL при использовании PostgreSQL)
+4. Команда запуска: `npm start` (или через Procfile: `web: npm start`)
 
 ### Render
 
@@ -127,8 +115,7 @@ detectivka-game/
 │   ├── css/               # Стили
 │   └── js/                # JavaScript файлы
 ├── package.json           # Корневой package.json
-├── Procfile              # Для Heroku
-├── railway.json          # Для Railway
+├── Procfile              # Для Heroku и совместимых платформ
 └── README.md             # Документация
 ```
 
@@ -137,20 +124,6 @@ detectivka-game/
 ### Procfile (для Heroku)
 ```
 web: cd backend && npm start
-```
-
-### railway.json (для Railway)
-```json
-{
-  "build": {
-    "builder": "NIXPACKS"
-  },
-  "deploy": {
-    "startCommand": "cd backend && npm start",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 100
-  }
-}
 ```
 
 ## 🌍 Переменные окружения
@@ -163,10 +136,6 @@ JWT_SECRET=your-super-secret-jwt-key
 ```
 
 ## 📊 Мониторинг и логи
-
-### Railway
-- Логи доступны в панели управления
-- Метрики производительности встроены
 
 ### Render
 - Логи в разделе "Logs"
