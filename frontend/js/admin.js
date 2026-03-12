@@ -348,8 +348,17 @@ async function loadUsers() {
     try {
         const response = await authFetch(`${API_BASE}/admin/users`);
 
+        if (response.status === 401 || response.status === 403) {
+            return; // authFetch уже перенаправил на логин
+        }
+
         if (!response.ok) {
-            throw new Error('Failed to load users');
+            if (response.status === 500) {
+                showMessage('Серверная ошибка при загрузке пользователей. Попробуйте позже.', 'danger');
+            } else {
+                showMessage('Ошибка загрузки пользователей', 'danger');
+            }
+            return;
         }
 
         const data = await response.json();
@@ -357,7 +366,7 @@ async function loadUsers() {
     } catch (error) {
         if (error.message === 'Session expired') return;
         console.error('Error loading users:', error);
-        showMessage('Ошибка загрузки пользователей', 'danger');
+        showMessage('Ошибка загрузки пользователей. Проверьте подключение.', 'danger');
     }
 }
 

@@ -66,6 +66,10 @@ if (DB_TYPE === 'postgresql') {
         });
     },
 
+    getAll: function() {
+        return this.findAll();
+    },
+
     verifyPassword: (plainPassword, hashedPassword) => {
         return bcrypt.compareSync(plainPassword, hashedPassword);
     },
