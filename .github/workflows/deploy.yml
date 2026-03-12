@@ -12,6 +12,16 @@ jobs:
     steps:
       - name: Call deploy webhook on server
         run: |
-          curl -X POST "http://5.42.113.79:3000/api/deploy" \
-            -H "X-Deploy-Secret: ${{ secrets.DEPLOY_SECRET }}"
+          echo "Calling deploy endpoint..."
+          RESP=$(curl -s -w "\n%{http_code}" -X POST "http://5.42.113.79:3000/api/deploy" \
+            -H "X-Deploy-Secret: ${{ secrets.DEPLOY_SECRET }}" \
+            --connect-timeout 10 --max-time 30) || true
+          BODY=$(echo "$RESP" | head -n -1)
+          CODE=$(echo "$RESP" | tail -n 1)
+          echo "Response code: $CODE"
+          echo "Response body: $BODY"
+          if [ "$CODE" != "200" ]; then
+            echo "Deploy failed (expected 200)"
+            exit 1
+          fi
 
