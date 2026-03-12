@@ -1,0 +1,17 @@
+name: Deploy to Timeweb
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Call deploy webhook on server
+        run: |
+          curl -X POST "http://5.42.113.79:3000/api/deploy" \
+            -H "X-Deploy-Secret: ${{ secrets.DEPLOY_SECRET }}"
+
