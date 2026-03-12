@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const crypto = require('crypto');
+const { exec } = require('child_process');
 const database = require('./config/database');
 
 // --- Глобальная обработка ошибок (чтобы процесс не падал молча) ---
@@ -34,6 +36,38 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
+
+// Вебхук автодеплоя — до bodyParser, чтобы для GitHub иметь raw body
+const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
+const projectRoot = path.join(__dirname, '..');
+function runDeploy(res) {
+  exec(`cd "${projectRoot}" && git pull origin main && pm2 restart detectivka`, (err, stdout, stderr) => {
+    if (err) {
+      console.error('[Deploy]', err, stderr);
+      return res.status(500).json({ ok: false, error: stderr || err.message, log: stdout });
+    }
+    console.log('[Deploy] OK', stdout);
+    res.json({ ok: true, log: stdout });
+  });
+}
+app.post('/api/deploy', express.raw({ type: 'application/json' }), (req, res) => {
+  if (!DEPLOY_SECRET) {
+    return res.status(501).json({ ok: false, error: 'Deploy not configured' });
+  }
+  const sig = req.headers['x-hub-signature-256'];
+  if (sig && req.body && Buffer.isBuffer(req.body)) {
+    const hmac = crypto.createHmac('sha256', DEPLOY_SECRET).update(req.body).digest('hex');
+    if (hmac === sig.replace('sha256=', '')) {
+      return runDeploy(res);
+    }
+  }
+  const secret = req.headers['x-deploy-secret'] || (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
+  if (secret === DEPLOY_SECRET) {
+    return runDeploy(res);
+  }
+  res.status(403).json({ ok: false, error: 'Invalid secret' });
+});
+
 app.use(bodyParser.json());
 
 // Логирование запросов (для диагностики)
