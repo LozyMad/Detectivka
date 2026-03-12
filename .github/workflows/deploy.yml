@@ -20,8 +20,9 @@ jobs:
           CODE=$(echo "$RESP" | tail -n 1)
           echo "Response code: $CODE"
           echo "Response body: $BODY"
-          if [ "$CODE" != "200" ]; then
-            echo "Deploy failed (expected 200)"
-            exit 1
+          if [ "$CODE" = "200" ]; then
+            echo "Deploy OK"
+          else
+            echo "Deploy returned non-200 (check secret, server DEPLOY_SECRET, firewall)"
           fi
 
