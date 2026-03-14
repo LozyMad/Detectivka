@@ -391,9 +391,6 @@
                     <a class="nav-link" href="#" data-tab="scenarios">
                         <i class="fas fa-list-alt me-2"></i>Сценарии
                     </a>
-                    <a class="nav-link" href="#" data-tab="addresses">
-                        <i class="fas fa-map-marker-alt me-2"></i>Адреса
-                    </a>
                     <a class="nav-link" href="#" data-tab="rooms">
                         <i class="fas fa-door-open me-2"></i>Комнаты
                     </a>
@@ -586,6 +583,98 @@
                                     <tbody id="scenariosTable">
                                         <tr>
                                             <td colspan="6" class="text-center">Загрузка...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Редактор сценариев: адреса (часть сценариев) -->
+                    <hr class="my-4">
+                    <h4 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Адреса сценариев</h4>
+
+                    <div class="form-section">
+                        <h5 class="mb-3">Добавить новый адрес</h5>
+                        <form id="addAddressForm">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="addressScenario" class="form-label">Сценарий</label>
+                                        <select class="form-select" id="addressScenario" required>
+                                            <option value="">Выберите сценарий...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="addressDistrict" class="form-label">Район</label>
+                                        <select class="form-select" id="addressDistrict" required>
+                                            <option value="">Выберите район...</option>
+                                            <option value="С">С</option>
+											<option value="Ю">Ю</option>
+											<option value="З">З</option>
+											<option value="В">В</option>
+                                            <option value="Ц">Ц</option>
+                                            <option value="СВ">СВ</option>
+                                            <option value="СЗ">СЗ</option>
+                                            <option value="ЮВ">ЮВ</option>
+											<option value="ЮЗ">ЮЗ</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="addressHouseNumber" class="form-label">Номер дома</label>
+                                        <input type="text" class="form-control" id="addressHouseNumber" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="addressDescription" class="form-label">Описание локации</label>
+                                <textarea class="form-control" id="addressDescription" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Добавить адрес
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Выберите сценарий</h5>
+                                </div>
+                                <div class="card-body">
+                                    <select class="form-select" id="viewAddressScenario">
+                                        <option value="">Выберите сценарий для просмотра адресов...</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Адреса сценария</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Район</th>
+                                            <th>Номер дома</th>
+                                            <th>Описание</th>
+                                            <th>Выборы</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="addressesTable">
+                                        <tr>
+                                            <td colspan="6" class="text-center">Выберите сценарий для просмотра адресов</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -882,104 +971,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Addresses Tab -->
-                <div id="addresses-tab" class="tab-content" style="display: none;">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h3><i class="fas fa-map-marker-alt me-2"></i>Управление адресами</h3>
-                    </div>
-
-                    <!-- Add Address Form -->
-                    <div class="form-section">
-                        <h5 class="mb-3">Добавить новый адрес</h5>
-                        <form id="addAddressForm">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="addressScenario" class="form-label">Сценарий</label>
-                                        <select class="form-select" id="addressScenario" required>
-                                            <option value="">Выберите сценарий...</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="mb-3">
-                                        <label for="addressDistrict" class="form-label">Район</label>
-                                        <select class="form-select" id="addressDistrict" required>
-                                            <option value="">Выберите район...</option>
-                                            <option value="С">С</option>
-											<option value="Ю">Ю</option>
-											<option value="З">З</option>
-											<option value="В">В</option>
-                                            <option value="Ц">Ц</option>
-                                            <option value="СВ">СВ</option>
-                                            <option value="СЗ">СЗ</option>
-                                            <option value="ЮВ">ЮВ</option>
-											<option value="ЮЗ">ЮЗ</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="mb-3">
-                                        <label for="addressHouseNumber" class="form-label">Номер дома</label>
-                                        <input type="text" class="form-control" id="addressHouseNumber" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="addressDescription" class="form-label">Описание локации</label>
-                                <textarea class="form-control" id="addressDescription" rows="3" required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-plus me-1"></i>Добавить адрес
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Address Management -->
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">Выберите сценарий</h5>
-                                </div>
-                                <div class="card-body">
-                                    <select class="form-select" id="viewAddressScenario">
-                                        <option value="">Выберите сценарий для просмотра...</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Addresses Table -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Адреса сценария</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Район</th>
-                                            <th>Номер дома</th>
-                                            <th>Описание</th>
-                                            <th>Выборы</th>
-                                            <th>Действия</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="addressesTable">
-                                        <tr>
-                                            <td colspan="6" class="text-center">Выберите сценарий для просмотра адресов</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Answers Tab -->
                 <div id="answers-tab" class="tab-content" style="display: none;">
                     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -1180,6 +1171,7 @@
     <script src="js/admin.js?v=2"></script>
     <script src="js/backup.js?v=2"></script>
     <script src="js/choices.js?v=1"></script>
+    <script src="js/persist-inputs.js"></script>
     
     <script>
         // Функции для управления сайдбаром

@@ -60,7 +60,7 @@ function setupAdminInterface(adminLevel) {
     const navLinks = sidebar.querySelectorAll('.nav-link');
     
     // Список вкладок, которые должны быть скрыты для обычных админов
-    const restrictedTabs = ['users', 'scenarios', 'addresses', 'permissions', 'backup'];
+    const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup'];
     
     if (adminLevel !== 'super_admin') {
         console.log('Hiding restricted tabs for regular admin');
@@ -214,7 +214,7 @@ function setupEventListeners() {
 
 function switchTab(tabName) {
     // Проверяем, доступна ли вкладка для текущего админа
-    const restrictedTabs = ['users', 'scenarios', 'addresses', 'permissions', 'backup'];
+    const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup'];
     if (currentUser.admin_level !== 'super_admin' && restrictedTabs.includes(tabName)) {
         showMessage('У вас нет доступа к этой вкладке', 'warning');
         return;
@@ -237,6 +237,7 @@ function switchTab(tabName) {
         loadUsers();
     } else if (tabName === 'scenarios') {
         loadScenarios();
+        populateScenarioDropdowns();
     } else if (tabName === 'statistics') {
         ensureStatsScenarioOptions();
         // Don't auto-load; let user click refresh

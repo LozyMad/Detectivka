@@ -23,6 +23,7 @@ jobs:
           if [ "$CODE" = "200" ]; then
             echo "Deploy OK"
           else
-            echo "Deploy returned non-200 (check secret, server DEPLOY_SECRET, firewall)"
+            echo "Deploy failed (code $CODE). Check DEPLOY_SECRET, server .env, firewall."
+            exit 1
           fi
 
