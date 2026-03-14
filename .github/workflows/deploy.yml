@@ -10,6 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check deploy secret
+        run: |
+          if [ -z "${{ secrets.DEPLOY_SECRET }}" ]; then
+            echo "::error::DEPLOY_SECRET is not set. Add it in repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          echo "DEPLOY_SECRET is set (length: ${#DEPLOY_SECRET} chars)"
+        env:
+          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
+
       - name: Call deploy webhook on server
         run: |
           echo "Calling deploy endpoint..."
