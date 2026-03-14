@@ -42,13 +42,20 @@ app.use(cors());
 const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
 const projectRoot = path.join(__dirname, '..');
 function runDeploy(res) {
-  exec(`cd "${projectRoot}" && git pull origin main && pm2 restart detectivka`, (err, stdout, stderr) => {
+  exec(`cd "${projectRoot}" && git pull origin main`, (err, stdout, stderr) => {
     if (err) {
       console.error('[Deploy]', err, stderr);
       return res.status(500).json({ ok: false, error: stderr || err.message, log: stdout });
     }
-    console.log('[Deploy] OK', stdout);
+    console.log('[Deploy] git pull OK', stdout);
     res.json({ ok: true, log: stdout });
+    // Перезапуск через 2 сек, чтобы ответ успел уйти (иначе pm2 restart убивает процесс до отправки)
+    setTimeout(() => {
+      exec(`pm2 restart detectivka`, (e, out, errOut) => {
+        if (e) console.error('[Deploy] pm2 restart error', e, errOut);
+        else console.log('[Deploy] pm2 restart OK', out);
+      });
+    }, 2000);
   });
 }
 app.post('/api/deploy', express.raw({ type: 'application/json' }), (req, res) => {
