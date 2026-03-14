@@ -75,7 +75,13 @@ app.post('/api/deploy', express.raw({ type: 'application/json' }), (req, res) =>
   if (secret && expected && secret === expected) {
     return runDeploy(res);
   }
-  res.status(403).json({ ok: false, error: 'Invalid secret' });
+  // Диагностика без раскрытия секрета: длины помогают понять лишний символ (например 49 vs 48)
+  console.log('[Deploy] 403: received length=', secret.length, 'expected length=', expected.length);
+  res.status(403).json({
+    ok: false,
+    error: 'Invalid secret',
+    hint: expected ? `expected_length=${expected.length}, received_length=${secret.length}` : 'DEPLOY_SECRET not set on server'
+  });
 });
 
 app.use(bodyParser.json());
