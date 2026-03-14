@@ -237,7 +237,7 @@ async function loadTripHistory() {
         
         // Преобразуем попытки в формат истории поездок
         tripHistory = await Promise.all(attempts.map(async (attempt) => {
-            let description = attempt.found ? (attempt.address_description || 'Локация найдена') : 'Лока нет';
+            let description = attempt.found ? (attempt.address_description || 'Локация найдена') : 'По этому адресу нет информации';
             
             // Если это успешная поездка с address_id, проверяем, есть ли сделанные выборы
             if (attempt.found && attempt.address_id && attempt.visited_location_id) {
@@ -310,7 +310,7 @@ function updateTripHistory() {
             <div class="trip-description">
                 ${trip.success ? 
                     `<strong>Найдено:</strong> ${trip.description}` : 
-                    `<strong>Лока нет</strong>`
+                    `<strong>По этому адресу нет информации</strong>`
                 }
             </div>
         </div>
