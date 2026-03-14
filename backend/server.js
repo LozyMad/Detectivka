@@ -69,8 +69,10 @@ app.post('/api/deploy', express.raw({ type: 'application/json' }), (req, res) =>
       return runDeploy(res);
     }
   }
-  const secret = req.headers['x-deploy-secret'] || (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
-  if (secret === DEPLOY_SECRET) {
+  const raw = req.headers['x-deploy-secret'] || (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
+  const secret = (raw && String(raw).trim()) || '';
+  const expected = (DEPLOY_SECRET && String(DEPLOY_SECRET).trim()) || '';
+  if (secret && expected && secret === expected) {
     return runDeploy(res);
   }
   res.status(403).json({ ok: false, error: 'Invalid secret' });
