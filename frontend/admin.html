@@ -87,28 +87,20 @@
             background: transparent !important;
             border: none;
             color: var(--noir-silver);
-            font-size: 1.5rem;
-            padding: 0.5rem 0.75rem;
+            font-size: 1.4rem;
+            padding: 0.1rem 0.25rem;
             cursor: pointer;
-            transition: color 0.2s ease, background 0.2s ease;
-            border-radius: 0.25rem;
+            line-height: 1;
+            transition: color 0.15s ease;
         }
 
-        .hamburger-btn:hover {
-            color: var(--noir-gold);
-            background: rgba(212, 175, 55, 0.15) !important;
-        }
-
-        .hamburger-btn:focus {
-            outline: none;
-            box-shadow: none;
-        }
-
+        .hamburger-btn:hover,
+        .hamburger-btn:focus,
         .hamburger-btn:focus-visible {
             color: var(--noir-gold);
-            background: rgba(212, 175, 55, 0.1) !important;
-            outline: 1px solid rgba(212, 175, 55, 0.5);
-            outline-offset: 2px;
+            background: transparent !important;
+            outline: none;
+            box-shadow: none;
         }
 
         /* Адаптивное поведение */
