@@ -67,6 +67,7 @@
             border-right: 1px solid rgba(212, 175, 55, 0.3);
             transition: transform 0.3s ease;
             overflow-y: auto;
+            transform: translateX(0);
         }
 
         /* Отступ для контента сайдбара на мобильных */
@@ -141,7 +142,7 @@
 
         @media (min-width: 992px) {
             .hamburger-btn {
-                display: none;
+                display: inline-block;
             }
             
             .sidebar {
@@ -150,10 +151,19 @@
                 left: 0;
                 width: 240px;
                 height: calc(100vh - 56px);
+                transform: translateX(0);
             }
             
             .main-content {
                 margin-left: 240px;
+            }
+            
+            .sidebar-collapsed .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar-collapsed .main-content {
+                margin-left: 0;
             }
         }
 
@@ -163,7 +173,7 @@
         }
 
         .main-content {
-            margin-top: 0;
+            margin-top: 0.75rem;
         }
 
         /* Дополнительный отступ для мобильных устройств */
@@ -1187,9 +1197,14 @@
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
+            const body = document.body;
             
-            sidebar.classList.toggle('show');
-            overlay.classList.toggle('show');
+            if (window.innerWidth <= 991.98) {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            } else {
+                body.classList.toggle('sidebar-collapsed');
+            }
         }
         
         function closeSidebar() {
@@ -1215,7 +1230,9 @@
             // Закрытие сайдбара при изменении размера окна
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 991.98) {
+                    const body = document.body;
                     closeSidebar();
+                    body.classList.remove('sidebar-collapsed');
                 }
             });
         });
