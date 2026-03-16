@@ -601,15 +601,20 @@ async function loadQuestions() {
     }
 }
 
+let currentQuestions = [];
+
 function displayQuestions(questions) {
     const container = document.getElementById('questionsList');
     
     if (!questions || questions.length === 0) {
         container.innerHTML = '<p class="text-muted text-center">Нет вопросов для этого сценария</p>';
+        currentQuestions = [];
         return;
     }
     
-    container.innerHTML = questions.map(question => `
+    currentQuestions = questions;
+    
+    const questionsHtml = questions.map(question => `
         <div class="question-item mb-4 p-3 border rounded">
             <h5 class="mb-3">${question.question_text}</h5>
             <div class="mb-3">
@@ -622,6 +627,17 @@ function displayQuestions(questions) {
             <div id="answer_status_${question.id}" class="mt-2"></div>
         </div>
     `).join('');
+    
+    const bulkControlsHtml = `
+        <div class="text-center mt-4">
+            <button class="btn btn-success" onclick="submitAllAnswers()">
+                <i class="fas fa-paper-plane me-1"></i>Отправить все ответы
+            </button>
+            <div id="answers_global_status" class="mt-2"></div>
+        </div>
+    `;
+    
+    container.innerHTML = questionsHtml + bulkControlsHtml;
 }
 
 async function submitAnswer(questionId) {
@@ -658,6 +674,50 @@ async function submitAnswer(questionId) {
     } catch (error) {
         console.error('Error submitting answer:', error);
         statusDiv.innerHTML = '<div class="alert alert-danger">Ошибка отправки ответа</div>';
+    }
+}
+
+async function submitAllAnswers() {
+    const globalStatusDiv = document.getElementById('answers_global_status');
+    
+    if (!currentQuestions || currentQuestions.length === 0) {
+        globalStatusDiv.innerHTML = '<div class="alert alert-warning">Нет вопросов для отправки ответов</div>';
+        return;
+    }
+    
+    const tasks = [];
+    
+    currentQuestions.forEach(question => {
+        const textarea = document.getElementById(`answer_${question.id}`);
+        const button = document.querySelector(`button[onclick="submitAnswer(${question.id})"]`);
+        
+        if (!textarea || !button || textarea.disabled || button.disabled) {
+            return;
+        }
+        
+        const answerText = textarea.value.trim();
+        if (!answerText) {
+            const statusDiv = document.getElementById(`answer_status_${question.id}`);
+            if (statusDiv) {
+                statusDiv.innerHTML = '<div class="alert alert-warning">Введите ответ</div>';
+            }
+            return;
+        }
+        
+        tasks.push(submitAnswer(question.id));
+    });
+    
+    if (tasks.length === 0) {
+        globalStatusDiv.innerHTML = '<div class="alert alert-warning">Нет новых ответов для отправки</div>';
+        return;
+    }
+    
+    try {
+        await Promise.all(tasks);
+        globalStatusDiv.innerHTML = '<div class="alert alert-success">Все возможные ответы отправлены</div>';
+    } catch (error) {
+        console.error('Error submitting all answers:', error);
+        globalStatusDiv.innerHTML = '<div class="alert alert-danger">Возникли ошибки при отправке некоторых ответов</div>';
     }
 }
 
