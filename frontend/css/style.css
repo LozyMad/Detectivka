@@ -13,9 +13,12 @@
     --noir-shadow: rgba(0, 0, 0, 0.8);
 }
 
-/* Глобально убираем "курсор ввода текста" на обычном тексте — везде стрелка, кроме полей ввода */
+/* Глобально: стрелка вместо I-beam, запрет выделения и каретки на всём кроме полей ввода */
 * {
     cursor: default !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -ms-user-select: none !important;
 }
 
 a, button, [role="button"], .btn, [type="button"], [type="submit"], [type="reset"] {
@@ -27,6 +30,9 @@ textarea,
 select,
 [contenteditable="true"] {
     cursor: text !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    -ms-user-select: text !important;
 }
 
 /* Стили модальных окон в London noir стиле */
