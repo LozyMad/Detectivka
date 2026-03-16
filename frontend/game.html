@@ -55,6 +55,17 @@
             color: #000;
             font-weight: 700;
         }
+        #goBtn {
+            background-color: var(--noir-gold) !important;
+            border-color: var(--noir-gold) !important;
+            color: #000 !important;
+            font-weight: 700 !important;
+        }
+        #goBtn:hover {
+            background-color: #e6c04a !important;
+            border-color: #e6c04a !important;
+            color: #000 !important;
+        }
         .trip-item {
             padding: 0.75rem;
             border-left: 4px solid #6c757d;
@@ -383,7 +394,7 @@
                         </div>
                     </div>
                     
-                    <button class="btn btn-success w-100" onclick="visitLocation()">Поехали!</button>
+                    <button class="btn w-100" id="goBtn" onclick="visitLocation()">Поехали!</button>
                 </div>
 
                 <!-- История поездок -->
