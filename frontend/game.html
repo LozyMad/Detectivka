@@ -349,23 +349,27 @@
                     <h2 class="text-center mb-4">Поиск локаций</h2>
                     
                     <div class="mb-4">
-                        <label class="form-label">Выберите район:</label>
-                        <div class="d-flex flex-wrap justify-content-center">
-                            <button class="btn btn-outline-primary district-btn" data-district="С">С</button>
-                            <button class="btn btn-outline-primary district-btn" data-district="Ю">Ю</button>
-                            <button class="btn btn-outline-primary district-btn" data-district="З">З</button>
-                            <button class="btn btn-outline-primary district-btn" data-district="В">В</button>
-                            <button class="btn btn-outline-primary district-btn" data-district="Ц">Ц</button>
-                            <button class="btn btn-outline-primary district-btn" data-district="СВ">СВ</button>
-                            <button class="btn btn-outline-primary district-btn" data-district="СЗ">СЗ</button>
-                            <button class="btn btn-outline-primary district-btn" data-district="ЮВ">ЮВ</button>
-                            <button class="btn btn-outline-primary district-btn" data-district="ЮЗ">ЮЗ</button>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-4">
+                                <label for="districtSelect" class="form-label">Район</label>
+                                <select class="form-select" id="districtSelect">
+                                    <option value="">Выберите район...</option>
+                                    <option value="С">С</option>
+                                    <option value="Ю">Ю</option>
+                                    <option value="З">З</option>
+                                    <option value="В">В</option>
+                                    <option value="Ц">Ц</option>
+                                    <option value="СВ">СВ</option>
+                                    <option value="СЗ">СЗ</option>
+                                    <option value="ЮВ">ЮВ</option>
+                                    <option value="ЮЗ">ЮЗ</option>
+                                </select>
+                            </div>
+                            <div class="col-md">
+                                <label for="houseNumber" class="form-label">Номер дома</label>
+                                <input type="text" class="form-control" id="houseNumber" placeholder="Введите номер дома">
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="houseNumber" class="form-label">Номер дома:</label>
-                        <input type="text" class="form-control" id="houseNumber" placeholder="Введите номер дома">
                     </div>
                     
                     <button class="btn btn-success w-100" onclick="visitLocation()">Поехали!</button>

@@ -10,7 +10,7 @@ let lastScenarioCheck = 0; // Время последней проверки с�
 // Initialize game
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
-    setupDistrictButtons();
+    setupDistrictSelect();
     loadTripCount();
     loadTripHistory();
     loadScenarioInfo();
@@ -52,21 +52,11 @@ function checkAuth() {
     }
 }
 
-function setupDistrictButtons() {
-    document.querySelectorAll('.district-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // Remove active class from all buttons
-            document.querySelectorAll('.district-btn').forEach(b => {
-                b.classList.remove('btn-primary');
-                b.classList.add('btn-outline-primary');
-            });
-            
-            // Add active class to clicked button
-            e.target.classList.remove('btn-outline-primary');
-            e.target.classList.add('btn-primary');
-            
-            selectedDistrict = e.target.dataset.district;
-        });
+function setupDistrictSelect() {
+    const sel = document.getElementById('districtSelect');
+    if (!sel) return;
+    sel.addEventListener('change', () => {
+        selectedDistrict = sel.value || null;
     });
 }
 
@@ -75,6 +65,7 @@ async function visitLocation() {
         alert('Игра еще не началась или уже завершилась');
         return;
     }
+    selectedDistrict = (document.getElementById('districtSelect') && document.getElementById('districtSelect').value) || null;
     if (!selectedDistrict) {
         alert('Пожалуйста, выберите район');
         return;
