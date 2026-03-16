@@ -2,6 +2,7 @@ const Scenario = require('../models/scenario');
 const Address = require('../models/address');
 const VisitedLocation = require('../models/visitedLocation');
 const VisitAttempt = require('../models/visitAttempt');
+const { broadcastNewTrip } = require('../sse/roomEvents');
 
 const visitLocation = async (req, res) => {
   try {
@@ -60,6 +61,7 @@ const visitLocation = async (req, res) => {
       found: !!address,
       address_id: address ? address.id : null
     });
+    if (roomContext && roomContext.room_id) broadcastNewTrip(roomContext.room_id);
 
     if (!address) {
       return res.status(404).json({ 
@@ -141,8 +143,31 @@ const getVisitedLocations = async (req, res) => {
   }
 };
 
+/** SSE: поток событий комнаты (новая поездка). Токен передаётся в query.token */
+const roomEventsStream = (req, res) => {
+  const roomId = req.params.roomId;
+  if (!roomId || parseInt(roomId, 10) !== parseInt(roomId, 10)) {
+    return res.status(400).json({ error: 'Invalid room id' });
+  }
+  const roomUser = req.roomUser;
+  if (!roomUser || String(roomUser.room_id) !== String(roomId)) {
+    return res.status(403).json({ error: 'Access denied to this room' });
+  }
+
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const { subscribe } = require('../sse/roomEvents');
+  subscribe(roomId, res);
+  res.write(': connected\n\n');
+};
+
 module.exports = {
   visitLocation,
   getActiveScenario,
-  getVisitedLocations
+  getVisitedLocations,
+  roomEventsStream
 };

@@ -6,12 +6,41 @@ let tripCount = 0;
 let tripHistory = [];
 let cachedScenarioName = null; // Кэш для имени сценария
 let lastScenarioCheck = 0; // Время последней проверки сценария
+let roomEventSource = null;
 
 function setScenarioTitle(text) {
     const el = document.getElementById('scenarioTitle');
     const elM = document.getElementById('scenarioTitleMobile');
     if (el) el.textContent = text;
     if (elM) elM.textContent = text;
+}
+
+function connectRoomSSE(roomId, token) {
+    if (roomEventSource) {
+        roomEventSource.close();
+        roomEventSource = null;
+    }
+    const url = `${API_BASE}/game/room/${roomId}/events?token=${encodeURIComponent(token)}`;
+    const es = new EventSource(url);
+    roomEventSource = es;
+    es.onmessage = (e) => {
+        try {
+            const d = JSON.parse(e.data || '{}');
+            if (d.type === 'new_trip') {
+                loadTripCount();
+                loadTripHistory();
+            }
+        } catch (_) {}
+    };
+    es.onerror = () => {
+        es.close();
+        roomEventSource = null;
+        setTimeout(() => {
+            const ru = JSON.parse(localStorage.getItem('roomUser') || 'null');
+            const t = localStorage.getItem('token');
+            if (ru && ru.room_id && t) connectRoomSSE(ru.room_id, t);
+        }, 5000);
+    };
 }
 
 // Initialize game
@@ -39,11 +68,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 30000);
     
-    // Обновляем историю поездок и счётчик каждые 5 сек (баланс между отзывчивостью и нагрузкой на сервер)
+    // SSE: мгновенное обновление истории при поездке с другого устройства
+    const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
+    const token = localStorage.getItem('token');
+    if (roomUser && roomUser.room_id && token) {
+        connectRoomSSE(roomUser.room_id, token);
+    }
+    // Резервный опрос раз в 60 сек на случай обрыва SSE
     setInterval(() => {
         loadTripCount();
         loadTripHistory();
-    }, 5000);
+    }, 60000);
     
     // Принудительно обновляем имя сценария каждые 10 минут (на случай изменений админом)
     setInterval(() => {

@@ -37,6 +37,32 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+/** Для SSE: токен из query (EventSource не шлёт заголовки) */
+const authenticateTokenQuery = (req, res, next) => {
+  const token = req.query && req.query.token;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, async (err, payload) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid token' });
+    }
+    if (payload.id) {
+      const userData = await User.findById(payload.id);
+      if (!userData) return res.status(403).json({ error: 'User not found' });
+      req.user = userData;
+      return next();
+    }
+    if (payload.room_user_id && payload.room_id) {
+      req.roomUser = { id: payload.room_user_id, room_id: payload.room_id, username: payload.username, scenario_id: payload.scenario_id };
+      return next();
+    }
+    return res.status(403).json({ error: 'Invalid token payload' });
+  });
+};
+
 const generateToken = (user) => {
   return jwt.sign(
     { id: user.id, username: user.username, is_admin: user.is_admin, admin_level: user.admin_level },
@@ -92,6 +118,7 @@ const scenarioAccessRequired = async (req, res, next) => {
 
 module.exports = {
   authenticateToken,
+  authenticateTokenQuery,
   generateToken,
   superAdminRequired,
   adminRequired,
