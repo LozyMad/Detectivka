@@ -66,6 +66,31 @@
             color: var(--noir-silver) !important;
         }
 
+        /* Не показывать "текстовый курсор"/выделение на кликабельных элементах */
+        .navbar,
+        .navbar * ,
+        .sidebar,
+        .sidebar * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .navbar-brand,
+        .navbar-text,
+        .sidebar .nav-link,
+        .hamburger-btn,
+        .btn {
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .navbar-brand,
+        .sidebar .nav-link,
+        .hamburger-btn,
+        .btn {
+            cursor: pointer;
+        }
+
         .sidebar {
             min-height: 100vh;
             background: var(--noir-gray);
