@@ -16,8 +16,11 @@ async function exportScenarios() {
     const contentType = res.headers.get('Content-Type') || '';
     if (contentType.includes('application/json')) {
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Ошибка экспорта');
-      throw new Error('Сервер вернул JSON вместо таблицы. Обновите backend (перезапустите сервер или задеплойте заново) и попробуйте снова.');
+      if (!res.ok) {
+        const msg = data.details ? `${data.error || 'Ошибка экспорта'}: ${data.details}` : (data.error || 'Ошибка экспорта');
+        throw new Error(msg);
+      }
+      throw new Error('Сервер вернул JSON вместо таблицы. Обновите backend и попробуйте снова.');
     }
     if (!res.ok) {
       const err = await res.text();

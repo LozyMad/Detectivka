@@ -36,18 +36,22 @@ const backupController = {
         Question.getByScenario(scenarioId)
       ]);
 
+      const addrList = Array.isArray(addresses) ? addresses : [];
+      const qList = Array.isArray(questions) ? questions : [];
+
       const tripsRows = [COLS_TRIPS];
-      for (const a of addresses) {
+      for (const a of addrList) {
         tripsRows.push([
-          a.district || '',
-          a.house_number || '',
-          a.description || ''
+          (a && a.district) || '',
+          (a && a.house_number) || '',
+          (a && a.description) || ''
         ]);
       }
 
       const questionsRows = [COLS_QUESTIONS];
-      questions.forEach((q, i) => {
-        questionsRows.push([i + 1, (q.question_text || '').replace(/\r?\n/g, ' ')]);
+      qList.forEach((q, i) => {
+        const text = (q && q.question_text) || (typeof q === 'string' ? q : '');
+        questionsRows.push([i + 1, String(text).replace(/\r?\n/g, ' ')]);
       });
 
       const wb = XLSX.utils.book_new();
