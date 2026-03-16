@@ -66,11 +66,7 @@
             background: var(--noir-gray);
             border-right: 1px solid rgba(212, 175, 55, 0.3);
             transition: transform 0.3s ease;
-            position: sticky;
-            top: 0;
-            height: 100vh;
             overflow-y: auto;
-            padding-top: 80px;
         }
 
         /* Отступ для контента сайдбара на мобильных */
@@ -146,6 +142,18 @@
         @media (min-width: 992px) {
             .hamburger-btn {
                 display: none;
+            }
+            
+            .sidebar {
+                position: fixed !important;
+                top: 56px;
+                left: 0;
+                width: 240px;
+                height: calc(100vh - 56px);
+            }
+            
+            .main-content {
+                margin-left: 240px;
             }
         }
 
