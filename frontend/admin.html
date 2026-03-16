@@ -152,14 +152,19 @@
             
             .main-content {
                 margin-left: 240px;
+                flex: 0 0 calc(100% - 240px);
+                max-width: calc(100% - 240px);
             }
             
             .sidebar-collapsed .sidebar {
                 transform: translateX(-100%);
+                display: none;
             }
             
             .sidebar-collapsed .main-content {
                 margin-left: 0;
+                flex: 0 0 100%;
+                max-width: 100%;
             }
         }
 
