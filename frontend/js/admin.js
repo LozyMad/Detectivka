@@ -3167,26 +3167,27 @@ function displayRoomAnswers(data) {
     let html = '';
     
     data.users.forEach((user, userIndex) => {
+        const collapseId = `answers-team-${user.id != null ? user.id : userIndex}`;
         html += `
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">
-                            <i class="fas fa-user me-2"></i>Команда: ${user.username}
-                        </h6>
-                        <div class="d-flex gap-2">
-                            <span class="badge bg-light text-dark">
-                                <i class="fas fa-car me-1"></i>Всего поездок: ${user.trip_stats?.total_trips || 0}
-                            </span>
-                            <span class="badge bg-success">
-                                <i class="fas fa-check me-1"></i>Успешных: ${user.trip_stats?.successful_trips || 0}
-                            </span>
-                            <span class="badge bg-danger">
-                                <i class="fas fa-times me-1"></i>Неудачных: ${user.trip_stats?.failed_trips || 0}
-                            </span>
-                        </div>
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center pe-3" role="button" tabindex="0" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="true" aria-controls="${collapseId}" style="cursor: pointer;">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chevron-down me-2 collapse-icon"></i>
+                        <i class="fas fa-user me-2"></i>Команда: ${user.username}
+                    </h6>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-car me-1"></i>Всего поездок: ${user.trip_stats?.total_trips || 0}
+                        </span>
+                        <span class="badge bg-success">
+                            <i class="fas fa-check me-1"></i>Успешных: ${user.trip_stats?.successful_trips || 0}
+                        </span>
+                        <span class="badge bg-danger">
+                            <i class="fas fa-times me-1"></i>Неудачных: ${user.trip_stats?.failed_trips || 0}
+                        </span>
                     </div>
                 </div>
+                <div class="collapse show" id="${collapseId}">
                 <div class="card-body">
         `;
         
@@ -3278,11 +3279,23 @@ function displayRoomAnswers(data) {
         
         html += `
                 </div>
+                </div>
             </div>
         `;
     });
     
     answersList.innerHTML = html;
+    
+    // Поворачиваем иконку шеврона при сворачивании/разворачивании
+    answersList.querySelectorAll('[data-bs-toggle="collapse"]').forEach(trigger => {
+        const targetId = trigger.getAttribute('data-bs-target');
+        const target = targetId ? document.querySelector(targetId) : null;
+        const icon = trigger.querySelector('.collapse-icon');
+        if (icon && target) {
+            target.addEventListener('show.bs.collapse', () => { if (icon) { icon.classList.remove('fa-chevron-right'); icon.classList.add('fa-chevron-down'); } });
+            target.addEventListener('hide.bs.collapse', () => { if (icon) { icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-right'); } });
+        }
+    });
 }
 
 // Заполняем список комнат для выбора ответов
