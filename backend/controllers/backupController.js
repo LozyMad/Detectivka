@@ -8,7 +8,7 @@ const SHEET_QUESTIONS = 'Вопросы';
 const SHEET_CHOICES = 'Выборы';
 const COLS_TRIPS = ['Район', 'Номер дома', 'Информация по адресу'];
 const COLS_QUESTIONS = ['Номер вопроса', 'Вопрос'];
-const COLS_CHOICES = ['Район', 'Номер дома', 'Вариант выбора', 'Результат', 'Порядок'];
+const COLS_CHOICES = ['Район', 'Номер дома', 'Текст варианта выбора', 'Результат', 'Порядок'];
 
 const backupController = {
   // Экспорт одного сценария: XLSX с листами «Поездки», «Вопросы» и «Выборы».
@@ -61,12 +61,14 @@ const backupController = {
         const choices = await Address.getChoices(scenarioId, a.id);
         const list = Array.isArray(choices) ? choices : [];
         list.forEach((c, idx) => {
+          const choiceText = (c && (c.choice_text ?? c['choice_text'])) != null ? String(c.choice_text ?? c['choice_text']) : '';
+          const responseText = (c && (c.response_text ?? c['response_text'])) != null ? String(c.response_text ?? c['response_text']) : '';
           choicesRows.push([
             (a && a.district) || '',
             (a && a.house_number) || '',
-            String((c && c.choice_text) || '').replace(/\r?\n/g, ' '),
-            String((c && c.response_text) || '').replace(/\r?\n/g, ' '),
-            (c && c.choice_order != null) ? c.choice_order : idx + 1
+            choiceText.replace(/\r?\n/g, ' '),
+            responseText.replace(/\r?\n/g, ' '),
+            (c && (c.choice_order != null || c.choice_order === 0)) ? c.choice_order : idx + 1
           ]);
         });
       }
@@ -193,7 +195,7 @@ const backupController = {
         const header = (rows[0] || []).map(String).map(s => s.trim().toLowerCase());
         const districtIdx = header.findIndex(h => h.includes('район'));
         const houseIdx = header.findIndex(h => h.includes('номер') && h.includes('дом'));
-        const choiceIdx = header.findIndex(h => h.includes('вариант') || (h.includes('выбор') && !h.includes('порядок')));
+        const choiceIdx = header.findIndex(h => h.includes('текст варианта выбора') || h.includes('вариант выбора') || (h.includes('вариант') && !h.includes('порядок')) || (h.includes('выбор') && !h.includes('порядок')));
         const resultIdx = header.findIndex(h => h.includes('результат') || h.includes('ответ'));
         const orderIdx = header.findIndex(h => h.includes('порядок'));
         const d = districtIdx >= 0 ? districtIdx : 0;
