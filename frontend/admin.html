@@ -39,11 +39,20 @@
             font-weight: 600;
         }
 
+        :root {
+            --admin-navbar-height: 56px;
+        }
+
         .navbar {
             background: var(--noir-darker) !important;
             border-bottom: 2px solid var(--noir-gold);
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
             z-index: 1020;
             width: 100%;
+            height: var(--admin-navbar-height);
         }
 
         .navbar-brand {
@@ -143,11 +152,15 @@
             
             .sidebar {
                 position: fixed !important;
-                top: 0;
+                top: var(--admin-navbar-height);
                 left: 0;
                 width: 240px;
-                height: 100vh;
+                height: calc(100vh - var(--admin-navbar-height));
                 transform: translateX(0);
+            }
+
+            .sidebar .nav {
+                padding-top: 0.5rem;
             }
             
             .main-content {
@@ -168,8 +181,14 @@
             }
         }
 
+        /* Контент и сайдбар начинаются ниже шапки */
+        body {
+            padding-top: var(--admin-navbar-height);
+        }
+
         .main-content {
-            margin-top: 1.5rem;
+            margin-top: 1rem;
+            padding-top: 0.5rem;
         }
 
         /* Дополнительный отступ для мобильных устройств */
@@ -209,7 +228,7 @@
 
         .content-area {
             background: var(--noir-dark);
-            min-height: calc(100vh - 56px);
+            min-height: calc(100vh - var(--admin-navbar-height));
             padding: 2rem;
             color: var(--noir-text);
         }
