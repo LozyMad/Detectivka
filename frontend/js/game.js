@@ -387,10 +387,7 @@ function formatTripTime(timestamp) {
     if (Number.isNaN(date.getTime())) {
         return String(timestamp || '');
     }
-    return date.toLocaleString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
+    return date.toLocaleTimeString('ru-RU', {
         hour: '2-digit',
         minute: '2-digit'
     });
