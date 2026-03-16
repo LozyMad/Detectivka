@@ -39,6 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 30000);
     
+    // Обновляем историю поездок и счётчик каждые 15 сек, чтобы поездки с другого устройства подтягивались без перезагрузки
+    setInterval(() => {
+        loadTripCount();
+        loadTripHistory();
+    }, 15000);
+    
     // Принудительно обновляем имя сценария каждые 10 минут (на случай изменений админом)
     setInterval(() => {
         if (localStorage.getItem('roomUser')) {
