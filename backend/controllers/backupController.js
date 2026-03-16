@@ -5,11 +5,13 @@ const Address = require('../models/address');
 
 const SHEET_TRIPS = 'Поездки';
 const SHEET_QUESTIONS = 'Вопросы';
+const SHEET_CHOICES = 'Выборы';
 const COLS_TRIPS = ['Район', 'Номер дома', 'Информация по адресу'];
 const COLS_QUESTIONS = ['Номер вопроса', 'Вопрос'];
+const COLS_CHOICES = ['Район', 'Номер дома', 'Вариант выбора', 'Результат', 'Порядок'];
 
 const backupController = {
-  // Экспорт одного сценария: XLSX с листами «Поездки» и «Вопросы».
+  // Экспорт одного сценария: XLSX с листами «Поездки», «Вопросы» и «Выборы».
   exportScenarios: async (req, res) => {
     try {
       const scenarioId = req.query.scenario_id ? parseInt(req.query.scenario_id, 10) : null;
@@ -54,11 +56,28 @@ const backupController = {
         questionsRows.push([i + 1, String(text).replace(/\r?\n/g, ' ')]);
       });
 
+      const choicesRows = [COLS_CHOICES];
+      for (const a of addrList) {
+        const choices = await Address.getChoices(scenarioId, a.id);
+        const list = Array.isArray(choices) ? choices : [];
+        list.forEach((c, idx) => {
+          choicesRows.push([
+            (a && a.district) || '',
+            (a && a.house_number) || '',
+            String((c && c.choice_text) || '').replace(/\r?\n/g, ' '),
+            String((c && c.response_text) || '').replace(/\r?\n/g, ' '),
+            (c && c.choice_order != null) ? c.choice_order : idx + 1
+          ]);
+        });
+      }
+
       const wb = XLSX.utils.book_new();
       const wsTrips = XLSX.utils.aoa_to_sheet(tripsRows);
       const wsQuestions = XLSX.utils.aoa_to_sheet(questionsRows);
+      const wsChoices = XLSX.utils.aoa_to_sheet(choicesRows);
       XLSX.utils.book_append_sheet(wb, wsTrips, SHEET_TRIPS);
       XLSX.utils.book_append_sheet(wb, wsQuestions, SHEET_QUESTIONS);
+      XLSX.utils.book_append_sheet(wb, wsChoices, SHEET_CHOICES);
 
       const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
       const safeName = (scenario.name || 'scenario').replace(/[^\w\s-]/g, '').trim() || 'scenario';
@@ -82,7 +101,7 @@ const backupController = {
     }
   },
 
-  // Импорт: только XLSX с листами «Поездки» и «Вопросы». Имя сценария — из имени файла.
+  // Импорт: XLSX с листами «Поездки» и «Вопросы»; лист «Выборы» опционален. Имя сценария — из имени файла.
   importScenarios: async (req, res) => {
     try {
       if (!req.file) {
@@ -96,6 +115,7 @@ const backupController = {
       const wb = XLSX.read(buf, { type: 'buffer' });
       const sheetTrips = wb.Sheets[SHEET_TRIPS];
       const sheetQuestions = wb.Sheets[SHEET_QUESTIONS];
+      const sheetChoices = wb.Sheets[SHEET_CHOICES];
 
       if (!sheetTrips && !sheetQuestions) {
         return res.status(400).json({
@@ -125,6 +145,8 @@ const backupController = {
         created_by: userId
       });
       const scenarioId = newScenario.id;
+      const addressKey = (d, h) => `${String(d).trim()}\t${String(h).trim()}`;
+      const addressIdByKey = new Map();
 
       if (sheetTrips) {
         const rows = XLSX.utils.sheet_to_json(sheetTrips, { header: 1, defval: '' });
@@ -140,12 +162,13 @@ const backupController = {
           const district = String(row[d] ?? '').trim();
           const house_number = String(row[h] ?? '').trim();
           if (!district && !house_number) continue;
-          await Address.create({
+          const created = await Address.create({
             scenario_id: scenarioId,
             district: district || '-',
             house_number: house_number || '-',
             description: String(row[i] ?? '').trim()
           });
+          if (created && created.id) addressIdByKey.set(addressKey(district, house_number), created.id);
         }
       }
 
@@ -161,6 +184,38 @@ const backupController = {
           await Question.create({
             scenario_id: scenarioId,
             question_text
+          });
+        }
+      }
+
+      if (sheetChoices && addressIdByKey.size > 0) {
+        const rows = XLSX.utils.sheet_to_json(sheetChoices, { header: 1, defval: '' });
+        const header = (rows[0] || []).map(String).map(s => s.trim().toLowerCase());
+        const districtIdx = header.findIndex(h => h.includes('район'));
+        const houseIdx = header.findIndex(h => h.includes('номер') && h.includes('дом'));
+        const choiceIdx = header.findIndex(h => h.includes('вариант') || (h.includes('выбор') && !h.includes('порядок')));
+        const resultIdx = header.findIndex(h => h.includes('результат') || h.includes('ответ'));
+        const orderIdx = header.findIndex(h => h.includes('порядок'));
+        const d = districtIdx >= 0 ? districtIdx : 0;
+        const h = houseIdx >= 0 ? houseIdx : 1;
+        const ch = choiceIdx >= 0 ? choiceIdx : 2;
+        const res = resultIdx >= 0 ? resultIdx : 3;
+        const ord = orderIdx >= 0 ? orderIdx : 4;
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r] || [];
+          const district = String(row[d] ?? '').trim();
+          const house_number = String(row[h] ?? '').trim();
+          const choice_text = String(row[ch] ?? '').trim();
+          if (!choice_text) continue;
+          const address_id = addressIdByKey.get(addressKey(district, house_number));
+          if (!address_id) continue;
+          const response_text = String(row[res] ?? '').trim();
+          const order = parseInt(row[ord], 10);
+          await Address.createChoice(scenarioId, {
+            address_id,
+            choice_text,
+            response_text,
+            choice_order: Number.isNaN(order) ? r : order
           });
         }
       }
