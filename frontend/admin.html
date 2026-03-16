@@ -84,23 +84,31 @@
 
         /* Гамбургер-меню */
         .hamburger-btn {
-            background: none;
+            background: transparent !important;
             border: none;
-            color: var(--noir-gold);
+            color: var(--noir-silver);
             font-size: 1.5rem;
-            padding: 0.5rem;
+            padding: 0.5rem 0.75rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: color 0.2s ease, background 0.2s ease;
+            border-radius: 0.25rem;
         }
 
         .hamburger-btn:hover {
-            color: var(--noir-cream);
-            transform: scale(1.1);
+            color: var(--noir-gold);
+            background: rgba(212, 175, 55, 0.15) !important;
         }
 
         .hamburger-btn:focus {
             outline: none;
-            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.5);
+            box-shadow: none;
+        }
+
+        .hamburger-btn:focus-visible {
+            color: var(--noir-gold);
+            background: rgba(212, 175, 55, 0.1) !important;
+            outline: 1px solid rgba(212, 175, 55, 0.5);
+            outline-offset: 2px;
         }
 
         /* Адаптивное поведение */
