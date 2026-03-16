@@ -87,10 +87,13 @@ const deleteQuestion = async (req, res) => {
 // Создание ответа на вопрос
 const createAnswer = async (req, res) => {
     try {
-        const { question_id, answer_text } = req.body;
+        const { question_id } = req.body;
+        const answer_text = (req.body.answer_text !== undefined && req.body.answer_text !== null)
+            ? String(req.body.answer_text)
+            : '';
         
-        if (!question_id || !answer_text) {
-            return res.status(400).json({ error: 'Question ID and answer text required' });
+        if (!question_id) {
+            return res.status(400).json({ error: 'Question ID required' });
         }
         
         // Определяем тип пользователя

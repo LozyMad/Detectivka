@@ -621,10 +621,6 @@ function displayQuestions(questions) {
                 <label for="answer_${question.id}" class="form-label">Ваш ответ:</label>
                 <textarea class="form-control" id="answer_${question.id}" rows="3" placeholder="Введите ваш ответ..."></textarea>
             </div>
-            <button class="btn btn-primary" onclick="submitAnswer(${question.id})">
-                <i class="fas fa-paper-plane me-1"></i>Отправить ответ
-            </button>
-            <div id="answer_status_${question.id}" class="mt-2"></div>
         </div>
     `).join('');
     
@@ -640,43 +636,6 @@ function displayQuestions(questions) {
     container.innerHTML = questionsHtml + bulkControlsHtml;
 }
 
-async function submitAnswer(questionId) {
-    const answerText = document.getElementById(`answer_${questionId}`).value.trim();
-    const statusDiv = document.getElementById(`answer_status_${questionId}`);
-    
-    if (!answerText) {
-        statusDiv.innerHTML = '<div class="alert alert-warning">Введите ответ</div>';
-        return;
-    }
-    
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/questions/answer`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                question_id: questionId,
-                answer_text: answerText
-            })
-        });
-        
-        if (response.ok) {
-            statusDiv.innerHTML = '<div class="alert alert-success">Ответ сохранен!</div>';
-            document.getElementById(`answer_${questionId}`).disabled = true;
-            document.querySelector(`button[onclick="submitAnswer(${questionId})"]`).disabled = true;
-        } else {
-            const error = await response.json();
-            statusDiv.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.error}</div>`;
-        }
-    } catch (error) {
-        console.error('Error submitting answer:', error);
-        statusDiv.innerHTML = '<div class="alert alert-danger">Ошибка отправки ответа</div>';
-    }
-}
-
 async function submitAllAnswers() {
     const globalStatusDiv = document.getElementById('answers_global_status');
     
@@ -685,39 +644,51 @@ async function submitAllAnswers() {
         return;
     }
     
-    const tasks = [];
+    const token = localStorage.getItem('token');
+    const results = [];
     
-    currentQuestions.forEach(question => {
+    for (const question of currentQuestions) {
         const textarea = document.getElementById(`answer_${question.id}`);
-        const button = document.querySelector(`button[onclick="submitAnswer(${question.id})"]`);
-        
-        if (!textarea || !button || textarea.disabled || button.disabled) {
-            return;
+        if (!textarea) {
+            continue;
         }
         
-        const answerText = textarea.value.trim();
-        if (!answerText) {
-            const statusDiv = document.getElementById(`answer_status_${question.id}`);
-            if (statusDiv) {
-                statusDiv.innerHTML = '<div class="alert alert-warning">Введите ответ</div>';
+        const answerText = textarea.value; // пустые ответы разрешены
+        
+        try {
+            const response = await fetch(`${API_BASE}/questions/answer`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    question_id: question.id,
+                    answer_text: answerText
+                })
+            });
+            
+            if (response.ok) {
+                results.push({ questionId: question.id, ok: true });
+            } else {
+                const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+                results.push({ questionId: question.id, ok: false, error: error.error });
             }
-            return;
+        } catch (error) {
+            console.error('Error submitting answer:', error);
+            results.push({ questionId: question.id, ok: false, error: 'Network error' });
         }
-        
-        tasks.push(submitAnswer(question.id));
-    });
-    
-    if (tasks.length === 0) {
-        globalStatusDiv.innerHTML = '<div class="alert alert-warning">Нет новых ответов для отправки</div>';
-        return;
     }
     
-    try {
-        await Promise.all(tasks);
-        globalStatusDiv.innerHTML = '<div class="alert alert-success">Все возможные ответы отправлены</div>';
-    } catch (error) {
-        console.error('Error submitting all answers:', error);
-        globalStatusDiv.innerHTML = '<div class="alert alert-danger">Возникли ошибки при отправке некоторых ответов</div>';
+    const successCount = results.filter(r => r.ok).length;
+    const failCount = results.length - successCount;
+    
+    if (successCount > 0 && failCount === 0) {
+        globalStatusDiv.innerHTML = '<div class="alert alert-success">Все ответы отправлены</div>';
+    } else if (successCount > 0 && failCount > 0) {
+        globalStatusDiv.innerHTML = `<div class="alert alert-warning">Часть ответов отправлена успешно (${successCount}), часть с ошибками (${failCount})</div>`;
+    } else {
+        globalStatusDiv.innerHTML = '<div class="alert alert-danger">Не удалось отправить ответы</div>';
     }
 }
 
