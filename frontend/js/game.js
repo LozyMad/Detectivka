@@ -336,14 +336,23 @@ function updateTripHistory() {
     });
 }
 
-// Форматирование времени поездки
+// Форматирование времени поездки (сервер отдаёт время в UTC без суффикса Z — нормализуем)
 function formatTripTime(timestamp) {
-    const date = new Date(timestamp);
+    let ts = timestamp;
+    if (typeof ts === 'string' && ts && !/Z|[+-]\d{2}:?\d{2}$/.test(ts.trim())) {
+        ts = ts.trim().replace(' ', 'T') + 'Z';
+    }
+    const date = new Date(ts);
+    if (Number.isNaN(date.getTime())) {
+        const fallback = new Date(timestamp);
+        return fallback.toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+    }
     const now = new Date();
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
 
+    if (diffMs < 0) return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     if (diffMins < 1) return 'Только что';
     if (diffMins < 60) return `${diffMins} мин. назад`;
     if (diffHours < 24) return `${diffHours} ч. назад`;
