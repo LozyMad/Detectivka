@@ -51,6 +51,16 @@ if (DB_TYPE === 'postgresql') {
         });
     },
 
+    getByScenario: (scenario_id) => {
+        return new Promise((resolve, reject) => {
+            const db = getScenarioDb(scenario_id);
+            db.all(`SELECT * FROM addresses ORDER BY district, house_number`, [], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+    },
+
     delete: (scenario_id, id) => {
         return new Promise((resolve, reject) => {
             const db = getScenarioDb(scenario_id);
