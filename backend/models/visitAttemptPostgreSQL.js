@@ -14,15 +14,20 @@ class VisitAttempt {
     }
 
     static async getByUserAndScenario(userId, scenarioId, roomId = null) {
+        const sid = parseInt(scenarioId, 10);
+        if (Number.isNaN(sid) || sid < 1) {
+            return [];
+        }
+        const schema = `scenario_${sid}`;
         let sql = `SELECT 
             va.*,
             a.description as address_description,
-            vl.id as visited_location_id
+            (SELECT vl.id FROM ${schema}.visited_locations vl 
+             WHERE vl.address_id = va.address_id AND vl.user_id = va.user_id 
+               AND (va.room_id IS NULL OR vl.room_id = va.room_id) 
+             ORDER BY vl.visited_at DESC LIMIT 1) as visited_location_id
           FROM visit_attempts va
-          LEFT JOIN addresses a ON va.address_id = a.id
-          LEFT JOIN visited_locations vl ON va.address_id = vl.address_id 
-            AND va.user_id = vl.user_id 
-            AND va.scenario_id = vl.scenario_id
+          LEFT JOIN ${schema}.addresses a ON va.address_id = a.id AND va.scenario_id = $2
           WHERE va.user_id = $1 AND va.scenario_id = $2`;
         
         let params = [userId, scenarioId];
@@ -34,8 +39,15 @@ class VisitAttempt {
         
         sql += ' ORDER BY va.attempted_at DESC LIMIT 100';
         
-        const result = await query(sql, params);
-        return result.rows;
+        try {
+            const result = await query(sql, params);
+            return result.rows;
+        } catch (err) {
+            if (err.code === '42P01') {
+                return [];
+            }
+            throw err;
+        }
     }
 
     static async getByScenario(scenarioId) {
