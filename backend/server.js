@@ -48,14 +48,19 @@ function runDeploy(res) {
       return res.status(500).json({ ok: false, error: stderr || err.message, log: stdout });
     }
     console.log('[Deploy] git pull OK', stdout);
-    res.json({ ok: true, log: stdout });
-    // Перезапуск через 2 сек, чтобы ответ успел уйти (иначе pm2 restart убивает процесс до отправки)
-    setTimeout(() => {
-      exec(`pm2 restart detectivka`, (e, out, errOut) => {
-        if (e) console.error('[Deploy] pm2 restart error', e, errOut);
-        else console.log('[Deploy] pm2 restart OK', out);
-      });
-    }, 2000);
+    // Устанавливаем зависимости (в т.ч. новые, например xlsx)
+    const backendDir = path.join(projectRoot, 'backend');
+    exec(`cd "${backendDir}" && npm install --production`, (errInstall, outInstall, errOutInstall) => {
+      if (errInstall) console.error('[Deploy] npm install warning', errInstall, errOutInstall);
+      else console.log('[Deploy] npm install OK', outInstall);
+      res.json({ ok: true, log: stdout });
+      setTimeout(() => {
+        exec(`pm2 restart detectivka`, (e, out, errOut) => {
+          if (e) console.error('[Deploy] pm2 restart error', e, errOut);
+          else console.log('[Deploy] pm2 restart OK', out);
+        });
+      }, 2000);
+    });
   });
 }
 app.post('/api/deploy', express.raw({ type: 'application/json' }), (req, res) => {
