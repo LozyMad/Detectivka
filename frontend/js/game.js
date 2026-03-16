@@ -7,6 +7,13 @@ let tripHistory = [];
 let cachedScenarioName = null; // Кэш для имени сценария
 let lastScenarioCheck = 0; // Время последней проверки сценария
 
+function setScenarioTitle(text) {
+    const el = document.getElementById('scenarioTitle');
+    const elM = document.getElementById('scenarioTitleMobile');
+    if (el) el.textContent = text;
+    if (elM) elM.textContent = text;
+}
+
 // Initialize game
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
@@ -14,6 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTripCount();
     loadTripHistory();
     loadScenarioInfo();
+    
+    const collapseEl = document.getElementById('navbarCollapse');
+    const iconEl = document.getElementById('navbarToggleIcon');
+    if (collapseEl && iconEl) {
+        collapseEl.addEventListener('show.bs.collapse', () => { iconEl.classList.remove('fa-chevron-down'); iconEl.classList.add('fa-chevron-up'); });
+        collapseEl.addEventListener('hide.bs.collapse', () => { iconEl.classList.remove('fa-chevron-up'); iconEl.classList.add('fa-chevron-down'); });
+    }
     
     // Setup tab switching
     setupTabSwitching();
@@ -367,16 +381,16 @@ async function loadScenarioInfo() {
                 });
                 
                 if (scenarioName) {
-                    document.getElementById('scenarioTitle').textContent = scenarioName;
+                    setScenarioTitle(scenarioName);
                     cachedScenarioName = scenarioName;
                     lastScenarioCheck = Date.now();
                     console.log('Scenario name loaded:', scenarioName);
                 } else {
-                    document.getElementById('scenarioTitle').textContent = 'Сценарий не определен';
+                    setScenarioTitle('Сценарий не определен');
                     console.log('No scenario name found in data:', data);
                 }
             } else {
-                document.getElementById('scenarioTitle').textContent = 'Ошибка загрузки комнаты';
+                setScenarioTitle('Ошибка загрузки комнаты');
                 console.error('Failed to load room state:', response.status);
             }
         } else {
@@ -385,16 +399,16 @@ async function loadScenarioInfo() {
             
             if (response.ok) {
                 const data = await response.json();
-                document.getElementById('scenarioTitle').textContent = data.scenario.name;
+                setScenarioTitle(data.scenario.name);
                 cachedScenarioName = data.scenario.name;
                 lastScenarioCheck = Date.now();
             } else {
-                document.getElementById('scenarioTitle').textContent = 'Нет активного сценария';
+                setScenarioTitle('Нет активного сценария');
             }
         }
     } catch (error) {
         console.error('Error loading scenario info:', error);
-        document.getElementById('scenarioTitle').textContent = 'Ошибка загрузки';
+        setScenarioTitle('Ошибка загрузки');
     }
 }
 
@@ -437,13 +451,13 @@ async function refreshRoomState() {
             
             // Обновляем только если имя сценария изменилось
             if (scenarioName && scenarioName !== cachedScenarioName) {
-                document.getElementById('scenarioTitle').textContent = scenarioName;
+                setScenarioTitle(scenarioName);
                 cachedScenarioName = scenarioName;
                 lastScenarioCheck = now;
                 console.log('Scenario name updated from room state:', scenarioName);
             } else if (!cachedScenarioName && scenarioName) {
                 // Первоначальная загрузка
-                document.getElementById('scenarioTitle').textContent = scenarioName;
+                setScenarioTitle(scenarioName);
                 cachedScenarioName = scenarioName;
                 lastScenarioCheck = now;
                 console.log('Scenario name initially loaded:', scenarioName);

@@ -330,41 +330,60 @@
             border-color: var(--noir-gold);
             color: var(--noir-gold);
         }
+        /* На десктопе шапка всегда развёрнута, мобильная строка скрыта */
+        @media (min-width: 768px) {
+            #navbarCollapse.navbar-collapse {
+                display: flex !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+        }
     </style>
 </head>
 <body class="game-container">
-    <nav class="navbar navbar-dark bg-dark">
+    <nav class="navbar navbar-dark bg-dark" id="gameNavbar">
         <div class="container">
-            <div class="d-flex align-items-center w-100 justify-content-between">
-                <!-- Левая часть: название игры и сценарий -->
-                <div class="d-flex flex-column align-items-start" style="margin-left: 1rem;">
-                    <span class="navbar-brand mb-0" style="line-height: 1;">Детективка</span>
-                    <span class="navbar-text small mt-0" id="scenarioTitle">Сценарий не определен</span>
-                </div>
-                
-                <!-- Центральная часть: кнопки навигации -->
-                <div class="d-flex align-items-center">
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-outline-light active" id="game-tab" type="button">
-                            <i class="fas fa-map-marker-alt me-2"></i>Игра
-                        </button>
-                        <button class="btn btn-outline-light" id="questions-tab" type="button">
-                            <i class="fas fa-question-circle me-2"></i>Вопросы
-                        </button>
+            <!-- Мобильная строка: логотип + кнопка сворачивания -->
+            <div class="d-md-none d-flex align-items-center justify-content-between w-100 py-1" style="min-height: 2.5rem;">
+                <span class="navbar-brand mb-0" style="line-height: 1;">Детективка</span>
+                <button class="btn btn-link text-light p-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-expanded="true" aria-controls="navbarCollapse" aria-label="Свернуть / развернуть шапку">
+                    <i class="fas fa-chevron-up" id="navbarToggleIcon"></i>
+                </button>
+            </div>
+            <!-- Содержимое шапки (на мобильном сворачивается) -->
+            <div class="collapse show navbar-collapse" id="navbarCollapse">
+                <div class="d-flex align-items-center w-100 justify-content-between flex-wrap">
+                    <!-- Левая часть: название игры и сценарий (на мобильном скрыта в первой строке) -->
+                    <div class="d-none d-md-flex flex-column align-items-start" style="margin-left: 1rem;">
+                        <span class="navbar-brand mb-0" style="line-height: 1;">Детективка</span>
+                        <span class="navbar-text small mt-0" id="scenarioTitle">Сценарий не определен</span>
                     </div>
-                </div>
-                
-                <!-- Правая часть: таймер, счетчик и пользователь -->
-                <div class="d-flex align-items-center">
-                    <div class="d-flex align-items-center me-3">
-                        <div id="roomTimer" style="display: none;" class="me-2">
-                            <span class="badge bg-warning text-dark fs-6" id="timerDisplay">00:00</span>
-                        </div>
-                        <span class="badge trips-badge fs-6" id="tripCounter">Поездок: 0</span>
+                    <div class="d-md-none flex-column align-items-start flex-grow-1">
+                        <span class="navbar-text small mt-0" id="scenarioTitleMobile">Сценарий не определен</span>
                     </div>
+                    <!-- Центральная часть: кнопки навигации -->
                     <div class="d-flex align-items-center">
-                        <span class="navbar-text me-3" id="usernameDisplay"></span>
-                        <button class="btn btn-outline-light btn-sm" onclick="logout()">Выйти</button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-light active" id="game-tab" type="button">
+                                <i class="fas fa-map-marker-alt me-2"></i>Игра
+                            </button>
+                            <button class="btn btn-outline-light" id="questions-tab" type="button">
+                                <i class="fas fa-question-circle me-2"></i>Вопросы
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Правая часть: таймер, счетчик и пользователь -->
+                    <div class="d-flex align-items-center mt-2 mt-md-0">
+                        <div class="d-flex align-items-center me-3">
+                            <div id="roomTimer" style="display: none;" class="me-2">
+                                <span class="badge bg-warning text-dark fs-6" id="timerDisplay">00:00</span>
+                            </div>
+                            <span class="badge trips-badge fs-6" id="tripCounter">Поездок: 0</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="navbar-text me-3" id="usernameDisplay"></span>
+                            <button class="btn btn-outline-light btn-sm" onclick="logout()">Выйти</button>
+                        </div>
                     </div>
                 </div>
             </div>
