@@ -42,10 +42,6 @@
         .navbar {
             background: var(--noir-darker) !important;
             border-bottom: 2px solid var(--noir-gold);
-            position: fixed !important;
-            top: 0;
-            left: 0;
-            right: 0;
             z-index: 1020;
             width: 100%;
         }
@@ -147,10 +143,10 @@
             
             .sidebar {
                 position: fixed !important;
-                top: 56px;
+                top: 0;
                 left: 0;
                 width: 240px;
-                height: calc(100vh - 56px);
+                height: 100vh;
                 transform: translateX(0);
             }
             
@@ -167,13 +163,8 @@
             }
         }
 
-        /* Отступ для фиксированного навбара */
-        body {
-            padding-top: 92px;
-        }
-
         .main-content {
-            margin-top: 1rem;
+            margin-top: 1.5rem;
         }
 
         /* Дополнительный отступ для мобильных устройств */
