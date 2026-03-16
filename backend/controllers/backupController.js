@@ -1,149 +1,86 @@
-const fs = require('fs').promises;
-const path = require('path');
-// Определяем тип базы данных
-const DB_TYPE = process.env.DB_TYPE || 'sqlite';
-
-let db, query;
-if (DB_TYPE === 'postgresql') {
-  const pgConfig = require('../config/database');
-  db = pgConfig.db;
-  query = pgConfig.query;
-} else {
-  const sqliteConfig = require('../config/database');
-  db = sqliteConfig.db;
-}
+const XLSX = require('xlsx');
 const Scenario = require('../models/scenario');
 const Question = require('../models/question');
 const Address = require('../models/address');
 
+const SHEET_TRIPS = 'Поездки';
+const SHEET_QUESTIONS = 'Вопросы';
+const COLS_TRIPS = ['Район', 'Номер дома', 'Информация по адресу'];
+const COLS_QUESTIONS = ['Номер вопроса', 'Вопрос'];
+
 const backupController = {
-  // Экспорт всех сценариев в JSON
+  // Экспорт одного сценария: XLSX с листами «Поездки» и «Вопросы».
   exportScenarios: async (req, res) => {
     try {
-      console.log('Starting scenarios export...');
-      
-      // Получаем все сценарии
-      let scenarios;
-      if (DB_TYPE === 'postgresql') {
-        const result = await query('SELECT * FROM scenarios ORDER BY id');
-        scenarios = result.rows;
-      } else {
-        scenarios = await new Promise((resolve, reject) => {
-          db.all('SELECT * FROM scenarios ORDER BY id', (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
+      const scenarioId = req.query.scenario_id ? parseInt(req.query.scenario_id, 10) : null;
+      if (!scenarioId || Number.isNaN(scenarioId)) {
+        if (typeof res.status === 'function') {
+          return res.status(400).json({
+            success: false,
+            error: 'Выберите сценарий для экспорта (scenario_id)'
           });
+        }
+        return;
+      }
+
+      const scenario = await Scenario.getById(scenarioId);
+      if (!scenario) {
+        return res.status(404).json({
+          success: false,
+          error: 'Сценарий не найден'
         });
       }
 
-      console.log(`Found ${scenarios.length} scenarios`);
+      const [addresses, questions] = await Promise.all([
+        Address.getByScenario(scenarioId),
+        Question.getByScenario(scenarioId)
+      ]);
 
-      // Для каждого сценария получаем связанные данные
-      const exportData = {
-        export_date: new Date().toISOString(),
-        version: '1.0',
-        scenarios: []
-      };
-
-      for (const scenario of scenarios) {
-        console.log(`Processing scenario: ${scenario.name} (ID: ${scenario.id})`);
-        
-        // Получаем вопросы для сценария
-        let questions;
-        if (DB_TYPE === 'postgresql') {
-          const result = await query('SELECT * FROM questions WHERE scenario_id = $1 ORDER BY id', [scenario.id]);
-          questions = result.rows;
-        } else {
-          questions = await new Promise((resolve, reject) => {
-            db.all('SELECT * FROM questions WHERE scenario_id = ? ORDER BY id', [scenario.id], (err, rows) => {
-              if (err) reject(err);
-              else resolve(rows);
-            });
-          });
-        }
-
-        // Получаем адреса для сценария
-        let addresses;
-        if (DB_TYPE === 'postgresql') {
-          const result = await query('SELECT * FROM addresses WHERE scenario_id = $1 ORDER BY id', [scenario.id]);
-          addresses = result.rows;
-        } else {
-          addresses = await new Promise((resolve, reject) => {
-            db.all('SELECT * FROM addresses WHERE scenario_id = ? ORDER BY id', [scenario.id], (err, rows) => {
-              if (err) reject(err);
-              else resolve(rows);
-            });
-          });
-        }
-
-        // Получаем разрешения для сценария
-        let permissions;
-        if (DB_TYPE === 'postgresql') {
-          const result = await query('SELECT * FROM admin_permissions WHERE scenario_id = $1', [scenario.id]);
-          permissions = result.rows;
-        } else {
-          permissions = await new Promise((resolve, reject) => {
-            db.all('SELECT * FROM admin_scenario_permissions WHERE scenario_id = ?', [scenario.id], (err, rows) => {
-              if (err) reject(err);
-              else resolve(rows);
-            });
-          });
-        }
-
-        exportData.scenarios.push({
-          scenario: scenario,
-          questions: questions,
-          addresses: addresses,
-          permissions: permissions
-        });
+      const tripsRows = [COLS_TRIPS];
+      for (const a of addresses) {
+        tripsRows.push([
+          a.district || '',
+          a.house_number || '',
+          a.description || ''
+        ]);
       }
 
-      // Создаем имя файла с датой
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      const filename = `scenarios_export_${timestamp}.json`;
-      const backupDir = path.join(__dirname, '../../backups/scenarios');
-      const filepath = path.join(backupDir, filename);
+      const questionsRows = [COLS_QUESTIONS];
+      questions.forEach((q, i) => {
+        questionsRows.push([i + 1, (q.question_text || '').replace(/\r?\n/g, ' ')]);
+      });
 
-      // Создаем директорию если её нет
-      await fs.mkdir(backupDir, { recursive: true });
+      const wb = XLSX.utils.book_new();
+      const wsTrips = XLSX.utils.aoa_to_sheet(tripsRows);
+      const wsQuestions = XLSX.utils.aoa_to_sheet(questionsRows);
+      XLSX.utils.book_append_sheet(wb, wsTrips, SHEET_TRIPS);
+      XLSX.utils.book_append_sheet(wb, wsQuestions, SHEET_QUESTIONS);
 
-      // Сохраняем файл
-      await fs.writeFile(filepath, JSON.stringify(exportData, null, 2), 'utf8');
-      
-      // Также сохраняем как latest.json
-      const latestPath = path.join(backupDir, 'latest.json');
-      await fs.writeFile(latestPath, JSON.stringify(exportData, null, 2), 'utf8');
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      const safeName = (scenario.name || 'scenario').replace(/[^\w\s-]/g, '').trim() || 'scenario';
+      const filename = `${safeName}.xlsx`;
 
-      console.log(`Export completed: ${filename}`);
-      
-      if (res.json && typeof res.json === 'function') {
-        res.json({
-          success: true,
-          message: 'Сценарии успешно экспортированы',
-          filename: filename,
-          scenarios_count: scenarios.length,
-          export_date: exportData.export_date
-        });
-      }
-
+      if (typeof res.setHeader !== 'function') return;
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename.replace(/"/g, '')}"`);
+      res.send(buf);
     } catch (error) {
       console.error('Export error:', error);
       if (res.status && typeof res.status === 'function') {
         res.status(500).json({
           success: false,
-          error: 'Ошибка экспорта сценариев',
+          error: 'Ошибка экспорта сценария',
           details: error.message
         });
+      } else {
+        throw error;
       }
-      throw error; // Пробрасываем ошибку для автоэкспорта
     }
   },
 
-  // Импорт сценариев из JSON
+  // Импорт: только XLSX с листами «Поездки» и «Вопросы». Имя сценария — из имени файла.
   importScenarios: async (req, res) => {
     try {
-      console.log('Starting scenarios import...');
-      
       if (!req.file) {
         return res.status(400).json({
           success: false,
@@ -151,261 +88,91 @@ const backupController = {
         });
       }
 
-      // Читаем содержимое файла
-      const fileContent = req.file.buffer.toString('utf8');
-      const importData = JSON.parse(fileContent);
+      const buf = req.file.buffer;
+      const wb = XLSX.read(buf, { type: 'buffer' });
+      const sheetTrips = wb.Sheets[SHEET_TRIPS];
+      const sheetQuestions = wb.Sheets[SHEET_QUESTIONS];
 
-      // Проверяем структуру файла
-      if (!importData.scenarios || !Array.isArray(importData.scenarios)) {
+      if (!sheetTrips && !sheetQuestions) {
         return res.status(400).json({
           success: false,
-          error: 'Неверный формат файла'
+          error: 'В файле должны быть листы «Поездки» и «Вопросы»'
         });
       }
 
-      console.log(`Importing ${importData.scenarios.length} scenarios`);
+      const scenarioName = (req.file.originalname || 'Импорт')
+        .replace(/\.(xlsx|xls)$/i, '')
+        .trim() || 'Импорт';
 
-      let importedCount = 0;
-      let skippedCount = 0;
+      const allScenarios = await Scenario.getAll();
+      const existingNames = new Set(allScenarios.map(s => (s.name || '').trim().toLowerCase()));
+      if (existingNames.has(scenarioName.trim().toLowerCase())) {
+        return res.status(400).json({
+          success: false,
+          error: `Сценарий с именем «${scenarioName}» уже существует`
+        });
+      }
 
-      for (const scenarioData of importData.scenarios) {
-        const { scenario, questions, addresses, permissions } = scenarioData;
+      const userId = req.user && req.user.id ? req.user.id : null;
+      const newScenario = await Scenario.create({
+        name: scenarioName,
+        description: '',
+        is_active: false,
+        created_by: userId
+      });
+      const scenarioId = newScenario.id;
 
-        try {
-          // Проверяем, существует ли сценарий с таким именем
-          const existingScenario = await new Promise((resolve, reject) => {
-            db.get('SELECT id FROM scenarios WHERE name = ?', [scenario.name], (err, row) => {
-              if (err) reject(err);
-              else resolve(row);
-            });
+      if (sheetTrips) {
+        const rows = XLSX.utils.sheet_to_json(sheetTrips, { header: 1, defval: '' });
+        const header = (rows[0] || []).map(String).map(s => s.trim().toLowerCase());
+        const districtIdx = header.findIndex(h => h.includes('район'));
+        const houseIdx = header.findIndex(h => h.includes('номер') && h.includes('дом'));
+        const infoIdx = header.findIndex(h => h.includes('информация') || h.includes('адрес'));
+        const d = districtIdx >= 0 ? districtIdx : 0;
+        const h = houseIdx >= 0 ? houseIdx : 1;
+        const i = infoIdx >= 0 ? infoIdx : 2;
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r] || [];
+          const district = String(row[d] ?? '').trim();
+          const house_number = String(row[h] ?? '').trim();
+          if (!district && !house_number) continue;
+          await Address.create({
+            scenario_id: scenarioId,
+            district: district || '-',
+            house_number: house_number || '-',
+            description: String(row[i] ?? '').trim()
           });
-
-          if (existingScenario) {
-            console.log(`Scenario "${scenario.name}" already exists, skipping...`);
-            skippedCount++;
-            continue;
-          }
-
-          // Создаем сценарий
-          const newScenario = await new Promise((resolve, reject) => {
-            db.run(
-              'INSERT INTO scenarios (name, description, is_active, created_by) VALUES (?, ?, ?, ?)',
-              [scenario.name, scenario.description, false, req.user.id], // is_active = false для безопасности
-              function(err) {
-                if (err) reject(err);
-                else resolve({ id: this.lastID, ...scenario });
-              }
-            );
-          });
-
-          console.log(`Created scenario: ${scenario.name} (ID: ${newScenario.id})`);
-
-          // Импортируем вопросы
-          for (const question of questions) {
-            await new Promise((resolve, reject) => {
-              db.run(
-                'INSERT INTO questions (scenario_id, question_text, answer_type) VALUES (?, ?, ?)',
-                [newScenario.id, question.question_text, question.answer_type],
-                function(err) {
-                  if (err) reject(err);
-                  else resolve();
-                }
-              );
-            });
-          }
-
-          // Импортируем адреса
-          for (const address of addresses) {
-            await new Promise((resolve, reject) => {
-              db.run(
-                'INSERT INTO addresses (scenario_id, district, house_number, description) VALUES (?, ?, ?, ?)',
-                [newScenario.id, address.district, address.house_number, address.description],
-                function(err) {
-                  if (err) reject(err);
-                  else resolve();
-                }
-              );
-            });
-          }
-
-          // Импортируем разрешения (если есть)
-          for (const permission of permissions) {
-            await new Promise((resolve, reject) => {
-              db.run(
-                'INSERT INTO admin_scenario_permissions (admin_id, scenario_id) VALUES (?, ?)',
-                [permission.admin_id, newScenario.id],
-                function(err) {
-                  if (err) reject(err);
-                  else resolve();
-                }
-              );
-            });
-          }
-
-          importedCount++;
-
-        } catch (scenarioError) {
-          console.error(`Error importing scenario "${scenario.name}":`, scenarioError);
-          // Продолжаем импорт других сценариев
         }
       }
 
-      console.log(`Import completed: ${importedCount} imported, ${skippedCount} skipped`);
+      if (sheetQuestions) {
+        const rows = XLSX.utils.sheet_to_json(sheetQuestions, { header: 1, defval: '' });
+        const header = (rows[0] || []).map(String).map(s => s.trim().toLowerCase());
+        const questionIdx = header.findIndex(x => x.includes('вопрос') && !x.includes('номер'));
+        const qCol = questionIdx >= 0 ? questionIdx : 1;
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r] || [];
+          const question_text = String(row[qCol] ?? '').trim();
+          if (!question_text) continue;
+          await Question.create({
+            scenario_id: scenarioId,
+            question_text
+          });
+        }
+      }
 
       res.json({
         success: true,
-        message: 'Импорт сценариев завершен',
-        imported_count: importedCount,
-        skipped_count: skippedCount,
-        total_processed: importData.scenarios.length
+        message: 'Импорт завершён',
+        imported_count: 1,
+        scenario_name: scenarioName
       });
-
     } catch (error) {
       console.error('Import error:', error);
       res.status(500).json({
         success: false,
-        error: 'Ошибка импорта сценариев',
+        error: 'Ошибка импорта сценария',
         details: error.message
-      });
-    }
-  },
-
-  // Получить список доступных бэкапов
-  getBackupList: async (req, res) => {
-    try {
-      const backupDir = path.join(__dirname, '../backups/scenarios');
-      console.log('Backup directory:', backupDir);
-      
-      try {
-        const files = await fs.readdir(backupDir);
-        console.log('Found files:', files);
-        
-        const backupFiles = await Promise.all(
-          files
-            .filter(file => file.endsWith('.json') && file !== 'latest.json')
-            .map(async (file) => {
-              const filePath = path.join(backupDir, file);
-              const stats = await fs.stat(filePath);
-              console.log(`File ${file}: size=${stats.size}, created=${stats.birthtime}`);
-              return {
-                filename: file,
-                size: stats.size,
-                created: stats.birthtime
-              };
-            })
-        );
-
-        backupFiles.sort((a, b) => new Date(b.created) - new Date(a.created));
-        console.log('Final backup files:', backupFiles);
-
-        res.json({
-          success: true,
-          backups: backupFiles
-        });
-      } catch (dirError) {
-        console.log('Directory error:', dirError);
-        // Папка не существует
-        res.json({
-          success: true,
-          backups: []
-        });
-      }
-
-    } catch (error) {
-      console.error('Get backup list error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Ошибка получения списка бэкапов'
-      });
-    }
-  },
-
-  // Скачать бэкап
-  downloadBackup: async (req, res) => {
-    try {
-      const { filename } = req.params;
-      const { token } = req.query;
-      
-      // Проверяем токен из query параметра
-      if (!token) {
-        return res.status(401).json({
-          success: false,
-          error: 'Токен авторизации не предоставлен'
-        });
-      }
-      
-      // Проверяем безопасность имени файла
-      if (!filename || filename.includes('..') || !filename.endsWith('.json')) {
-        return res.status(400).json({
-          success: false,
-          error: 'Неверное имя файла'
-        });
-      }
-
-      const backupDir = path.join(__dirname, '../backups/scenarios');
-      const filePath = path.join(backupDir, filename);
-
-      try {
-        // Проверяем, что файл существует
-        await fs.access(filePath);
-        
-        // Отправляем файл
-        res.download(filePath, filename);
-      } catch (fileError) {
-        res.status(404).json({
-          success: false,
-          error: 'Файл не найден'
-        });
-      }
-
-    } catch (error) {
-      console.error('Download backup error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Ошибка скачивания бэкапа'
-      });
-    }
-  },
-
-  // Удалить бэкап
-  deleteBackup: async (req, res) => {
-    try {
-      const { filename } = req.params;
-      
-      // Проверяем безопасность имени файла
-      if (!filename || filename.includes('..') || !filename.endsWith('.json')) {
-        return res.status(400).json({
-          success: false,
-          error: 'Неверное имя файла'
-        });
-      }
-
-      const backupDir = path.join(__dirname, '../backups/scenarios');
-      const filePath = path.join(backupDir, filename);
-
-      try {
-        // Проверяем, что файл существует
-        await fs.access(filePath);
-        
-        // Удаляем файл
-        await fs.unlink(filePath);
-        
-        res.json({
-          success: true,
-          message: 'Бэкап успешно удален'
-        });
-      } catch (fileError) {
-        res.status(404).json({
-          success: false,
-          error: 'Файл не найден'
-        });
-      }
-
-    } catch (error) {
-      console.error('Delete backup error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Ошибка удаления бэкапа'
       });
     }
   }

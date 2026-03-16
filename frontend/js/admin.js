@@ -257,7 +257,9 @@ function switchTab(tabName) {
         loadPermissions();
         populatePermissionDropdowns();
     } else if (tabName === 'backup') {
-        loadBackupList();
+        loadScenarios().then(() => {
+            if (typeof populateExportScenarioSelect === 'function') populateExportScenarioSelect();
+        });
     }
 }
 
@@ -1586,22 +1588,30 @@ function populateScenarioDropdowns() {
     const addDropdown = document.getElementById('addressScenario');
     const viewDropdown = document.getElementById('viewAddressScenario');
     const copyDropdown = document.getElementById('sourceScenarioSelect');
-    
-    const options = scenarios.map(scenario => 
+
+    const options = scenarios.map(scenario =>
         `<option value="${scenario.id}">${scenario.name}</option>`
     ).join('');
-    
+
     addDropdown.innerHTML = '<option value="">Выберите сценарий...</option>' + options;
     viewDropdown.innerHTML = '<option value="">Выберите сценарий для просмотра...</option>' + options;
-    
+
     if (copyDropdown) {
         copyDropdown.innerHTML = '<option value="">Выберите сценарий для копирования</option>' + options;
     }
 
-    // Populate statistics select as well
     ensureStatsScenarioOptions();
-    // Populate room scenario select
     ensureRoomScenarioOptions();
+    if (typeof populateExportScenarioSelect === 'function') populateExportScenarioSelect();
+}
+
+function populateExportScenarioSelect() {
+    const sel = document.getElementById('exportScenarioSelect');
+    if (!sel) return;
+    const options = (typeof scenarios !== 'undefined' && scenarios.length)
+        ? scenarios.map(s => `<option value="${s.id}">${s.name}</option>`).join('')
+        : '';
+    sel.innerHTML = '<option value="">Выберите сценарий...</option>' + options;
 }
 
 function ensureStatsScenarioOptions() {

@@ -5,38 +5,23 @@ const backupController = require('../controllers/backupController');
 
 const router = express.Router();
 
-// Настройка multer для загрузки файлов
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB лимит
-  },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/json' || file.originalname.endsWith('.json')) {
+    const name = (file.originalname || '').toLowerCase();
+    if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
       cb(null, true);
     } else {
-      cb(new Error('Только JSON файлы разрешены'), false);
+      cb(new Error('Разрешены только файлы .xlsx'), false);
     }
   }
 });
 
-// Все маршруты требуют авторизации и права супер-админа
 router.use(authenticateToken);
 router.use(superAdminRequired);
 
-// Экспорт сценариев
 router.get('/export', backupController.exportScenarios);
-
-// Импорт сценариев
 router.post('/import', upload.single('backupFile'), backupController.importScenarios);
-
-// Получить список бэкапов
-router.get('/list', backupController.getBackupList);
-
-// Скачать бэкап (без middleware авторизации, токен передается в query)
-router.get('/download/:filename', backupController.downloadBackup);
-
-// Удалить бэкап
-router.delete('/delete/:filename', backupController.deleteBackup);
 
 module.exports = router;
