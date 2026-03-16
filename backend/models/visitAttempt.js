@@ -9,6 +9,22 @@ if (DB_TYPE === 'postgresql') {
 } else {
   // Используем SQLite версию (оригинальная логика)
   const { db } = require('../config/database');
+  const { getScenarioDb } = require('../config/scenarioDatabase');
+
+  function getDescriptionFromScenarioDb(scenarioId, addressId) {
+    return new Promise((resolve) => {
+      if (!scenarioId || !addressId) return resolve(null);
+      try {
+        const scenarioDb = getScenarioDb(scenarioId);
+        scenarioDb.get('SELECT description FROM addresses WHERE id = ?', [addressId], (err, row) => {
+          if (err) resolve(null);
+          else resolve(row ? row.description : null);
+        });
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
 
   class VisitAttemptSQLite {
   static create(attemptData) {
@@ -75,15 +91,13 @@ if (DB_TYPE === 'postgresql') {
     });
   }
 
-  // Новый метод: получение попыток пользователя по сценарию
+  // Новый метод: получение попыток пользователя по сценарию (описание адреса из базы сценария)
   static getByUserAndScenario(userId, scenarioId, roomId = null) {
     return new Promise((resolve, reject) => {
       const sql = `SELECT 
            va.*,
-           a.description as address_description,
            vl.id as visited_location_id
          FROM visit_attempts va
-         LEFT JOIN addresses a ON va.address_id = a.id
          LEFT JOIN visited_locations vl ON va.address_id = vl.address_id 
            AND va.user_id = vl.user_id 
            AND va.scenario_id = vl.scenario_id
@@ -91,14 +105,16 @@ if (DB_TYPE === 'postgresql') {
          ORDER BY va.attempted_at DESC
          LIMIT 100`;
       const params = roomId !== null ? [userId, scenarioId, roomId] : [userId, scenarioId];
-      db.all(
-        sql,
-        params,
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
+      db.all(sql, params, async (err, rows) => {
+        if (err) return reject(err);
+        if (!rows || rows.length === 0) return resolve([]);
+        for (const row of rows) {
+          if (row.found && row.address_id && row.scenario_id) {
+            row.address_description = await getDescriptionFromScenarioDb(row.scenario_id, row.address_id);
+          }
         }
-      );
+        resolve(rows);
+      });
     });
   }
 
