@@ -1,5 +1,6 @@
 const VisitAttempt = require('../models/visitAttempt');
 const Scenario = require('../models/scenario');
+const Address = require('../models/address');
 
 const getUserAttempts = async (req, res) => {
     try {
@@ -25,13 +26,23 @@ const getUserAttempts = async (req, res) => {
             return res.json({ attempts: [] });
         }
 
-        // Получаем все попытки пользователя для активного сценария
-        const VisitAttempt = require('../models/visitAttempt');
         const attempts = await VisitAttempt.getByUserAndScenario(
             userId,
             activeScenario.id,
             req.roomUser ? req.roomUser.room_id : null
         );
+
+        for (const a of attempts) {
+            a.has_choices = false;
+            if (a.found && a.address_id) {
+                try {
+                    const hasCh = await Address.hasChoices(activeScenario.id, a.address_id);
+                    a.has_choices = !!hasCh;
+                } catch (e) {
+                    a.has_choices = false;
+                }
+            }
+        }
 
         res.json({ attempts });
     } catch (error) {

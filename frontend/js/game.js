@@ -277,7 +277,8 @@ async function loadTripHistory() {
                 timestamp: attempt.attempted_at,
                 alreadyVisited: false,
                 address_id: attempt.address_id || null,
-                visited_location_id: attempt.visited_location_id || null
+                visited_location_id: attempt.visited_location_id || null,
+                hasChoices: !!attempt.has_choices
             };
         }));
         
@@ -306,9 +307,12 @@ function updateTripHistory() {
                 <span class="badge district-badge bg-primary">${trip.district}</span>
                 <span class="ms-2">Дом ${trip.houseNumber}</span>
                 <span class="ms-2 text-muted">${formatTripTime(trip.timestamp)}</span>
-                ${trip.success && trip.address_id ? 
-                    `<button class="btn btn-sm btn-outline-warning ms-2" onclick="openChoiceHistory(${trip.address_id}, '${trip.description}', ${trip.visited_location_id || 'null'})" title="Интерактивные выборы">
-                        <i class="fas fa-question-circle"></i>
+                ${trip.success && trip.address_id && trip.hasChoices ? 
+                    `<button type="button" class="btn btn-sm btn-outline-warning ms-2 trip-choice-btn" title="Развилка по выборам"
+                        data-address-id="${trip.address_id}"
+                        data-description="${(trip.description || '').replace(/"/g, '&quot;')}"
+                        data-visited-location-id="${trip.visited_location_id || ''}">
+                        <i class="fas fa-code-branch"></i>
                     </button>` : ''
                 }
             </div>
@@ -322,6 +326,14 @@ function updateTripHistory() {
     `).join('');
 
     container.innerHTML = items;
+    container.querySelectorAll('.trip-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = parseInt(btn.dataset.addressId, 10);
+            const desc = btn.dataset.description || '';
+            const vid = btn.dataset.visitedLocationId ? parseInt(btn.dataset.visitedLocationId, 10) : null;
+            openChoiceHistory(id, desc, vid);
+        });
+    });
 }
 
 // Форматирование времени поездки
