@@ -579,7 +579,7 @@ async function loadQuestions() {
         const questionsResponse = await fetch(`${API_BASE}/questions/scenario/${scenarioId}`);
         if (questionsResponse.ok) {
             const questionsData = await questionsResponse.json();
-            displayQuestions(questionsData.questions);
+            displayQuestions(questionsData.questions, scenarioId, roomUser);
         } else {
             questionsListElement.innerHTML = '<p class="text-muted text-center">Ошибка загрузки вопросов</p>';
         }
@@ -593,8 +593,47 @@ async function loadQuestions() {
 }
 
 let currentQuestions = [];
+let lastAnswersScenarioId = null;
+let lastAnswersRoomUser = undefined;
 
-function displayQuestions(questions) {
+const ANSWERS_STORAGE_PREFIX = 'detectivka_answers_';
+
+function escapeHtmlForTextarea(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function getAnswersStorageKey(scenarioId, roomUser) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const id = roomUser && roomUser.room_id != null
+        ? 'room_' + roomUser.room_id + '_' + roomUser.id
+        : 'user_' + (user.id || 'anon');
+    return ANSWERS_STORAGE_PREFIX + scenarioId + '_' + id;
+}
+
+function loadSavedAnswers(scenarioId, roomUser) {
+    try {
+        const key = getAnswersStorageKey(scenarioId, roomUser);
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveAnswer(scenarioId, roomUser, questionId, text) {
+    const key = getAnswersStorageKey(scenarioId, roomUser);
+    const saved = loadSavedAnswers(scenarioId, roomUser);
+    if (text) {
+        saved[questionId] = text;
+    } else {
+        delete saved[questionId];
+    }
+    try {
+        localStorage.setItem(key, JSON.stringify(saved));
+    } catch (e) {}
+}
+
+function displayQuestions(questions, scenarioId, roomUser) {
     const container = document.getElementById('questionsList');
     
     if (!questions || questions.length === 0) {
@@ -604,13 +643,16 @@ function displayQuestions(questions) {
     }
     
     currentQuestions = questions;
+    lastAnswersScenarioId = scenarioId || null;
+    lastAnswersRoomUser = roomUser;
+    const saved = scenarioId && roomUser !== undefined ? loadSavedAnswers(scenarioId, roomUser) : {};
     
     const questionsHtml = questions.map(question => `
         <div class="question-item mb-4 p-3 border rounded">
             <h5 class="mb-3">${question.question_text}</h5>
             <div class="mb-3">
                 <label for="answer_${question.id}" class="form-label">Ваш ответ:</label>
-                <textarea class="form-control" id="answer_${question.id}" rows="3" placeholder="Введите ваш ответ..."></textarea>
+                <textarea class="form-control answer-input" id="answer_${question.id}" data-question-id="${question.id}" rows="3" placeholder="Введите ваш ответ...">${escapeHtmlForTextarea(saved[question.id] || '')}</textarea>
             </div>
         </div>
     `).join('');
@@ -625,6 +667,15 @@ function displayQuestions(questions) {
     `;
     
     container.innerHTML = questionsHtml + bulkControlsHtml;
+    
+    if (scenarioId && roomUser !== undefined) {
+        container.querySelectorAll('.answer-input').forEach(textarea => {
+            const questionId = textarea.dataset.questionId;
+            textarea.addEventListener('input', () => {
+                saveAnswer(scenarioId, roomUser, questionId, textarea.value);
+            });
+        });
+    }
 }
 
 async function submitAllAnswers() {
@@ -662,24 +713,32 @@ async function submitAllAnswers() {
             if (response.ok) {
                 results.push({ questionId: question.id, ok: true });
             } else {
-                const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-                results.push({ questionId: question.id, ok: false, error: error.error });
+                const errorBody = await response.json().catch(() => ({}));
+                const msg = errorBody.error || (response.status === 401 ? 'Требуется авторизация. Зайдите в комнату заново.' : `Ошибка ${response.status}`);
+                results.push({ questionId: question.id, ok: false, error: msg });
             }
         } catch (error) {
             console.error('Error submitting answer:', error);
-            results.push({ questionId: question.id, ok: false, error: 'Network error' });
+            results.push({ questionId: question.id, ok: false, error: 'Сеть недоступна или сервер не отвечает' });
         }
     }
     
     const successCount = results.filter(r => r.ok).length;
     const failCount = results.length - successCount;
+    const firstError = results.find(r => !r.ok);
+    const errorMessage = firstError ? firstError.error : '';
     
     if (successCount > 0 && failCount === 0) {
         globalStatusDiv.innerHTML = '<div class="alert alert-success">Все ответы отправлены</div>';
+        if (lastAnswersScenarioId && lastAnswersRoomUser !== undefined) {
+            try {
+                localStorage.removeItem(getAnswersStorageKey(lastAnswersScenarioId, lastAnswersRoomUser));
+            } catch (e) {}
+        }
     } else if (successCount > 0 && failCount > 0) {
-        globalStatusDiv.innerHTML = `<div class="alert alert-warning">Часть ответов отправлена успешно (${successCount}), часть с ошибками (${failCount})</div>`;
+        globalStatusDiv.innerHTML = `<div class="alert alert-warning">Часть ответов отправлена успешно (${successCount}), часть с ошибками (${failCount}). ${errorMessage ? errorMessage : ''}</div>`;
     } else {
-        globalStatusDiv.innerHTML = '<div class="alert alert-danger">Не удалось отправить ответы</div>';
+        globalStatusDiv.innerHTML = `<div class="alert alert-danger">Не удалось отправить ответы. ${errorMessage || 'Проверьте подключение и авторизацию.'}</div>`;
     }
 }
 
