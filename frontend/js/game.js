@@ -617,7 +617,7 @@ function displayQuestions(questions) {
     
     const bulkControlsHtml = `
         <div class="text-center mt-4">
-            <button class="btn btn-success" onclick="submitAllAnswers()">
+            <button class="btn" id="submitAllAnswersBtn" onclick="submitAllAnswers()">
                 <i class="fas fa-paper-plane me-1"></i>Отправить все ответы
             </button>
             <div id="answers_global_status" class="mt-2"></div>
