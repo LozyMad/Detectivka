@@ -13,21 +13,20 @@
     --noir-shadow: rgba(0, 0, 0, 0.8);
 }
 
-/* Глобально убираем "курсор ввода текста" на обычном тексте */
-html, body {
-    cursor: default;
+/* Глобально убираем "курсор ввода текста" на обычном тексте — везде стрелка, кроме полей ввода */
+* {
+    cursor: default !important;
 }
 
-body * {
-    cursor: inherit;
+a, button, [role="button"], .btn, [type="button"], [type="submit"], [type="reset"] {
+    cursor: pointer !important;
 }
 
-a, button, [role="button"], .btn {
-    cursor: pointer;
-}
-
-input, textarea, select, [contenteditable="true"] {
-    cursor: text;
+input:not([type="button"]):not([type="submit"]):not([type="reset"]),
+textarea,
+select,
+[contenteditable="true"] {
+    cursor: text !important;
 }
 
 /* Стили модальных окон в London noir стиле */
