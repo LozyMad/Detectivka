@@ -13,6 +13,23 @@
     --noir-shadow: rgba(0, 0, 0, 0.8);
 }
 
+/* Глобально убираем "курсор ввода текста" на обычном тексте */
+html, body {
+    cursor: default;
+}
+
+body * {
+    cursor: inherit;
+}
+
+a, button, [role="button"], .btn {
+    cursor: pointer;
+}
+
+input, textarea, select, [contenteditable="true"] {
+    cursor: text;
+}
+
 /* Стили модальных окон в London noir стиле */
 .modal-content {
     background-color: var(--noir-gray) !important;
