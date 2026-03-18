@@ -145,8 +145,76 @@ function parseAddressBookXlsx(filePath) {
   return { entries, categories: Array.from(categories) };
 }
 
+function parseAddressBookXlsxFromBuffer(buffer) {
+  const wb = XLSX.read(buffer, { type: 'buffer', cellDates: true });
+  const categories = computeAllCategoriesFromWorkbook(wb);
+
+  const entries = [];
+  for (const sheetName of wb.SheetNames) {
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+
+    let currentCategory = null;
+    for (const row of rows) {
+      const picked = pickNonEmptyCells(row || []);
+
+      if (picked.length === 0) continue;
+
+      if (picked.length === 1) {
+        const v = picked[0];
+        if (categories.has(v)) {
+          currentCategory = v;
+        }
+        continue;
+      }
+
+      if (!currentCategory) continue;
+
+      if (currentCategory === 'Частные лица') {
+        if (picked.length >= 4) {
+          const district = picked[0];
+          const house_number = picked[1];
+          const apartment = picked[2] || '';
+          const name = picked[3] || '';
+          const note = picked[4] || '';
+
+          entries.push({
+            category: currentCategory,
+            district,
+            house_number,
+            apartment,
+            name,
+            note,
+            _letter_group: parseLetterGroupFromName(name)
+          });
+        }
+      } else {
+        if (picked.length >= 3) {
+          const district = picked[0];
+          const house_number = picked[1];
+          const name = picked[2] || '';
+          const categoryFromRow = picked[3] && categories.has(picked[3]) ? picked[3] : currentCategory;
+
+          entries.push({
+            category: categoryFromRow,
+            district,
+            house_number,
+            apartment: '',
+            name,
+            note: '',
+            _letter_group: null
+          });
+        }
+      }
+    }
+  }
+
+  return { entries, categories: Array.from(categories) };
+}
+
 module.exports = {
   DEFAULT_ADDRESS_BOOK_XLSX_PATH,
-  parseAddressBookXlsx
+  parseAddressBookXlsx,
+  parseAddressBookXlsxFromBuffer
 };
 

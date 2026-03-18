@@ -1,5 +1,10 @@
 const { query, getClient } = require('../config/postgresql');
-const { parseAddressBookXlsx, DEFAULT_ADDRESS_BOOK_XLSX_PATH } = require('../utils/addressBookImport');
+const {
+  parseAddressBookXlsx,
+  parseAddressBookXlsxFromBuffer,
+  DEFAULT_ADDRESS_BOOK_XLSX_PATH
+} = require('../utils/addressBookImport');
+const fs = require('fs');
 
 const allowedDistricts = new Set(['С', 'Ю', 'З', 'В', 'Ц', 'П', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ']);
 
@@ -30,6 +35,13 @@ async function ensureImported({ filePath } = {}) {
   if (count > 0) return;
 
   const usedPath = filePath || process.env.ADDRESS_BOOK_XLSX_PATH || DEFAULT_ADDRESS_BOOK_XLSX_PATH;
+  if (!fs.existsSync(usedPath)) {
+    throw new Error(
+      `Адресная книга XLSX не найдена: ${usedPath}. ` +
+      'Загрузите файл в админке (суперадмин) или задайте env ADDRESS_BOOK_XLSX_PATH.'
+    );
+  }
+
   const { entries } = parseAddressBookXlsx(usedPath);
 
   if (!entries.length) return;
@@ -66,9 +78,10 @@ const AddressBook = {
   ensureImported,
 
   listCategories: async () => {
-    const usedPath = process.env.ADDRESS_BOOK_XLSX_PATH || DEFAULT_ADDRESS_BOOK_XLSX_PATH;
-    const { categories } = parseAddressBookXlsx(usedPath);
-    return categories;
+    const res = await query(
+      `SELECT DISTINCT category FROM address_book_entries ORDER BY category`
+    );
+    return (res.rows || []).map(r => r.category);
   },
 
   getEntriesByCategory: async ({ category, limit = 500, offset = 0 }) => {
@@ -118,6 +131,39 @@ const AddressBook = {
   deleteEntry: async (id) => {
     const res = await query('DELETE FROM address_book_entries WHERE id = $1', [id]);
     return { deletedId: id, changes: res.rowCount || 0 };
+  },
+
+  resetAndLoadFromBuffer: async (buffer) => {
+    const { entries } = parseAddressBookXlsxFromBuffer(buffer);
+    if (!entries || !entries.length) return { loaded: 0 };
+
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM address_book_entries');
+
+      const values = [];
+      const placeholders = entries.map((e, idx) => {
+        const base = idx * 6;
+        values.push(e.category, e.district, e.house_number, e.apartment || '', e.name, e.note || '');
+        return `($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6})`;
+      });
+
+      await client.query(
+        `INSERT INTO address_book_entries (category, district, house_number, apartment, name, note, updated_at)
+         VALUES ${placeholders.join(',')}
+         `,
+        values
+      );
+
+      await client.query('COMMIT');
+      return { loaded: entries.length };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 };
 

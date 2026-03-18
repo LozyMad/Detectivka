@@ -9,7 +9,12 @@ if (DB_TYPE === 'postgresql') {
   AddressBook = require('./addressBookPostgreSQL');
 } else {
   const { db } = require('../config/database');
-  const { parseAddressBookXlsx, DEFAULT_ADDRESS_BOOK_XLSX_PATH } = require('../utils/addressBookImport');
+  const {
+    parseAddressBookXlsx,
+    parseAddressBookXlsxFromBuffer,
+    DEFAULT_ADDRESS_BOOK_XLSX_PATH
+  } = require('../utils/addressBookImport');
+  const fs = require('fs');
 
   const allowedDistricts = new Set(['С', 'Ю', 'З', 'В', 'Ц', 'П', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ']);
 
@@ -46,6 +51,13 @@ if (DB_TYPE === 'postgresql') {
     if (countRow && Number(countRow.count) > 0) return;
 
     const usedPath = filePath || process.env.ADDRESS_BOOK_XLSX_PATH || DEFAULT_ADDRESS_BOOK_XLSX_PATH;
+    if (!fs.existsSync(usedPath)) {
+      throw new Error(
+        `Адресная книга XLSX не найдена: ${usedPath}. ` +
+        'Загрузите файл в админке (суперадмин) или задайте env ADDRESS_BOOK_XLSX_PATH.'
+      );
+    }
+
     const { entries } = parseAddressBookXlsx(usedPath);
 
     await new Promise((resolve, reject) => {
@@ -80,12 +92,16 @@ if (DB_TYPE === 'postgresql') {
     ensureImported,
 
     listCategories: async () => {
-      const { parseAddressBookXlsx: parseFn, DEFAULT_ADDRESS_BOOK_XLSX_PATH: defaultPath } = require('../utils/addressBookImport');
-      const usedPath = process.env.ADDRESS_BOOK_XLSX_PATH || defaultPath;
-      // Категории можно прочитать из XLSX (не из БД), чтобы всегда совпадали с файлом.
-      // Делается только после ensureImported.
-      const { categories } = parseFn(usedPath);
-      return categories;
+      return new Promise((resolve, reject) => {
+        db.all(
+          `SELECT DISTINCT category FROM address_book_entries ORDER BY category`,
+          [],
+          (err, rows) => {
+            if (err) return reject(err);
+            resolve((rows || []).map(r => r.category));
+          }
+        );
+      });
     },
 
     getEntriesByCategory: async ({ category, limit = 500, offset = 0 }) => {
@@ -159,6 +175,47 @@ if (DB_TYPE === 'postgresql') {
           resolve({ deletedId: id, changes: this.changes });
         });
       });
+    },
+
+    resetAndLoadFromBuffer: async (buffer) => {
+      const { entries } = parseAddressBookXlsxFromBuffer(buffer);
+      if (!entries || !entries.length) return { loaded: 0 };
+
+      await new Promise((resolve, reject) => {
+        db.serialize(() => {
+          db.run('BEGIN TRANSACTION');
+
+          db.run(`DELETE FROM address_book_entries`, [], (delErr) => {
+            if (delErr) {
+              db.run('ROLLBACK');
+              return reject(delErr);
+            }
+
+            const stmt = db.prepare(
+              `INSERT INTO address_book_entries 
+               (category, district, house_number, apartment, name, note)
+               VALUES (?, ?, ?, ?, ?, ?)`
+            );
+
+            for (const e of entries) {
+              stmt.run([e.category, e.district, e.house_number, e.apartment || '', e.name, e.note || '']);
+            }
+
+            stmt.finalize((insErr) => {
+              if (insErr) {
+                db.run('ROLLBACK');
+                return reject(insErr);
+              }
+              db.run('COMMIT', (commitErr) => {
+                if (commitErr) return reject(commitErr);
+                resolve();
+              });
+            });
+          });
+        });
+      });
+
+      return { loaded: entries.length };
     }
   };
 }

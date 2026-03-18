@@ -964,6 +964,28 @@
                                 </div>
                             </div>
 
+                            <div class="card mb-3" id="addressBookUploadCard" style="display: none;">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0"><i class="fas fa-upload me-2"></i>Загрузка XLSX адресной книги</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-md-8">
+                                            <label class="form-label">Файл .xlsx</label>
+                                            <input type="file" class="form-control" id="addressBookUploadInput" accept=".xlsx,.xls">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button type="button" class="btn btn-warning w-100" id="addressBookUploadBtn" onclick="uploadAddressBookXlsx()">
+                                                <i class="fas fa-save me-2"></i>Загрузить
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted small mt-2">
+                                        Если на сервере нет файла в папке, загрузка заполняет адресную книгу из вашего XLSX.
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="card">
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="card-title mb-0" id="addressBookActiveLabel">—</h5>

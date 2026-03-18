@@ -51,6 +51,9 @@ function checkAdminAuth() {
     currentUser = user;
     isSuperAdmin = currentUser.admin_level === 'super_admin';
     document.getElementById('adminUsername').textContent = user.username;
+
+    const uploadCard = document.getElementById('addressBookUploadCard');
+    if (uploadCard) uploadCard.style.display = isSuperAdmin ? '' : 'none';
     
     // Отладочная информация
     console.log('Current user:', user);
@@ -517,6 +520,46 @@ async function deleteAddressBookEntry() {
     } catch (err) {
         console.error('deleteAddressBookEntry error:', err);
         showMessage(err.message || 'Ошибка удаления записи', 'danger');
+    }
+}
+
+// Загрузка XLSX адресной книги (только супер-админ)
+async function uploadAddressBookXlsx() {
+    if (!isSuperAdmin) {
+        showMessage('Загрузка адресной книги доступна только супер-админу', 'warning');
+        return;
+    }
+
+    const input = document.getElementById('addressBookUploadInput');
+    if (!input || !input.files || !input.files[0]) {
+        showMessage('Выберите XLSX файл', 'warning');
+        return;
+    }
+
+    const file = input.files[0];
+    const form = new FormData();
+    form.append('addressBookFile', file);
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/super-admin/address-book/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: form
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Ошибка загрузки XLSX');
+
+        showMessage('Адресная книга загружена', 'success');
+
+        // Перезагружаем секции/таблицу
+        addressBookSectionsLoaded = false;
+        addressBookSections = null;
+        await loadAddressBookSectionsAndEntries();
+    } catch (err) {
+        console.error('uploadAddressBookXlsx error:', err);
+        showMessage(err.message || 'Ошибка загрузки адресной книги', 'danger');
     }
 }
 

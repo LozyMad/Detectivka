@@ -162,12 +162,27 @@ async function deleteAddressBookEntry(req, res) {
   }
 }
 
+async function uploadAddressBookXlsx(req, res) {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({ error: 'Файл XLSX обязателен' });
+    }
+
+    const result = await AddressBook.resetAndLoadFromBuffer(req.file.buffer);
+    res.json({ ok: true, loaded: result.loaded || 0 });
+  } catch (err) {
+    console.error('uploadAddressBookXlsx error:', err);
+    res.status(400).json({ error: err.message || 'Bad request' });
+  }
+}
+
 module.exports = {
   getAddressBookSections,
   getAddressBookEntries,
   getAddressBookEntryById,
   createAddressBookEntry,
   updateAddressBookEntry,
-  deleteAddressBookEntry
+  deleteAddressBookEntry,
+  uploadAddressBookXlsx
 };
 
