@@ -10,6 +10,11 @@ const {
   getAdminPermissions,
   getScenarioPermissions
 } = require('../controllers/superAdminController');
+const {
+  createAddressBookEntry,
+  updateAddressBookEntry,
+  deleteAddressBookEntry
+} = require('../controllers/addressBookController');
 
 const router = express.Router();
 
@@ -30,6 +35,11 @@ router.post('/permissions/revoke', revokeScenarioPermission);
 router.get('/permissions', getAllPermissions);
 router.get('/permissions/admin/:admin_id', getAdminPermissions);
 router.get('/permissions/scenario/:scenario_id', getScenarioPermissions);
+
+// Адресная книга: редактирование доступно только супер-админу
+router.post('/address-book/entries', createAddressBookEntry);
+router.put('/address-book/entries/:id', updateAddressBookEntry);
+router.delete('/address-book/entries/:id', deleteAddressBookEntry);
 
 module.exports = router;
 

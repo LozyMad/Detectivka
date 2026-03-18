@@ -210,6 +210,20 @@ const init = async () => {
         FOREIGN KEY(visited_location_id) REFERENCES visited_locations(id) ON DELETE SET NULL
       )`);
 
+      // Address book (глобальная “адресная книга” для города)
+      db.run(`CREATE TABLE IF NOT EXISTS address_book_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        district TEXT NOT NULL,
+        house_number TEXT NOT NULL,
+        apartment TEXT NOT NULL DEFAULT '',
+        name TEXT NOT NULL,
+        note TEXT NOT NULL DEFAULT '',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(category, district, house_number, apartment, name)
+      )`);
+
       // Create default super admin user
       const bcrypt = require('bcryptjs');
       const hashedPassword = bcrypt.hashSync('admin123', 10);

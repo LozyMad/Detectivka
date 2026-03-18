@@ -4,6 +4,17 @@ let scenarios = [];
 let roomsCache = null;
 let roomsCacheTime = 0;
 const CACHE_DURATION = 5000; // 5 секунд кэш
+let isSuperAdmin = false;
+
+// Address book state
+let addressBookSections = null;
+let addressBookSectionsLoaded = false;
+let addressBookFilter = {
+    category: 'Частные лица',
+    letter_group: 'А-Е',
+    q: ''
+};
+let addressBookEditModalInstance = null;
 
 /** Запрос с токеном; при 401/403 — выход и редирект на страницу входа */
 async function authFetch(url, options = {}) {
@@ -38,6 +49,7 @@ function checkAdminAuth() {
     }
     
     currentUser = user;
+    isSuperAdmin = currentUser.admin_level === 'super_admin';
     document.getElementById('adminUsername').textContent = user.username;
     
     // Отладочная информация
@@ -166,6 +178,349 @@ async function nuclearReset() {
     }
 }
 
+// -----------------------------
+// Address Book (admin)
+// -----------------------------
+
+function escapeHtml(value) {
+    const str = value === null || value === undefined ? '' : String(value);
+    return str.replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    })[m]);
+}
+
+function renderAddressBookActiveLabel() {
+    const labelEl = document.getElementById('addressBookActiveLabel');
+    if (!labelEl) return;
+    const { category, letter_group } = addressBookFilter;
+    if (category === 'Частные лица' && letter_group) {
+        labelEl.textContent = `Частные лица: ${letter_group}`;
+    } else {
+        labelEl.textContent = category || '—';
+    }
+}
+
+function updateAddressBookTabActiveStyles() {
+    const privateWrap = document.getElementById('addressBookPrivateTabs');
+    if (privateWrap) {
+        privateWrap.querySelectorAll('.addressbook-tab-btn').forEach(btn => {
+            const lg = btn.dataset.letterGroup;
+            btn.classList.toggle('active', addressBookFilter.category === 'Частные лица' && addressBookFilter.letter_group === lg);
+        });
+    }
+
+    const enterpriseWrap = document.getElementById('addressBookEnterpriseTabs');
+    if (enterpriseWrap) {
+        enterpriseWrap.querySelectorAll('.addressbook-tab-btn').forEach(btn => {
+            const cat = btn.dataset.category;
+            btn.classList.toggle('active', addressBookFilter.category === cat);
+        });
+    }
+}
+
+function renderAddressBookEditModalOptions() {
+    const categorySelect = document.getElementById('addressBookEditCategory');
+    if (!categorySelect || !addressBookSections) return;
+
+    const allCategories = [
+        addressBookSections.private_category,
+        ...(addressBookSections.enterprise_categories || [])
+    ];
+
+    categorySelect.innerHTML = allCategories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+    const districtSelect = document.getElementById('addressBookEditDistrict');
+    if (districtSelect) {
+        const districts = ['С', 'Ю', 'З', 'В', 'Ц', 'П', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ'];
+        districtSelect.innerHTML = districts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+    }
+}
+
+function syncAddressBookEditApartmentVisibility() {
+    const wrap = document.getElementById('addressBookEditApartmentWrap');
+    if (!wrap) return;
+    const category = document.getElementById('addressBookEditCategory')?.value;
+    wrap.style.display = category === 'Частные лица' ? '' : 'none';
+}
+
+async function loadAddressBookSectionsAndEntries() {
+    if (!addressBookSectionsLoaded) {
+        const response = await authFetch(`${API_BASE}/admin/address-book/sections`);
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            showMessage(data.error || 'Ошибка загрузки разделов адресной книги', 'danger');
+            return;
+        }
+        const data = await response.json();
+        addressBookSections = data;
+        addressBookSectionsLoaded = true;
+
+        // Render tabs
+        const privateTabs = document.getElementById('addressBookPrivateTabs');
+        if (privateTabs) {
+            privateTabs.innerHTML = '';
+            (data.private_letter_groups || []).forEach(group => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'addressbook-tab-btn';
+                btn.textContent = group;
+                btn.dataset.letterGroup = group;
+                btn.addEventListener('click', () => {
+                    addressBookFilter.category = data.private_category;
+                    addressBookFilter.letter_group = group;
+                    renderAddressBookActiveLabel();
+                    updateAddressBookTabActiveStyles();
+                    loadAddressBookEntries();
+                });
+                privateTabs.appendChild(btn);
+            });
+        }
+
+        const enterpriseTabs = document.getElementById('addressBookEnterpriseTabs');
+        if (enterpriseTabs) {
+            enterpriseTabs.innerHTML = '';
+            (data.enterprise_categories || []).forEach(cat => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'addressbook-tab-btn';
+                btn.textContent = cat;
+                btn.dataset.category = cat;
+                btn.addEventListener('click', () => {
+                    addressBookFilter.category = cat;
+                    addressBookFilter.letter_group = null;
+                    renderAddressBookActiveLabel();
+                    updateAddressBookTabActiveStyles();
+                    loadAddressBookEntries();
+                });
+                enterpriseTabs.appendChild(btn);
+            });
+        }
+
+        // Default filter: first letter group
+        if (addressBookSections.private_letter_groups && addressBookSections.private_letter_groups.length > 0) {
+            addressBookFilter.category = addressBookSections.private_category;
+            addressBookFilter.letter_group = addressBookSections.private_letter_groups[0];
+        } else {
+            addressBookFilter.category = 'Частные лица';
+            addressBookFilter.letter_group = 'А-Е';
+        }
+
+        renderAddressBookEditModalOptions();
+
+        const categorySelect = document.getElementById('addressBookEditCategory');
+        if (categorySelect && !categorySelect.dataset.bound) {
+            categorySelect.dataset.bound = '1';
+            categorySelect.addEventListener('change', () => syncAddressBookEditApartmentVisibility());
+        }
+    }
+
+    renderAddressBookActiveLabel();
+    updateAddressBookTabActiveStyles();
+    await loadAddressBookEntries();
+}
+
+async function loadAddressBookEntries() {
+    const tbody = document.getElementById('addressBookTableBody');
+    const hint = document.getElementById('addressBookLoadingHint');
+    if (!tbody) return;
+
+    if (!addressBookSectionsLoaded) {
+        // Загружаем структуру один раз
+        await loadAddressBookSectionsAndEntries();
+        return;
+    }
+
+    const searchInput = document.getElementById('addressBookSearch');
+    addressBookFilter.q = searchInput ? (searchInput.value || '').trim() : '';
+
+    try {
+        if (hint) hint.textContent = 'Загрузка...';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Загрузка...</td></tr>';
+
+        const qs = new URLSearchParams();
+        qs.set('category', addressBookFilter.category);
+        if (addressBookFilter.category === 'Частные лица' && addressBookFilter.letter_group) {
+            qs.set('letter_group', addressBookFilter.letter_group);
+        }
+        if (addressBookFilter.q) qs.set('q', addressBookFilter.q);
+
+        const response = await authFetch(`${API_BASE}/admin/address-book/entries?${qs.toString()}`);
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || 'Ошибка загрузки адресной книги');
+        }
+        const data = await response.json();
+        const entries = data.entries || [];
+
+        const showActions = isSuperAdmin;
+        const actionsHeader = document.getElementById('addressBookActionsHeader');
+        if (actionsHeader) actionsHeader.style.display = showActions ? '' : 'none';
+
+        if (entries.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center">Ничего не найдено</td></tr>`;
+            if (hint) hint.textContent = '';
+            return;
+        }
+
+        tbody.innerHTML = entries.map(e => {
+            const apartment = e.apartment || '';
+            const note = e.note || '';
+            const name = e.name || '';
+
+            const actionsCell = showActions
+                ? `<td class="text-center" style="white-space:nowrap;">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openAddressBookEditModal(${e.id})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>`
+                : `<td class="text-center" style="display:none;"></td>`;
+
+            return `
+                <tr>
+                    <td>${escapeHtml(e.district || '')}</td>
+                    <td>${escapeHtml(e.house_number || '')}</td>
+                    <td>${escapeHtml(apartment)}</td>
+                    <td>${escapeHtml(name)}</td>
+                    <td>${escapeHtml(note)}</td>
+                    ${actionsCell}
+                </tr>
+            `;
+        }).join('');
+
+        if (hint) hint.textContent = `${entries.length} записей`;
+        renderAddressBookActiveLabel();
+    } catch (err) {
+        console.error('loadAddressBookEntries error:', err);
+        showMessage(err.message || 'Ошибка загрузки адресной книги', 'danger');
+        if (hint) hint.textContent = '';
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center">Ошибка загрузки</td></tr>`;
+    }
+}
+
+async function openAddressBookEditModal(entryId) {
+    if (!isSuperAdmin) {
+        showMessage('Редактирование доступно только супер-админу', 'warning');
+        return;
+    }
+
+    if (!addressBookSectionsLoaded) {
+        await loadAddressBookSectionsAndEntries();
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/admin/address-book/entries/${entryId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || 'Ошибка загрузки записи');
+        }
+
+        const data = await response.json();
+        const entry = data.entry;
+        if (!entry) throw new Error('Запись не найдена');
+
+        document.getElementById('addressBookEditId').value = entry.id;
+        document.getElementById('addressBookEditCategory').value = entry.category;
+        document.getElementById('addressBookEditDistrict').value = entry.district;
+        document.getElementById('addressBookEditHouseNumber').value = entry.house_number || '';
+        document.getElementById('addressBookEditApartment').value = entry.apartment || '';
+        document.getElementById('addressBookEditName').value = entry.name || '';
+        document.getElementById('addressBookEditNote').value = entry.note || '';
+
+        syncAddressBookEditApartmentVisibility();
+
+        const modalEl = document.getElementById('addressBookEditModal');
+        addressBookEditModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+        addressBookEditModalInstance.show();
+    } catch (err) {
+        console.error('openAddressBookEditModal error:', err);
+        showMessage(err.message || 'Ошибка открытия редактора', 'danger');
+    }
+}
+
+async function saveAddressBookEntry() {
+    if (!isSuperAdmin) return;
+    const id = document.getElementById('addressBookEditId').value;
+    if (!id) {
+        showMessage('Нет ID записи', 'warning');
+        return;
+    }
+
+    const category = document.getElementById('addressBookEditCategory').value;
+    const district = document.getElementById('addressBookEditDistrict').value;
+    const house_number = document.getElementById('addressBookEditHouseNumber').value;
+    const apartmentWrap = document.getElementById('addressBookEditApartmentWrap');
+    const apartment = apartmentWrap && apartmentWrap.style.display === 'none'
+        ? ''
+        : document.getElementById('addressBookEditApartment').value;
+    const name = document.getElementById('addressBookEditName').value;
+    const note = document.getElementById('addressBookEditNote').value;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/super-admin/address-book/entries/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ category, district, house_number, apartment, name, note })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Ошибка сохранения');
+
+        showMessage('Запись обновлена', 'success');
+
+        const modalEl = document.getElementById('addressBookEditModal');
+        const inst = bootstrap.Modal.getInstance(modalEl) || addressBookEditModalInstance;
+        inst && inst.hide();
+
+        await loadAddressBookEntries();
+    } catch (err) {
+        console.error('saveAddressBookEntry error:', err);
+        showMessage(err.message || 'Ошибка сохранения записи', 'danger');
+    }
+}
+
+async function deleteAddressBookEntry() {
+    if (!isSuperAdmin) return;
+    const id = document.getElementById('addressBookEditId').value;
+    if (!id) return;
+
+    if (!confirm('Удалить запись адресной книги?')) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/super-admin/address-book/entries/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Ошибка удаления');
+
+        showMessage('Запись удалена', 'success');
+
+        const modalEl = document.getElementById('addressBookEditModal');
+        const inst = bootstrap.Modal.getInstance(modalEl) || addressBookEditModalInstance;
+        inst && inst.hide();
+
+        await loadAddressBookEntries();
+    } catch (err) {
+        console.error('deleteAddressBookEntry error:', err);
+        showMessage(err.message || 'Ошибка удаления записи', 'danger');
+    }
+}
+
+
 function setupEventListeners() {
     // Tab navigation
     document.querySelectorAll('.sidebar .nav-link').forEach(link => {
@@ -190,6 +545,16 @@ function setupEventListeners() {
     const viewAddressScenario = document.getElementById('viewAddressScenario');
     if (viewAddressScenario) {
         viewAddressScenario.addEventListener('change', loadAddressesForScenario);
+    }
+
+    // Address book search (дебаунс)
+    const addressBookSearch = document.getElementById('addressBookSearch');
+    if (addressBookSearch) {
+        let t = null;
+        addressBookSearch.addEventListener('input', () => {
+            if (t) clearTimeout(t);
+            t = setTimeout(() => loadAddressBookEntries(), 350);
+        });
     }
 
     // Rooms
@@ -260,6 +625,8 @@ function switchTab(tabName) {
         loadScenarios().then(() => {
             if (typeof populateExportScenarioSelect === 'function') populateExportScenarioSelect();
         });
+    } else if (tabName === 'addressBook') {
+        loadAddressBookSectionsAndEntries();
     }
 }
 

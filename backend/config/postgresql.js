@@ -195,6 +195,22 @@ const createTables = async () => {
     )
   `);
 
+  // Address book entries (глобальная адресная книга для города)
+  await query(`
+    CREATE TABLE IF NOT EXISTS address_book_entries (
+      id SERIAL PRIMARY KEY,
+      category VARCHAR(255) NOT NULL,
+      district VARCHAR(255) NOT NULL,
+      house_number VARCHAR(255) NOT NULL,
+      apartment VARCHAR(255) NOT NULL DEFAULT '',
+      name TEXT NOT NULL,
+      note TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(category, district, house_number, apartment, name)
+    )
+  `);
+
   console.log('All tables created successfully');
 };
 

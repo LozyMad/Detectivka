@@ -13,6 +13,11 @@ const {
   deleteAddress,
   getStatistics
 } = require('../controllers/adminController');
+const {
+  getAddressBookSections,
+  getAddressBookEntries,
+  getAddressBookEntryById
+} = require('../controllers/addressBookController');
 const { authenticateToken, adminRequired } = require('../middleware/auth');
 
 const router = express.Router();
@@ -37,5 +42,10 @@ router.get('/statistics/:scenario_id', getStatistics);
 router.post('/addresses', createAddress);
 router.get('/addresses/:scenario_id', getAddresses);
 router.delete('/addresses/:scenario_id/:id', deleteAddress);
+
+// Address book routes (просмотр доступен любому администратору)
+router.get('/address-book/sections', getAddressBookSections);
+router.get('/address-book/entries', getAddressBookEntries);
+router.get('/address-book/entries/:id', getAddressBookEntryById);
 
 module.exports = router;

@@ -413,6 +413,63 @@
             animation: fadeInNoir 0.6s ease-out;
         }
 
+        /* Адресная книга (AddressBook Tab) */
+        .addressbook-panel {
+            background: rgba(0,0,0,0.15);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .addressbook-group-title {
+            color: var(--noir-cream);
+            font-weight: 700;
+            font-family: 'Playfair Display', serif;
+            text-transform: uppercase;
+            font-size: 0.95rem;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .addressbook-sub-title {
+            color: var(--noir-gold);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .addressbook-tabs .addressbook-tab-btn {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 8px;
+            background: transparent;
+            border: 1px solid rgba(245,245,220,0.25);
+            color: var(--noir-cream);
+            border-radius: 8px;
+            padding: 10px 10px;
+            font-weight: 600;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .addressbook-tabs .addressbook-tab-btn:hover {
+            border-color: var(--noir-gold);
+        }
+
+        .addressbook-tabs .addressbook-tab-btn.active {
+            background: rgba(212, 175, 55, 0.25) !important;
+            border-color: var(--noir-gold) !important;
+            color: #000 !important;
+            font-weight: 700;
+        }
+
+        .addressbook-actions {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+
         /* Запрет каретки и выделения на заголовках, подписях, таблицах — только поля ввода редактируемые */
         .content-area .form-label,
         .content-area h1, .content-area h2, .content-area h3, .content-area h4, .content-area h5, .content-area h6,
@@ -471,6 +528,9 @@
                     </a>
                     <a class="nav-link" href="#" data-tab="permissions">
                         <i class="fas fa-key me-2"></i>Разрешения
+                    </a>
+                    <a class="nav-link" href="#" data-tab="addressBook">
+                        <i class="fas fa-book me-2"></i>Адресная книга
                     </a>
                     <a class="nav-link" href="#" data-tab="backup">
                         <i class="fas fa-download me-2"></i>Бэкап сценариев
@@ -867,6 +927,74 @@
                     </div>
                 </div>
 
+                <!-- Address Book Tab -->
+                <div id="addressBook-tab" class="tab-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-book me-2"></i>Адресная книга</h3>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4 col-lg-3">
+                            <div class="addressbook-panel">
+                                <div class="addressbook-group-title">КАРТА ГОРОДА</div>
+                                <div class="addressbook-sub-title">ЧАСТНЫЕ ЛИЦА</div>
+                                <div id="addressBookPrivateTabs" class="addressbook-tabs"></div>
+                            </div>
+
+                            <div class="addressbook-panel mt-3">
+                                <div class="addressbook-group-title">ПРЕДПРИЯТИЯ</div>
+                                <div id="addressBookEnterpriseTabs" class="addressbook-tabs"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8 col-lg-9">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-md-8">
+                                            <label class="form-label">Поиск по адресу/названию</label>
+                                            <input type="text" id="addressBookSearch" class="form-control" placeholder="Например: Центральный, Мирослав, 10...">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button class="btn btn-outline-primary w-100" id="addressBookReloadBtn" onclick="loadAddressBookEntries()">
+                                                <i class="fas fa-sync-alt me-1"></i>Обновить
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0" id="addressBookActiveLabel">—</h5>
+                                    <div class="text-muted small" id="addressBookLoadingHint"></div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Район</th>
+                                                    <th>Номер дома</th>
+                                                    <th id="addressBookApartmentHeader">Квартира</th>
+                                                    <th>Имя / название</th>
+                                                    <th>Примечание</th>
+                                                    <th id="addressBookActionsHeader" class="text-center">Действия</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="addressBookTableBody">
+                                                <tr>
+                                                    <td colspan="6" class="text-center">Загрузка...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Backup Tab -->
                 <div id="backup-tab" class="tab-content" style="display: none;">
                     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -1205,6 +1333,73 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                     <button type="button" class="btn btn-primary" onclick="updateChoice()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Address Book Edit Modal (super admin) -->
+    <div class="modal fade" id="addressBookEditModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>Редактирование адресной книги
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addressBookEditForm">
+                        <input type="hidden" id="addressBookEditId">
+
+                        <div class="mb-3">
+                            <label for="addressBookEditCategory" class="form-label">Категория</label>
+                            <select id="addressBookEditCategory" class="form-select"></select>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="addressBookEditDistrict" class="form-label">Район</label>
+                                    <select id="addressBookEditDistrict" class="form-select"></select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="addressBookEditHouseNumber" class="form-label">Номер дома</label>
+                                    <input id="addressBookEditHouseNumber" type="text" class="form-control">
+                                </div>
+                            </div>
+
+                            <div class="col-md-4" id="addressBookEditApartmentWrap">
+                                <div class="mb-3">
+                                    <label for="addressBookEditApartment" class="form-label">Квартира</label>
+                                    <input id="addressBookEditApartment" type="text" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="addressBookEditName" class="form-label">Имя / название</label>
+                            <input id="addressBookEditName" type="text" class="form-control">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="addressBookEditNote" class="form-label">Примечание</label>
+                            <textarea id="addressBookEditNote" class="form-control" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger me-auto" id="addressBookDeleteBtn" onclick="deleteAddressBookEntry()">
+                        <i class="fas fa-trash me-1"></i>Удалить
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary ms-2" onclick="saveAddressBookEntry()">
+                        <i class="fas fa-save me-1"></i>Сохранить
+                    </button>
                 </div>
             </div>
         </div>
