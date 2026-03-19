@@ -6,6 +6,7 @@ const {
   roomEventsStream
 } = require('../controllers/gameController');
 const { getUserAttempts } = require('../controllers/statsController');
+const { getAddressBookSections, getAddressBookEntries } = require('../controllers/addressBookController');
 const { authenticateToken, authenticateTokenQuery } = require('../middleware/auth');
 
 const router = express.Router();
@@ -19,5 +20,9 @@ router.post('/visit', visitLocation);
 router.get('/scenario', getActiveScenario);
 router.get('/visited', getVisitedLocations);
 router.get('/attempts', getUserAttempts);
+
+// Адресная книга для игроков (только чтение)
+router.get('/address-book/sections', getAddressBookSections);
+router.get('/address-book/entries', getAddressBookEntries);
 
 module.exports = router;

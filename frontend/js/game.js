@@ -561,41 +561,182 @@ function logout() {
 
 // ===== Tab Switching =====
 function setupTabSwitching() {
-    // Добавляем обработчики для переключения вкладок
     const gameTab = document.getElementById('game-tab');
     const questionsTab = document.getElementById('questions-tab');
+    const addressbookTab = document.getElementById('addressbook-tab');
     const gameContent = document.getElementById('game');
     const questionsContent = document.getElementById('questions');
-    
+    const addressbookContent = document.getElementById('addressbook');
+
+    function showPane(pane) {
+        [gameContent, questionsContent, addressbookContent].forEach(el => {
+            if (!el) return;
+            if (el === pane) {
+                el.classList.add('show', 'active');
+                el.classList.remove('fade');
+            } else {
+                el.classList.remove('show', 'active');
+                el.classList.add('fade');
+            }
+        });
+        [gameTab, questionsTab, addressbookTab].forEach((btn, i) => {
+            if (!btn) return;
+            const panes = [gameContent, questionsContent, addressbookContent];
+            btn.classList.toggle('active', panes[i] === pane);
+        });
+    }
+
     if (gameTab && questionsTab && gameContent && questionsContent) {
         gameTab.addEventListener('click', (e) => {
             e.preventDefault();
-            // Переключаем активные состояния кнопок
-            gameTab.classList.add('active');
-            questionsTab.classList.remove('active');
-            
-            // Переключаем видимость контента
-            gameContent.classList.add('show', 'active');
-            gameContent.classList.remove('fade');
-            questionsContent.classList.remove('show', 'active');
-            questionsContent.classList.add('fade');
+            showPane(gameContent);
         });
-        
+
         questionsTab.addEventListener('click', (e) => {
             e.preventDefault();
-            // Переключаем активные состояния кнопок
-            questionsTab.classList.add('active');
-            gameTab.classList.remove('active');
-            
-            // Переключаем видимость контента
-            questionsContent.classList.add('show', 'active');
-            questionsContent.classList.remove('fade');
-            gameContent.classList.remove('show', 'active');
-            gameContent.classList.add('fade');
-            
-            // Загружаем вопросы
+            showPane(questionsContent);
             loadQuestions();
         });
+
+        if (addressbookTab && addressbookContent) {
+            addressbookTab.addEventListener('click', (e) => {
+                e.preventDefault();
+                showPane(addressbookContent);
+                loadPlayerAddressBookSectionsAndEntries();
+            });
+        }
+    }
+}
+
+// ===== Address Book (players, read-only) =====
+let playerAddressBookSections = null;
+let playerAddressBookSectionsLoaded = false;
+let playerAddressBookFilter = { category: 'Частные лица', letter_group: 'А-Б', q: '' };
+
+function escapeHtmlPlayer(s) {
+    if (s == null || s === undefined) return '';
+    const t = String(s);
+    return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function loadPlayerAddressBookSectionsAndEntries() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+        const response = await fetch(`${API_BASE}/game/address-book/sections`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Ошибка загрузки');
+        const data = await response.json();
+        playerAddressBookSections = data;
+        playerAddressBookSectionsLoaded = true;
+
+        const privateWrap = document.getElementById('playerAddressBookPrivateTabs');
+        const enterpriseWrap = document.getElementById('playerAddressBookEnterpriseTabs');
+        if (privateWrap && data.private_letter_groups) {
+            privateWrap.innerHTML = '';
+            data.private_letter_groups.forEach(group => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-sm ' + (playerAddressBookFilter.category === 'Частные лица' && playerAddressBookFilter.letter_group === group ? 'active' : '');
+                btn.textContent = group;
+                btn.addEventListener('click', () => {
+                    playerAddressBookFilter.category = data.private_category || 'Частные лица';
+                    playerAddressBookFilter.letter_group = group;
+                    document.querySelectorAll('#playerAddressBookPrivateTabs .btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelectorAll('#playerAddressBookEnterpriseTabs .btn').forEach(b => b.classList.remove('active'));
+                    loadPlayerAddressBookEntries();
+                });
+                privateWrap.appendChild(btn);
+            });
+        }
+        if (enterpriseWrap && data.enterprise_categories) {
+            enterpriseWrap.innerHTML = '';
+            data.enterprise_categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-sm ' + (playerAddressBookFilter.category === cat ? 'active' : '');
+                btn.textContent = cat;
+                btn.addEventListener('click', () => {
+                    playerAddressBookFilter.category = cat;
+                    playerAddressBookFilter.letter_group = null;
+                    document.querySelectorAll('#playerAddressBookEnterpriseTabs .btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelectorAll('#playerAddressBookPrivateTabs .btn').forEach(b => b.classList.remove('active'));
+                    loadPlayerAddressBookEntries();
+                });
+                enterpriseWrap.appendChild(btn);
+            });
+        }
+        if (playerAddressBookSections.private_letter_groups && playerAddressBookSections.private_letter_groups.length && !playerAddressBookFilter.letter_group) {
+            playerAddressBookFilter.category = playerAddressBookSections.private_category || 'Частные лица';
+            playerAddressBookFilter.letter_group = playerAddressBookSections.private_letter_groups[0];
+        }
+        const searchEl = document.getElementById('playerAddressBookSearch');
+        if (searchEl) {
+            searchEl.value = playerAddressBookFilter.q || '';
+            searchEl.oninput = () => {
+                playerAddressBookFilter.q = searchEl.value.trim();
+                loadPlayerAddressBookEntries();
+            };
+        }
+        await loadPlayerAddressBookEntries();
+    } catch (err) {
+        console.error('loadPlayerAddressBookSectionsAndEntries:', err);
+        const tbody = document.getElementById('playerAddressBookTableBody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Ошибка загрузки адресной книги</td></tr>';
+    }
+}
+
+async function loadPlayerAddressBookEntries() {
+    const token = localStorage.getItem('token');
+    const tbody = document.getElementById('playerAddressBookTableBody');
+    const labelEl = document.getElementById('playerAddressBookActiveLabel');
+    const apartmentHeader = document.getElementById('playerAddressBookApartmentHeader');
+    if (!tbody || !playerAddressBookSectionsLoaded) return;
+
+    const category = playerAddressBookFilter.category;
+    if (labelEl) labelEl.textContent = category === 'Частные лица' && playerAddressBookFilter.letter_group
+        ? `Частные лица: ${playerAddressBookFilter.letter_group}` : category;
+
+    const showApartment = category === 'Частные лица';
+    if (apartmentHeader) apartmentHeader.style.display = showApartment ? '' : 'none';
+
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Загрузка...</td></tr>';
+    const qs = new URLSearchParams();
+    qs.set('category', category);
+    if (category === 'Частные лица' && playerAddressBookFilter.letter_group) {
+        qs.set('letter_group', playerAddressBookFilter.letter_group);
+    }
+    if (playerAddressBookFilter.q) qs.set('q', playerAddressBookFilter.q);
+
+    try {
+        const response = await fetch(`${API_BASE}/game/address-book/entries?${qs}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Ошибка загрузки');
+        const data = await response.json();
+        const entries = data.entries || [];
+
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Ничего не найдено</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = entries.map(e => {
+            const apartmentCell = `<td>${showApartment ? escapeHtmlPlayer(e.apartment) : ''}</td>`;
+            return `<tr>
+                <td>${escapeHtmlPlayer(e.district)}</td>
+                <td>${escapeHtmlPlayer(e.house_number)}</td>
+                ${apartmentCell}
+                <td>${escapeHtmlPlayer(e.name)}</td>
+                <td>${escapeHtmlPlayer(e.note)}</td>
+            </tr>`;
+        }).join('');
+    } catch (err) {
+        console.error('loadPlayerAddressBookEntries:', err);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Ошибка загрузки</td></tr>';
     }
 }
 

@@ -131,6 +131,22 @@
             color: var(--noir-dark);
         }
 
+        .addressbook-tabs-game .btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 0.25rem;
+            background: rgba(64, 64, 64, 0.6);
+            border-color: rgba(212, 175, 55, 0.3);
+            color: var(--noir-silver);
+        }
+        .addressbook-tabs-game .btn:hover,
+        .addressbook-tabs-game .btn.active {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: var(--noir-gold);
+            color: var(--noir-gold);
+        }
+
         /* Адаптивные стили для мобильных устройств */
         @media (max-width: 767.98px) {
             .navbar .container {
@@ -370,6 +386,9 @@
                             <button class="btn btn-outline-light" id="questions-tab" type="button">
                                 <i class="fas fa-question-circle me-2"></i>Вопросы
                             </button>
+                            <button class="btn btn-outline-light" id="addressbook-tab" type="button">
+                                <i class="fas fa-book me-2"></i>Адресная книга
+                            </button>
                         </div>
                     </div>
                     <!-- Правая часть: таймер, счетчик и пользователь -->
@@ -449,6 +468,48 @@
                             <h2 class="text-center mb-4">Вопросы сценария</h2>
                             <div id="questionsList">
                                 <p class="text-muted text-center">Загрузка вопросов...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Вкладка адресной книги (только просмотр) -->
+            <div class="tab-pane fade" id="addressbook" role="tabpanel">
+                <div class="row g-3">
+                    <div class="col-md-4 col-lg-3">
+                        <div class="game-card p-3 addressbook-panel-game">
+                            <div class="text-uppercase small fw-bold text-secondary mb-2">Карта города</div>
+                            <div class="text-uppercase small fw-bold mb-2" style="color: var(--noir-gold);">Частные лица</div>
+                            <div id="playerAddressBookPrivateTabs" class="addressbook-tabs-game"></div>
+                        </div>
+                        <div class="game-card p-3 addressbook-panel-game mt-3">
+                            <div class="text-uppercase small fw-bold text-secondary mb-2">Предприятия</div>
+                            <div id="playerAddressBookEnterpriseTabs" class="addressbook-tabs-game"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-8 col-lg-9">
+                        <div class="game-card p-3 mb-3">
+                            <label class="form-label small text-secondary">Поиск по адресу / названию</label>
+                            <input type="text" id="playerAddressBookSearch" class="form-control form-control-sm" placeholder="Например: Центральный, Мирослав, 10...">
+                        </div>
+                        <div class="game-card p-4">
+                            <h5 class="mb-3" id="playerAddressBookActiveLabel">—</h5>
+                            <div class="table-responsive">
+                                <table class="table table-dark table-striped table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Район</th>
+                                            <th>Номер дома</th>
+                                            <th id="playerAddressBookApartmentHeader">Квартира</th>
+                                            <th>Имя / название</th>
+                                            <th>Примечание</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="playerAddressBookTableBody">
+                                        <tr><td colspan="5" class="text-center text-muted">Выберите категорию или введите поиск</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
