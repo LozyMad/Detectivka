@@ -52,9 +52,6 @@ function checkAdminAuth() {
     isSuperAdmin = currentUser.admin_level === 'super_admin';
     document.getElementById('adminUsername').textContent = user.username;
 
-    const uploadCard = document.getElementById('addressBookUploadCard');
-    if (uploadCard) uploadCard.style.display = isSuperAdmin ? '' : 'none';
-    
     // Отладочная информация
     console.log('Current user:', user);
     console.log('Admin level:', user.admin_level);
@@ -362,6 +359,8 @@ async function loadAddressBookEntries() {
         const showActions = isSuperAdmin;
         const actionsHeader = document.getElementById('addressBookActionsHeader');
         if (actionsHeader) actionsHeader.style.display = showActions ? '' : 'none';
+        const addBtn = document.getElementById('addressBookAddBtn');
+        if (addBtn) addBtn.classList.toggle('d-none', !showActions);
 
         if (entries.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="text-center">Ничего не найдено</td></tr>`;
@@ -404,6 +403,27 @@ async function loadAddressBookEntries() {
     }
 }
 
+async function openAddressBookAddModal() {
+    if (!isSuperAdmin) return;
+    if (!addressBookSectionsLoaded) {
+        await loadAddressBookSectionsAndEntries();
+    }
+    document.getElementById('addressBookEditId').value = '';
+    document.getElementById('addressBookEditCategory').value = addressBookSections?.private_category || 'Частные лица';
+    document.getElementById('addressBookEditDistrict').value = 'Ц';
+    document.getElementById('addressBookEditHouseNumber').value = '';
+    document.getElementById('addressBookEditApartment').value = '';
+    document.getElementById('addressBookEditName').value = '';
+    document.getElementById('addressBookEditNote').value = '';
+    syncAddressBookEditApartmentVisibility();
+    const deleteBtn = document.getElementById('addressBookDeleteBtn');
+    if (deleteBtn) deleteBtn.style.display = 'none';
+    renderAddressBookEditModalOptions();
+    const modalEl = document.getElementById('addressBookEditModal');
+    addressBookEditModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+    addressBookEditModalInstance.show();
+}
+
 async function openAddressBookEditModal(entryId) {
     if (!isSuperAdmin) {
         showMessage('Редактирование доступно только супер-админу', 'warning');
@@ -438,6 +458,8 @@ async function openAddressBookEditModal(entryId) {
         document.getElementById('addressBookEditNote').value = entry.note || '';
 
         syncAddressBookEditApartmentVisibility();
+        const deleteBtn = document.getElementById('addressBookDeleteBtn');
+        if (deleteBtn) deleteBtn.style.display = '';
 
         const modalEl = document.getElementById('addressBookEditModal');
         addressBookEditModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -450,12 +472,7 @@ async function openAddressBookEditModal(entryId) {
 
 async function saveAddressBookEntry() {
     if (!isSuperAdmin) return;
-    const id = document.getElementById('addressBookEditId').value;
-    if (!id) {
-        showMessage('Нет ID записи', 'warning');
-        return;
-    }
-
+    const id = (document.getElementById('addressBookEditId').value || '').trim();
     const category = document.getElementById('addressBookEditCategory').value;
     const district = document.getElementById('addressBookEditDistrict').value;
     const house_number = document.getElementById('addressBookEditHouseNumber').value;
@@ -466,21 +483,27 @@ async function saveAddressBookEntry() {
     const name = document.getElementById('addressBookEditName').value;
     const note = document.getElementById('addressBookEditNote').value;
 
+    const payload = { category, district, house_number, apartment, name, note };
+    const token = localStorage.getItem('token');
+    const isCreate = !id;
+
     try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/super-admin/address-book/entries/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ category, district, house_number, apartment, name, note })
-        });
+        const response = isCreate
+            ? await fetch(`${API_BASE}/super-admin/address-book/entries`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            })
+            : await fetch(`${API_BASE}/super-admin/address-book/entries/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
 
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || 'Ошибка сохранения');
+        if (!response.ok) throw new Error(data.error || (isCreate ? 'Ошибка добавления' : 'Ошибка сохранения'));
 
-        showMessage('Запись обновлена', 'success');
+        showMessage(isCreate ? 'Адрес добавлен' : 'Запись обновлена', 'success');
 
         const modalEl = document.getElementById('addressBookEditModal');
         const inst = bootstrap.Modal.getInstance(modalEl) || addressBookEditModalInstance;
@@ -522,47 +545,6 @@ async function deleteAddressBookEntry() {
         showMessage(err.message || 'Ошибка удаления записи', 'danger');
     }
 }
-
-// Загрузка XLSX адресной книги (только супер-админ)
-async function uploadAddressBookXlsx() {
-    if (!isSuperAdmin) {
-        showMessage('Загрузка адресной книги доступна только супер-админу', 'warning');
-        return;
-    }
-
-    const input = document.getElementById('addressBookUploadInput');
-    if (!input || !input.files || !input.files[0]) {
-        showMessage('Выберите XLSX файл', 'warning');
-        return;
-    }
-
-    const file = input.files[0];
-    const form = new FormData();
-    form.append('addressBookFile', file);
-
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/super-admin/address-book/upload`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: form
-        });
-
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || 'Ошибка загрузки XLSX');
-
-        showMessage('Адресная книга загружена', 'success');
-
-        // Перезагружаем секции/таблицу
-        addressBookSectionsLoaded = false;
-        addressBookSections = null;
-        await loadAddressBookSectionsAndEntries();
-    } catch (err) {
-        console.error('uploadAddressBookXlsx error:', err);
-        showMessage(err.message || 'Ошибка загрузки адресной книги', 'danger');
-    }
-}
-
 
 function setupEventListeners() {
     // Tab navigation

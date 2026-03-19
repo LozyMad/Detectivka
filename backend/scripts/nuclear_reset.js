@@ -31,9 +31,7 @@ async function nuclearReset() {
         await query('DROP TABLE IF EXISTS addresses');
         console.log('   💥 Таблица addresses уничтожена');
 
-        await query('DROP TABLE IF EXISTS address_book_entries');
-        console.log('   💥 Таблица address_book_entries уничтожена');
-        
+        // address_book_entries не трогаем — адресная книга единая для всех сценариев
         await query('DROP TABLE IF EXISTS rooms');
         console.log('   💥 Таблица rooms уничтожена');
         
@@ -101,23 +99,6 @@ async function nuclearReset() {
             )
         `);
         console.log('   ✅ Таблица addresses пересоздана');
-
-        // Таблица address_book_entries (адресная книга для города)
-        await query(`
-            CREATE TABLE address_book_entries (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                category TEXT NOT NULL,
-                district TEXT NOT NULL,
-                house_number TEXT NOT NULL,
-                apartment TEXT NOT NULL DEFAULT '',
-                name TEXT NOT NULL,
-                note TEXT NOT NULL DEFAULT '',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(category, district, house_number, apartment, name)
-            )
-        `);
-        console.log('   ✅ Таблица address_book_entries пересоздана');
 
         // Таблица address_choices
         await query(`

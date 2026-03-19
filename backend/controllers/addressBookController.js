@@ -63,7 +63,7 @@ function orderEnterpriseCategories(categories) {
 
 async function getAddressBookSections(req, res) {
   try {
-    await AddressBook.ensureImported();
+    await AddressBook.ensureSeeded();
     const categories = await AddressBook.listCategories();
 
     const privateCategory = 'Частные лица';
@@ -86,7 +86,7 @@ async function getAddressBookEntries(req, res) {
 
     if (!category) return res.status(400).json({ error: 'category is required' });
 
-    await AddressBook.ensureImported();
+    await AddressBook.ensureSeeded();
     const lim = Math.max(1, Number(limit || 500));
     const off = Math.max(0, Number(offset || 0));
 
@@ -162,27 +162,12 @@ async function deleteAddressBookEntry(req, res) {
   }
 }
 
-async function uploadAddressBookXlsx(req, res) {
-  try {
-    if (!req.file || !req.file.buffer) {
-      return res.status(400).json({ error: 'Файл XLSX обязателен' });
-    }
-
-    const result = await AddressBook.resetAndLoadFromBuffer(req.file.buffer);
-    res.json({ ok: true, loaded: result.loaded || 0 });
-  } catch (err) {
-    console.error('uploadAddressBookXlsx error:', err);
-    res.status(400).json({ error: err.message || 'Bad request' });
-  }
-}
-
 module.exports = {
   getAddressBookSections,
   getAddressBookEntries,
   getAddressBookEntryById,
   createAddressBookEntry,
   updateAddressBookEntry,
-  deleteAddressBookEntry,
-  uploadAddressBookXlsx
+  deleteAddressBookEntry
 };
 

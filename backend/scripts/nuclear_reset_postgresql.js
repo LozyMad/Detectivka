@@ -37,9 +37,7 @@ async function nuclearResetPostgreSQL() {
         await client.query('DELETE FROM addresses');
         console.log('   💥 addresses очищена');
 
-        await client.query('DELETE FROM address_book_entries');
-        console.log('   💥 address_book_entries очищена');
-        
+        // address_book_entries не трогаем — адресная книга единая для всех сценариев
         await client.query('DELETE FROM admin_permissions');
         console.log('   💥 admin_permissions очищена');
         
@@ -59,7 +57,6 @@ async function nuclearResetPostgreSQL() {
             'rooms_id_seq',
             'room_users_id_seq',
             'addresses_id_seq',
-            'address_book_entries_id_seq',
             'questions_id_seq',
             'question_answers_id_seq',
             'visited_locations_id_seq',

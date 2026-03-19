@@ -1,5 +1,4 @@
 const express = require('express');
-const multer = require('multer');
 const { authenticateToken, superAdminRequired } = require('../middleware/auth');
 const {
   createAdmin,
@@ -14,8 +13,7 @@ const {
 const {
   createAddressBookEntry,
   updateAddressBookEntry,
-  deleteAddressBookEntry,
-  uploadAddressBookXlsx
+  deleteAddressBookEntry
 } = require('../controllers/addressBookController');
 
 const router = express.Router();
@@ -23,18 +21,6 @@ const router = express.Router();
 // Все маршруты требуют аутентификации и супер-админских прав
 router.use(authenticateToken);
 router.use(superAdminRequired);
-
-const uploadAddressBook = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const name = (file.originalname || '').toLowerCase();
-    if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
-      return cb(null, true);
-    }
-    return cb(new Error('Разрешены только файлы .xlsx'), false);
-  }
-});
 
 // Управление админами
 router.post('/admins', createAdmin);
@@ -54,9 +40,6 @@ router.get('/permissions/scenario/:scenario_id', getScenarioPermissions);
 router.post('/address-book/entries', createAddressBookEntry);
 router.put('/address-book/entries/:id', updateAddressBookEntry);
 router.delete('/address-book/entries/:id', deleteAddressBookEntry);
-
-// Загрузка XLSX адресной книги (чтобы работало даже если файла нет на сервере)
-router.post('/address-book/upload', uploadAddressBook.single('addressBookFile'), uploadAddressBookXlsx);
 
 module.exports = router;
 
