@@ -97,18 +97,16 @@ async function getAddressBookEntries(req, res) {
       entries = entries.filter((e) => letterGroupForName(e.name) === letterGroup);
     }
 
-    // Для «Частные лица» сортируем по имени (по буквам), затем район, дом, квартира
-    if (category === 'Частные лица') {
-      entries = entries.slice().sort((a, b) => {
-        const nameCmp = (a.name || '').localeCompare(b.name || '', 'ru');
-        if (nameCmp !== 0) return nameCmp;
-        const dist = (a.district || '').localeCompare(b.district || '', 'ru');
-        if (dist !== 0) return dist;
-        const house = String(a.house_number || '').localeCompare(String(b.house_number || ''), 'ru');
-        if (house !== 0) return house;
-        return String(a.apartment || '').localeCompare(String(b.apartment || ''), 'ru');
-      });
-    }
+    // Во всех категориях сортируем по имени (А–Я), затем район, дом, квартира
+    entries = entries.slice().sort((a, b) => {
+      const nameCmp = (a.name || '').localeCompare(b.name || '', 'ru');
+      if (nameCmp !== 0) return nameCmp;
+      const dist = (a.district || '').localeCompare(b.district || '', 'ru');
+      if (dist !== 0) return dist;
+      const house = String(a.house_number || '').localeCompare(String(b.house_number || ''), 'ru');
+      if (house !== 0) return house;
+      return String(a.apartment || '').localeCompare(String(b.apartment || ''), 'ru');
+    });
 
     if (q) {
       const query = String(q).toLowerCase();
