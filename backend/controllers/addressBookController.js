@@ -1,6 +1,7 @@
 const AddressBook = require('../models/addressBook');
 
-const LETTER_TABS = ['А-Е', 'Б-И', 'К-Л', 'М-Н', 'О-П', 'Р-С', 'Т-Ф', 'Х-Я'];
+// Группы букв для «Частные лица» по референсу
+const LETTER_TABS = ['А-Б', 'В-Г', 'Д-Й', 'К-Л', 'М-Н', 'О-П', 'Р-С', 'Т-Ф', 'Х-Я'];
 
 function normalizeCellText(v) {
   if (v === null || v === undefined) return '';
@@ -13,7 +14,6 @@ function letterGroupForName(name) {
 
   let ch = raw[0].toUpperCase();
   if (ch === 'Ё') ch = 'Е';
-  if (ch === 'Й') ch = 'И';
   const alphabet = 'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
   const idx = alphabet.indexOf(ch);
   if (idx === -1) return null;
@@ -25,8 +25,9 @@ function letterGroupForName(name) {
     return idx >= a && idx <= b;
   };
 
-  if (inRange('А', 'Е')) return 'А-Е';
-  if (inRange('Б', 'И')) return 'Б-И';
+  if (inRange('А', 'Б')) return 'А-Б';
+  if (inRange('В', 'Г')) return 'В-Г';
+  if (inRange('Д', 'Й')) return 'Д-Й';
   if (inRange('К', 'Л')) return 'К-Л';
   if (inRange('М', 'Н')) return 'М-Н';
   if (inRange('О', 'П')) return 'О-П';

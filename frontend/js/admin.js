@@ -11,7 +11,7 @@ let addressBookSections = null;
 let addressBookSectionsLoaded = false;
 let addressBookFilter = {
     category: 'Частные лица',
-    letter_group: 'А-Е',
+    letter_group: 'А-Б',
     q: ''
 };
 let addressBookEditModalInstance = null;
@@ -306,7 +306,7 @@ async function loadAddressBookSectionsAndEntries() {
             addressBookFilter.letter_group = addressBookSections.private_letter_groups[0];
         } else {
             addressBookFilter.category = 'Частные лица';
-            addressBookFilter.letter_group = 'А-Е';
+            addressBookFilter.letter_group = 'А-Б';
         }
 
         renderAddressBookEditModalOptions();
