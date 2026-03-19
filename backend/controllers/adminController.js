@@ -253,13 +253,13 @@ const copyScenario = async (req, res) => {
 // Address management
 const createAddress = async (req, res) => {
   try {
-    const { scenario_id, district, house_number, description } = req.body;
+    const { scenario_id, district, house_number, apartment, description } = req.body;
 
     if (!scenario_id || !district || !house_number || !description) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    const validDistricts = ['С', 'Ю', 'З', 'В', 'Ц', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ'];
+    const validDistricts = ['С', 'Ю', 'З', 'В', 'Ц', 'П', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ'];
     if (!validDistricts.includes(district)) {
       return res.status(400).json({ error: 'Invalid district' });
     }
@@ -268,6 +268,7 @@ const createAddress = async (req, res) => {
       scenario_id,
       district,
       house_number,
+      apartment: apartment != null ? String(apartment).trim() : '',
       description
     });
 

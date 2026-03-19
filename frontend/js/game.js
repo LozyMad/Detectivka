@@ -131,11 +131,13 @@ async function visitLocation() {
         alert('Пожалуйста, введите номер дома');
         return;
     }
+    const apartmentNumber = (document.getElementById('apartmentNumber') && document.getElementById('apartmentNumber').value) ? document.getElementById('apartmentNumber').value.trim() : '';
     
     // Проверяем, не была ли уже совершена поездка в эту локацию
     const existingTrip = tripHistory.find(trip => 
         trip.district === selectedDistrict && 
-        trip.houseNumber === houseNumber
+        trip.houseNumber === houseNumber &&
+        (trip.apartment || '') === apartmentNumber
     );
     
     if (existingTrip) {
@@ -156,7 +158,8 @@ async function visitLocation() {
             },
             body: JSON.stringify({
                 district: selectedDistrict,
-                house_number: houseNumber
+                house_number: houseNumber,
+                apartment: apartmentNumber
             })
         });
         
@@ -167,22 +170,22 @@ async function visitLocation() {
         updateTripCounter();
         
         if (response.ok) {
-            // Добавляем поездку в историю
             const trip = {
                 district: selectedDistrict,
                 houseNumber: houseNumber,
+                apartment: (data.location && data.location.apartment) ? data.location.apartment : apartmentNumber,
                 success: data.success,
                 description: data.description || null,
                 timestamp: new Date().toISOString(),
-                alreadyVisited: false, // Все поездки уникальные
+                alreadyVisited: false,
                 address_id: data.address_id || null,
                 visited_location_id: data.visited_location_id || null
             };
-            tripHistory.unshift(trip); // Добавляем в начало массива
+            tripHistory.unshift(trip);
             updateTripHistory();
             
-            // Clear input
             document.getElementById('houseNumber').value = '';
+            if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
             
             // Проверяем, есть ли интерактивные выборы для этого адреса
             if (data.success && data.address_id) {
@@ -191,10 +194,10 @@ async function visitLocation() {
             }
             
         } else {
-            // Добавляем неудачную поездку в историю
             const trip = {
                 district: selectedDistrict,
                 houseNumber: houseNumber,
+                apartment: apartmentNumber,
                 success: false,
                 description: data.error || 'Произошла ошибка',
                 timestamp: new Date().toISOString(),
@@ -202,21 +205,17 @@ async function visitLocation() {
             };
             tripHistory.unshift(trip);
             updateTripHistory();
-            
-            // Clear input
             document.getElementById('houseNumber').value = '';
+            if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
         }
     } catch (error) {
         console.error('Error visiting location:', error);
-        
-        // Увеличиваем счетчик поездок даже при ошибке
         tripCount++;
         updateTripCounter();
-        
-        // Добавляем поездку с ошибкой в историю
         const trip = {
             district: selectedDistrict,
             houseNumber: houseNumber,
+            apartment: apartmentNumber,
             success: false,
             description: 'Ошибка соединения',
             timestamp: new Date().toISOString(),
@@ -224,9 +223,8 @@ async function visitLocation() {
         };
         tripHistory.unshift(trip);
         updateTripHistory();
-        
-        // Clear input
         document.getElementById('houseNumber').value = '';
+        if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
     }
 }
 
@@ -313,6 +311,7 @@ async function loadTripHistory() {
             return {
                 district: attempt.district,
                 houseNumber: attempt.house_number,
+                apartment: attempt.apartment || '',
                 success: attempt.found,
                 description: description,
                 timestamp: attempt.attempted_at,
@@ -346,7 +345,7 @@ function updateTripHistory() {
         <div class="trip-item ${trip.success ? 'success' : 'failure'}">
             <div class="trip-info">
                 <span class="badge district-badge bg-primary">${trip.district}</span>
-                <span class="ms-2">Дом ${trip.houseNumber}</span>
+                <span class="ms-2">Дом ${trip.houseNumber}${trip.apartment ? ', кв. ' + trip.apartment : ''}</span>
                 <span class="ms-2 text-muted">${formatTripTime(trip.timestamp)}</span>
                 ${trip.success && trip.address_id && trip.hasChoices ? 
                     `<button type="button" class="btn btn-sm btn-outline-warning ms-2 trip-choice-btn" title="Развилка по выборам"

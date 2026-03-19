@@ -29,12 +29,13 @@ if (DB_TYPE === 'postgresql') {
   class VisitAttemptSQLite {
   static create(attemptData) {
     return new Promise((resolve, reject) => {
-      const { user_id, scenario_id, district, house_number, found, address_id = null, room_id = null } = attemptData;
+      const { user_id, scenario_id, district, house_number, apartment = '', found, address_id = null, room_id = null } = attemptData;
+      const apt = String(apartment ?? '').trim();
 
       db.run(
-        `INSERT INTO visit_attempts (user_id, scenario_id, room_id, district, house_number, found, address_id) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [user_id, scenario_id, room_id, district, house_number, found, address_id],
+        `INSERT INTO visit_attempts (user_id, scenario_id, room_id, district, house_number, apartment, found, address_id) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [user_id, scenario_id, room_id, district, house_number, apt, found, address_id],
         function(err) {
           if (err) reject(err);
           else resolve({ 

@@ -13,26 +13,28 @@ if (DB_TYPE === 'postgresql') {
   Address = {
     create: (addressData) => {
         return new Promise((resolve, reject) => {
-            const { scenario_id, district, house_number, description } = addressData;
+            const { scenario_id, district, house_number, apartment = '', description } = addressData;
+            const apt = String(apartment ?? '').trim();
             const db = getScenarioDb(scenario_id);
 
             db.run(
-                `INSERT INTO addresses (district, house_number, description) VALUES (?, ?, ?)`,
-                [district, house_number, description],
+                `INSERT INTO addresses (district, house_number, apartment, description) VALUES (?, ?, ?, ?)`,
+                [district, house_number, apt, description],
                 function(err) {
                     if (err) reject(err);
-                    else resolve({ id: this.lastID, scenario_id, district, house_number, description });
+                    else resolve({ id: this.lastID, scenario_id, district, house_number, apartment: apt, description });
                 }
             );
         });
     },
 
-    findByScenarioAndAddress: (scenario_id, district, house_number) => {
+    findByScenarioAndAddress: (scenario_id, district, house_number, apartment) => {
         return new Promise((resolve, reject) => {
             const db = getScenarioDb(scenario_id);
+            const apt = String(apartment ?? '').trim();
             db.get(
-                `SELECT * FROM addresses WHERE district = ? AND house_number = ?`,
-                [district, house_number],
+                `SELECT * FROM addresses WHERE district = ? AND house_number = ? AND COALESCE(apartment, '') = ?`,
+                [district, house_number, apt],
                 (err, row) => {
                     if (err) reject(err);
                     else resolve(row);
@@ -44,7 +46,7 @@ if (DB_TYPE === 'postgresql') {
     findByScenario: (scenario_id) => {
         return new Promise((resolve, reject) => {
             const db = getScenarioDb(scenario_id);
-            db.all(`SELECT * FROM addresses ORDER BY district, house_number`, [], (err, rows) => {
+            db.all(`SELECT * FROM addresses ORDER BY district, house_number, apartment`, [], (err, rows) => {
                 if (err) reject(err);
                 else resolve(rows);
             });
@@ -54,7 +56,7 @@ if (DB_TYPE === 'postgresql') {
     getByScenario: (scenario_id) => {
         return new Promise((resolve, reject) => {
             const db = getScenarioDb(scenario_id);
-            db.all(`SELECT * FROM addresses ORDER BY district, house_number`, [], (err, rows) => {
+            db.all(`SELECT * FROM addresses ORDER BY district, house_number, apartment`, [], (err, rows) => {
                 if (err) reject(err);
                 else resolve(rows);
             });

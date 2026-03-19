@@ -2,12 +2,12 @@ const { query } = require('../config/database');
 
 class VisitAttempt {
     static async create(attemptData) {
-        const { user_id, scenario_id, room_id, district, house_number, found, address_id } = attemptData;
-        
+        const { user_id, scenario_id, room_id, district, house_number, apartment = '', found, address_id } = attemptData;
+        const apt = String(apartment ?? '').trim();
         const result = await query(
-            `INSERT INTO visit_attempts (user_id, scenario_id, room_id, district, house_number, found, address_id) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-            [user_id, scenario_id, room_id, district, house_number, found, address_id]
+            `INSERT INTO visit_attempts (user_id, scenario_id, room_id, district, house_number, apartment, found, address_id) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+            [user_id, scenario_id, room_id, district, house_number, apt, found, address_id]
         );
         
         return result.rows[0];

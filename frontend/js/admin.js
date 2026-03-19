@@ -1855,7 +1855,7 @@ async function loadAddressesForScenario() {
     const addressesTable = document.getElementById('addressesTable');
     
     if (!scenarioId) {
-        addressesTable.innerHTML = '<tr><td colspan="6" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
+        addressesTable.innerHTML = '<tr><td colspan="7" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
         return;
     }
     
@@ -1872,22 +1872,22 @@ async function loadAddressesForScenario() {
             const addresses = data.addresses || [];
             
             if (addresses.length === 0) {
-                addressesTable.innerHTML = '<tr><td colspan="6" class="text-center">Адреса для этого сценария не найдены</td></tr>';
+                addressesTable.innerHTML = '<tr><td colspan="7" class="text-center">Адреса для этого сценария не найдены</td></tr>';
             } else {
-                // Загружаем информацию о выборах для каждого адреса
                 const addressesWithChoices = await Promise.all(
                     addresses.map(async (address) => {
                         const hasChoices = await checkAddressHasChoices(scenarioId, address.id);
                         return { ...address, hasChoices };
                     })
                 );
-                
+                const esc = (s) => (s || '').replace(/'/g, "\\'").replace(/\\/g, '\\\\');
                 addressesTable.innerHTML = addressesWithChoices.map(address => `
                     <tr>
                         <td>${address.id}</td>
-                        <td>${address.district}</td>
-                        <td>${address.house_number}</td>
-                        <td>${address.description || '-'}</td>
+                        <td>${escapeHtml(address.district)}</td>
+                        <td>${escapeHtml(address.house_number)}</td>
+                        <td>${escapeHtml(address.apartment || '-')}</td>
+                        <td>${escapeHtml(address.description || '-')}</td>
                         <td class="text-center">
                             ${address.hasChoices ? 
                                 '<span class="badge bg-success"><i class="fas fa-check"></i> Есть</span>' : 
@@ -1896,7 +1896,7 @@ async function loadAddressesForScenario() {
                         </td>
                         <td class="table-actions">
                             <button class="btn btn-sm btn-outline-primary me-1" 
-                                    onclick="openChoicesModal(${scenarioId}, ${address.id}, {district: '${address.district}', house_number: '${address.house_number}', description: '${address.description || ''}'})">
+                                    onclick="openChoicesModal(${scenarioId}, ${address.id}, {district: '${esc(address.district)}', house_number: '${esc(address.house_number)}', apartment: '${esc(address.apartment || '')}', description: '${esc(address.description || '')}'})">
                                 <i class="fas fa-question-circle"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteAddress(${address.id})">
@@ -1909,12 +1909,12 @@ async function loadAddressesForScenario() {
         } else {
             const data = await response.json();
             showMessage(data.error || 'Ошибка загрузки адресов', 'danger');
-            addressesTable.innerHTML = '<tr><td colspan="6" class="text-center">Ошибка загрузки адресов</td></tr>';
+            addressesTable.innerHTML = '<tr><td colspan="7" class="text-center">Ошибка загрузки адресов</td></tr>';
         }
     } catch (error) {
         console.error('Error loading addresses:', error);
         showMessage('Ошибка соединения', 'danger');
-        addressesTable.innerHTML = '<tr><td colspan="6" class="text-center">Ошибка соединения</td></tr>';
+        addressesTable.innerHTML = '<tr><td colspan="7" class="text-center">Ошибка соединения</td></tr>';
     }
 }
 
@@ -3103,6 +3103,7 @@ async function handleAddAddress(e) {
     const scenario_id = document.getElementById('addressScenario').value;
     const district = document.getElementById('addressDistrict').value;
     const house_number = document.getElementById('addressHouseNumber').value;
+    const apartment = (document.getElementById('addressApartment') && document.getElementById('addressApartment').value) ? document.getElementById('addressApartment').value.trim() : '';
     const description = document.getElementById('addressDescription').value;
 
     try {
@@ -3113,7 +3114,7 @@ async function handleAddAddress(e) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ scenario_id, district, house_number, description })
+            body: JSON.stringify({ scenario_id, district, house_number, apartment, description })
         });
 
         const data = await response.json();

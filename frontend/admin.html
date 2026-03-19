@@ -745,6 +745,7 @@
 											<option value="З">З</option>
 											<option value="В">В</option>
                                             <option value="Ц">Ц</option>
+                                            <option value="П">П</option>
                                             <option value="СВ">СВ</option>
                                             <option value="СЗ">СЗ</option>
                                             <option value="ЮВ">ЮВ</option>
@@ -752,10 +753,16 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <div class="mb-3">
                                         <label for="addressHouseNumber" class="form-label">Номер дома</label>
                                         <input type="text" class="form-control" id="addressHouseNumber" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="addressApartment" class="form-label">Квартира</label>
+                                        <input type="text" class="form-control" id="addressApartment" placeholder="Необязательно">
                                     </div>
                                 </div>
                             </div>
@@ -796,6 +803,7 @@
                                             <th>ID</th>
                                             <th>Район</th>
                                             <th>Номер дома</th>
+                                            <th>Квартира</th>
                                             <th>Описание</th>
                                             <th>Выборы</th>
                                             <th>Действия</th>
@@ -803,7 +811,7 @@
                                     </thead>
                                     <tbody id="addressesTable">
                                         <tr>
-                                            <td colspan="6" class="text-center">Выберите сценарий для просмотра адресов</td>
+                                            <td colspan="7" class="text-center">Выберите сценарий для просмотра адресов</td>
                                         </tr>
                                     </tbody>
                                 </table>

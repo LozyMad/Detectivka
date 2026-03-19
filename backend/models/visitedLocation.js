@@ -54,7 +54,7 @@ if (DB_TYPE === 'postgresql') {
     return new Promise((resolve, reject) => {
       const db = getScenarioDb(scenarioId);
       db.all(
-        `SELECT vl.id, vl.visited_at, a.district, a.house_number, a.description
+        `SELECT vl.id, vl.visited_at, a.district, a.house_number, COALESCE(a.apartment, '') as apartment, a.description
          FROM visited_locations vl
          LEFT JOIN addresses a ON vl.address_id = a.id
          WHERE vl.user_id = ? ${roomId !== null ? 'AND vl.room_id = ?' : ''}

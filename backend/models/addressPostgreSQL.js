@@ -3,34 +3,29 @@ const { query } = require('../config/database');
 
 const Address = {
     create: async (addressData) => {
-        const { scenario_id, district, house_number, description } = addressData;
-        
-        // Убеждаемся что таблицы созданы
+        const { scenario_id, district, house_number, apartment = '', description } = addressData;
+        const apt = String(apartment ?? '').trim();
         await ensureTables(scenario_id);
-        
-        // Создаем только в сценарий-специфичной таблице
+
         const result = await queryScenario(
             scenario_id,
-            `INSERT INTO scenario_${scenario_id}.addresses (district, house_number, description) 
-             VALUES ($1, $2, $3) RETURNING *`,
-            [district, house_number, description]
+            `INSERT INTO scenario_${scenario_id}.addresses (district, house_number, apartment, description) 
+             VALUES ($1, $2, $3, $4) RETURNING *`,
+            [district, house_number, apt, description]
         );
-        
         const address = result.rows[0];
-        
         return { ...address, scenario_id };
     },
 
-    findByScenarioAndAddress: async (scenario_id, district, house_number) => {
+    findByScenarioAndAddress: async (scenario_id, district, house_number, apartment) => {
         await ensureTables(scenario_id);
-        
+        const apt = String(apartment ?? '').trim();
         const result = await queryScenario(
             scenario_id,
             `SELECT * FROM scenario_${scenario_id}.addresses 
-             WHERE district = $1 AND house_number = $2`,
-            [district, house_number]
+             WHERE district = $1 AND house_number = $2 AND COALESCE(apartment, '') = $3`,
+            [district, house_number, apt]
         );
-        
         return result.rows[0] || null;
     },
 
@@ -58,25 +53,21 @@ const Address = {
     },
 
     update: async (scenario_id, id, addressData) => {
-        const { district, house_number, description } = addressData;
-        
-        // Обновляем в сценарий-специфичной таблице
+        const { district, house_number, apartment = '', description } = addressData;
+        const apt = String(apartment ?? '').trim();
         const result = await queryScenario(
             scenario_id,
             `UPDATE scenario_${scenario_id}.addresses 
-             SET district = $1, house_number = $2, description = $3 
-             WHERE id = $4 RETURNING *`,
-            [district, house_number, description, id]
+             SET district = $1, house_number = $2, apartment = $3, description = $4 
+             WHERE id = $5 RETURNING *`,
+            [district, house_number, apt, description, id]
         );
-        
-        // Также обновляем в главной таблице
         await query(
             `UPDATE addresses 
-             SET district = $1, house_number = $2, description = $3 
-             WHERE scenario_id = $4 AND id = $5`,
-            [district, house_number, description, scenario_id, id]
+             SET district = $1, house_number = $2, apartment = $3, description = $4 
+             WHERE scenario_id = $5 AND id = $6`,
+            [district, house_number, apt, description, scenario_id, id]
         );
-        
         return result.rows[0] || null;
     },
 

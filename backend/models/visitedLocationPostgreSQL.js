@@ -48,7 +48,7 @@ const VisitedLocation = {
     try {
       const result = await queryScenario(
         scenarioId,
-        `SELECT vl.id, vl.visited_at, a.district, a.house_number, a.description
+        `SELECT vl.id, vl.visited_at, a.district, a.house_number, COALESCE(a.apartment, '') as apartment, a.description
          FROM scenario_${scenarioId}.visited_locations vl
          LEFT JOIN scenario_${scenarioId}.addresses a ON vl.address_id = a.id
          WHERE vl.user_id = $1 ${roomId !== null ? 'AND vl.room_id = $2' : ''}

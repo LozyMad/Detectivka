@@ -107,8 +107,9 @@ const init = async () => {
       db.run(`CREATE TABLE IF NOT EXISTS addresses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         scenario_id INTEGER NOT NULL,
-        district TEXT NOT NULL CHECK(district IN ('С', 'Ю', 'З', 'В', 'Ц', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ')),
+        district TEXT NOT NULL CHECK(district IN ('С', 'Ю', 'З', 'В', 'Ц', 'П', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ')),
         house_number TEXT NOT NULL,
+        apartment TEXT NOT NULL DEFAULT '',
         description TEXT NOT NULL,
         FOREIGN KEY(scenario_id) REFERENCES scenarios(id) ON DELETE CASCADE
       )`);
@@ -133,6 +134,7 @@ const init = async () => {
         room_id INTEGER,
         district TEXT NOT NULL,
         house_number TEXT NOT NULL,
+        apartment TEXT NOT NULL DEFAULT '',
         found BOOLEAN NOT NULL,
         address_id INTEGER,
         attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -147,6 +149,9 @@ const init = async () => {
         if (err && !err.message.includes('duplicate column name')) {
           console.error('Error adding room_id column:', err);
         }
+      });
+      db.run(`ALTER TABLE visit_attempts ADD COLUMN apartment TEXT NOT NULL DEFAULT ''`, (err) => {
+        if (err && !err.message.includes('duplicate column')) console.error('visit_attempts apartment:', err);
       });
 
       // Rooms (games) table

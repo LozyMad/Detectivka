@@ -32,10 +32,14 @@ const ensureTables = async (scenarioId) => {
         id SERIAL PRIMARY KEY,
         district VARCHAR(255) NOT NULL,
         house_number VARCHAR(255) NOT NULL,
+        apartment VARCHAR(255) NOT NULL DEFAULT '',
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    await pool.query(`
+      ALTER TABLE scenario_${scenarioId}.addresses ADD COLUMN IF NOT EXISTS apartment VARCHAR(255) NOT NULL DEFAULT ''
+    `).catch(() => {});
 
     // Visited locations table (в схеме сценария)
     await pool.query(`

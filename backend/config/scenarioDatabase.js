@@ -17,10 +17,14 @@ function ensureTables(db) {
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS addresses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      district TEXT NOT NULL CHECK(district IN ('С', 'Ю', 'З', 'В', 'Ц', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ')),
+      district TEXT NOT NULL CHECK(district IN ('С', 'Ю', 'З', 'В', 'Ц', 'П', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ')),
       house_number TEXT NOT NULL,
+      apartment TEXT NOT NULL DEFAULT '',
       description TEXT NOT NULL
     )`);
+    db.run(`ALTER TABLE addresses ADD COLUMN apartment TEXT NOT NULL DEFAULT ''`, (err) => {
+      if (err && !err.message.includes('duplicate column')) console.error('addresses apartment column:', err);
+    });
 
     db.run(`CREATE TABLE IF NOT EXISTS visited_locations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,11 +41,15 @@ function ensureTables(db) {
       room_id INTEGER,
       district TEXT NOT NULL,
       house_number TEXT NOT NULL,
+      apartment TEXT NOT NULL DEFAULT '',
       found BOOLEAN NOT NULL,
       address_id INTEGER,
       attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(address_id) REFERENCES addresses(id)
     )`);
+    db.run(`ALTER TABLE visit_attempts ADD COLUMN apartment TEXT NOT NULL DEFAULT ''`, (err) => {
+      if (err && !err.message.includes('duplicate column')) console.error('visit_attempts apartment:', err);
+    });
 
     // Address choices table - варианты выбора для адресов
     db.run(`CREATE TABLE IF NOT EXISTS address_choices (

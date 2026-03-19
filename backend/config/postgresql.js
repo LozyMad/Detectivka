@@ -136,11 +136,13 @@ const createTables = async () => {
       room_id INTEGER REFERENCES rooms(id),
       district VARCHAR(255) NOT NULL,
       house_number VARCHAR(255) NOT NULL,
+      apartment VARCHAR(255) NOT NULL DEFAULT '',
       found BOOLEAN NOT NULL,
       address_id INTEGER,
       attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await query(`ALTER TABLE visit_attempts ADD COLUMN IF NOT EXISTS apartment VARCHAR(255) NOT NULL DEFAULT ''`).catch(() => {});
 
   // Questions table
   await query(`
@@ -161,10 +163,12 @@ const createTables = async () => {
       scenario_id INTEGER REFERENCES scenarios(id) ON DELETE CASCADE,
       district VARCHAR(255) NOT NULL,
       house_number VARCHAR(255) NOT NULL,
+      apartment VARCHAR(255) NOT NULL DEFAULT '',
       description TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await query(`ALTER TABLE addresses ADD COLUMN IF NOT EXISTS apartment VARCHAR(255) NOT NULL DEFAULT ''`).catch(() => {});
 
   // Question answers table
   await query(`

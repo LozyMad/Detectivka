@@ -6,7 +6,8 @@ const { broadcastNewTrip } = require('../sse/roomEvents');
 
 const visitLocation = async (req, res) => {
   try {
-    const { district, house_number } = req.body;
+    const { district, house_number, apartment } = req.body;
+    const apt = (apartment != null && apartment !== undefined) ? String(apartment).trim() : '';
     // Support both admin-user gameplay (legacy) and room-user gameplay
     const userId = req.user ? req.user.id : (req.roomUser ? req.roomUser.id : null);
     const roomContext = req.roomUser || null;
@@ -15,7 +16,7 @@ const visitLocation = async (req, res) => {
       return res.status(400).json({ error: 'District and house number required' });
     }
 
-    const validDistricts = ['С', 'Ю', 'З', 'В', 'Ц', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ'];
+    const validDistricts = ['С', 'Ю', 'З', 'В', 'Ц', 'П', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ'];
     if (!validDistricts.includes(district)) {
       return res.status(400).json({ error: 'Invalid district' });
     }
@@ -46,30 +47,32 @@ const visitLocation = async (req, res) => {
     }
 
     const address = await Address.findByScenarioAndAddress(
-      activeScenario.id, 
-      district, 
-      house_number
+      activeScenario.id,
+      district,
+      house_number,
+      apt
     );
 
-    // ФИКСИРУЕМ ВСЕ ПОПЫТКИ (даже неудачные)
     await VisitAttempt.create({
       user_id: userId,
       scenario_id: activeScenario.id,
       room_id: roomContext ? roomContext.room_id : null,
       district: district,
       house_number: house_number,
+      apartment: apt,
       found: !!address,
       address_id: address ? address.id : null
     });
     if (roomContext && roomContext.room_id) broadcastNewTrip(roomContext.room_id);
 
     if (!address) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
         error: 'Location not found in this scenario',
         location: {
           district: district,
-          house_number: house_number
+          house_number: house_number,
+          apartment: apt
         }
       });
     }
@@ -87,7 +90,8 @@ const visitLocation = async (req, res) => {
       description: address.description,
       location: {
         district: address.district,
-        house_number: address.house_number
+        house_number: address.house_number,
+        apartment: address.apartment || ''
       },
       address_id: address.id,
       visited_location_id: visitResult.visit ? visitResult.visit.id : null,
