@@ -626,8 +626,8 @@ async function loadPlayerAddressBookSectionsAndEntries() {
         const response = await fetch(`${API_BASE}/game/address-book/sections`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!response.ok) throw new Error('Ошибка загрузки');
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Ошибка загрузки (' + response.status + ')');
         playerAddressBookSections = data;
         playerAddressBookSectionsLoaded = true;
 
@@ -715,8 +715,8 @@ async function loadPlayerAddressBookEntries() {
         const response = await fetch(`${API_BASE}/game/address-book/entries?${qs}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!response.ok) throw new Error('Ошибка загрузки');
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Ошибка загрузки (' + response.status + ')');
         const entries = data.entries || [];
 
         if (entries.length === 0) {

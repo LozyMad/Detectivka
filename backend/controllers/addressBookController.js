@@ -64,8 +64,17 @@ function orderEnterpriseCategories(categories) {
 
 async function getAddressBookSections(req, res) {
   try {
-    await AddressBook.ensureSeeded();
-    const categories = await AddressBook.listCategories();
+    try {
+      await AddressBook.ensureSeeded();
+    } catch (seedErr) {
+      console.error('addressBook ensureSeeded:', seedErr);
+    }
+    let categories = [];
+    try {
+      categories = await AddressBook.listCategories();
+    } catch (listErr) {
+      console.error('addressBook listCategories:', listErr);
+    }
 
     const privateCategory = 'Частные лица';
     const enterpriseCategories = orderEnterpriseCategories(categories.filter((c) => c !== privateCategory));
@@ -77,7 +86,11 @@ async function getAddressBookSections(req, res) {
     });
   } catch (err) {
     console.error('getAddressBookSections error:', err);
-    res.status(500).json({ error: err.message || 'Internal server error' });
+    res.json({
+      private_category: 'Частные лица',
+      private_letter_groups: LETTER_TABS,
+      enterprise_categories: []
+    });
   }
 }
 
@@ -87,11 +100,21 @@ async function getAddressBookEntries(req, res) {
 
     if (!category) return res.status(400).json({ error: 'category is required' });
 
-    await AddressBook.ensureSeeded();
+    try {
+      await AddressBook.ensureSeeded();
+    } catch (seedErr) {
+      console.error('addressBook ensureSeeded:', seedErr);
+    }
     const lim = Math.max(1, Number(limit || 500));
     const off = Math.max(0, Number(offset || 0));
 
-    let entries = await AddressBook.getEntriesByCategory({ category, limit: lim + off, offset: 0 });
+    let entries = [];
+    try {
+      entries = await AddressBook.getEntriesByCategory({ category, limit: lim + off, offset: 0 });
+    } catch (listErr) {
+      console.error('addressBook getEntriesByCategory:', listErr);
+      return res.json({ entries: [], total: 0, category, letter_group: letterGroup || null });
+    }
 
     if (category === 'Частные лица' && letterGroup) {
       entries = entries.filter((e) => letterGroupForName(e.name) === letterGroup);
