@@ -6,9 +6,9 @@ const Address = require('../models/address');
 const SHEET_TRIPS = 'Поездки';
 const SHEET_QUESTIONS = 'Вопросы';
 const SHEET_CHOICES = 'Выборы';
-const COLS_TRIPS = ['Район', 'Номер дома', 'Информация по адресу'];
+const COLS_TRIPS = ['Район', 'Номер дома', 'Квартира', 'Информация по адресу'];
 const COLS_QUESTIONS = ['Номер вопроса', 'Вопрос'];
-const COLS_CHOICES = ['Район', 'Номер дома', 'Текст варианта выбора', 'Результат', 'Порядок'];
+const COLS_CHOICES = ['Район', 'Номер дома', 'Квартира', 'Текст варианта выбора', 'Результат', 'Порядок'];
 
 const backupController = {
   // Экспорт одного сценария: XLSX с листами «Поездки», «Вопросы» и «Выборы».
@@ -46,6 +46,7 @@ const backupController = {
         tripsRows.push([
           (a && a.district) || '',
           (a && a.house_number) || '',
+          (a && a.apartment) || '',
           (a && a.description) || ''
         ]);
       }
@@ -66,6 +67,7 @@ const backupController = {
           choicesRows.push([
             (a && a.district) || '',
             (a && a.house_number) || '',
+            (a && a.apartment) || '',
             choiceText.replace(/\r?\n/g, ' '),
             responseText.replace(/\r?\n/g, ' '),
             (c && (c.choice_order != null || c.choice_order === 0)) ? c.choice_order : idx + 1
@@ -147,7 +149,7 @@ const backupController = {
         created_by: userId
       });
       const scenarioId = newScenario.id;
-      const addressKey = (d, h) => `${String(d).trim()}\t${String(h).trim()}`;
+      const addressKey = (d, h, a) => `${String(d).trim()}\t${String(h).trim()}\t${String(a).trim()}`;
       const addressIdByKey = new Map();
 
       if (sheetTrips) {
@@ -155,6 +157,7 @@ const backupController = {
         const header = (rows[0] || []).map(String).map(s => s.trim().toLowerCase());
         const districtIdx = header.findIndex(h => h.includes('район'));
         const houseIdx = header.findIndex(h => h.includes('номер') && h.includes('дом'));
+        const apartmentIdx = header.findIndex(h => h.includes('кварт'));
         const infoIdx = header.findIndex(h => h.includes('информация') || h.includes('адрес'));
         const d = districtIdx >= 0 ? districtIdx : 0;
         const h = houseIdx >= 0 ? houseIdx : 1;
@@ -163,14 +166,16 @@ const backupController = {
           const row = rows[r] || [];
           const district = String(row[d] ?? '').trim();
           const house_number = String(row[h] ?? '').trim();
+          const apartment = apartmentIdx >= 0 ? String(row[apartmentIdx] ?? '').trim() : '';
           if (!district && !house_number) continue;
           const created = await Address.create({
             scenario_id: scenarioId,
             district: district || '-',
             house_number: house_number || '-',
+            apartment,
             description: String(row[i] ?? '').trim()
           });
-          if (created && created.id) addressIdByKey.set(addressKey(district, house_number), created.id);
+          if (created && created.id) addressIdByKey.set(addressKey(district, house_number, apartment), created.id);
         }
       }
 
@@ -195,6 +200,7 @@ const backupController = {
         const header = (rows[0] || []).map(String).map(s => s.trim().toLowerCase());
         const districtIdx = header.findIndex(h => h.includes('район'));
         const houseIdx = header.findIndex(h => h.includes('номер') && h.includes('дом'));
+        const apartmentIdx = header.findIndex(h => h.includes('кварт'));
         const choiceIdx = header.findIndex(h => h.includes('текст варианта выбора') || h.includes('вариант выбора') || (h.includes('вариант') && !h.includes('порядок')) || (h.includes('выбор') && !h.includes('порядок')));
         const resultIdx = header.findIndex(h => h.includes('результат') || h.includes('ответ'));
         const orderIdx = header.findIndex(h => h.includes('порядок'));
@@ -207,9 +213,10 @@ const backupController = {
           const row = rows[r] || [];
           const district = String(row[d] ?? '').trim();
           const house_number = String(row[h] ?? '').trim();
+          const apartment = apartmentIdx >= 0 ? String(row[apartmentIdx] ?? '').trim() : '';
           const choice_text = String(row[ch] ?? '').trim();
           if (!choice_text) continue;
-          const address_id = addressIdByKey.get(addressKey(district, house_number));
+          const address_id = addressIdByKey.get(addressKey(district, house_number, apartment));
           if (!address_id) continue;
           const response_text = String(row[res] ?? '').trim();
           const order = parseInt(row[ord], 10);
