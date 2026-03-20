@@ -196,7 +196,13 @@ function escapeHtml(value) {
 function renderAddressBookActiveLabel() {
     const labelEl = document.getElementById('addressBookActiveLabel');
     if (!labelEl) return;
-    const { category, letter_group } = addressBookFilter;
+    const { category, letter_group, q } = addressBookFilter;
+
+    // Если пользователь ввел поиск, показываем что поиск выполняется по всей книге
+    if (q && String(q).trim().length > 0) {
+        labelEl.textContent = `Поиск по всей книге: ${q}`;
+        return;
+    }
     if (category === 'Частные лица' && letter_group) {
         labelEl.textContent = `Частные лица: ${letter_group}`;
     } else {
