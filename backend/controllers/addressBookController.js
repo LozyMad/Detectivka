@@ -98,7 +98,8 @@ async function getAddressBookEntries(req, res) {
   try {
     const { category, letter_group: letterGroup, q, limit, offset } = req.query || {};
 
-    if (!category) return res.status(400).json({ error: 'category is required' });
+    const hasQuery = !!q;
+    if (!category && !hasQuery) return res.status(400).json({ error: 'category is required' });
 
     try {
       await AddressBook.ensureSeeded();
@@ -110,13 +111,18 @@ async function getAddressBookEntries(req, res) {
 
     let entries = [];
     try {
-      entries = await AddressBook.getEntriesByCategory({ category, limit: lim + off, offset: 0 });
+      if (hasQuery) {
+        // Глобальный поиск по всей книге: игнорируем category/letter_group
+        entries = await AddressBook.getAllEntries({ limit: 100000, offset: 0 });
+      } else {
+        entries = await AddressBook.getEntriesByCategory({ category, limit: lim + off, offset: 0 });
+      }
     } catch (listErr) {
       console.error('addressBook getEntriesByCategory:', listErr);
       return res.json({ entries: [], total: 0, category, letter_group: letterGroup || null });
     }
 
-    if (category === 'Частные лица' && letterGroup) {
+    if (!hasQuery && category === 'Частные лица' && letterGroup) {
       entries = entries.filter((e) => letterGroupForName(e.name) === letterGroup);
     }
 
@@ -143,7 +149,7 @@ async function getAddressBookEntries(req, res) {
     const total = entries.length;
     entries = entries.slice(off, off + lim);
 
-    res.json({ entries, total, category, letter_group: letterGroup || null });
+    res.json({ entries, total, category, letter_group: hasQuery ? null : (letterGroup || null) });
   } catch (err) {
     console.error('getAddressBookEntries error:', err);
     res.status(500).json({ error: err.message || 'Internal server error' });

@@ -116,6 +116,23 @@ if (DB_TYPE === 'postgresql') {
       });
     },
 
+    // Глобальный поиск: вернуть все записи (будет дополнительно отфильтровано в контроллере)
+    getAllEntries: async ({ limit = 50000, offset = 0 } = {}) => {
+      return new Promise((resolve, reject) => {
+        db.all(
+          `SELECT id, category, district, house_number, apartment, name, note, updated_at
+           FROM address_book_entries
+           ORDER BY category, district, house_number, apartment, name
+           LIMIT ? OFFSET ?`,
+          [limit, offset],
+          (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows || []);
+          }
+        );
+      });
+    },
+
     getEntryById: async (id) => {
       return new Promise((resolve, reject) => {
         db.get(

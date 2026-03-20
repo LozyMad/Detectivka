@@ -98,6 +98,18 @@ const AddressBook = {
     return res.rows || [];
   },
 
+  // Глобальный поиск: вернуть все записи (дополнительно отфильтруется в контроллере)
+  getAllEntries: async ({ limit = 50000, offset = 0 } = {}) => {
+    const res = await query(
+      `SELECT id, category, district, house_number, apartment, name, note, updated_at
+       FROM address_book_entries
+       ORDER BY category, district, house_number, apartment, name
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    return res.rows || [];
+  },
+
   getEntryById: async (id) => {
     const res = await query(
       `SELECT id, category, district, house_number, apartment, name, note, updated_at FROM address_book_entries WHERE id = $1`,

@@ -699,7 +699,7 @@ async function loadPlayerAddressBookEntries() {
     if (labelEl) labelEl.textContent = category === 'Частные лица' && playerAddressBookFilter.letter_group
         ? `Частные лица: ${playerAddressBookFilter.letter_group}` : category;
 
-    const showApartment = category === 'Частные лица';
+    const showApartment = category === 'Частные лица' || (playerAddressBookFilter.q && playerAddressBookFilter.q.length > 0);
     if (apartmentHeader) apartmentHeader.style.display = showApartment ? '' : 'none';
 
     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Загрузка...</td></tr>';
