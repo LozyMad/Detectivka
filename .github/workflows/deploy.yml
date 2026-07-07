@@ -23,7 +23,7 @@ jobs:
       - name: Call deploy webhook on server
         run: |
           echo "Calling deploy endpoint..."
-          RESP=$(curl -s -w "\n%{http_code}" -X POST "http://5.42.113.79:3000/api/deploy" \
+          RESP=$(curl -s -w "\n%{http_code}" -X POST "http://186.246.10.236:3000/api/deploy" \
             -H "X-Deploy-Secret: ${{ secrets.DEPLOY_SECRET }}" \
             --connect-timeout 15 --max-time 45) || true
           BODY=$(echo "$RESP" | head -n -1)
@@ -34,7 +34,7 @@ jobs:
             echo "Deploy OK"
           else
             if [ "$CODE" = "000" ]; then
-              echo "::error::Connection failed (000). Server unreachable from GitHub. Check: 1) App running on server (pm2 status). 2) Timeweb firewall: open port 3000 for incoming. 3) Server IP 5.42.113.79 is correct."
+              echo "::error::Connection failed (000). Server unreachable from GitHub. Check: 1) App running on server (pm2 status). 2) Timeweb firewall: open port 3000 for incoming. 3) Server IP 186.246.10.236 is correct."
             else
               echo "::error::Deploy failed (code $CODE). Check DEPLOY_SECRET and server .env."
             fi
