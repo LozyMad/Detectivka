@@ -166,17 +166,21 @@ const Room = {
 
     // Методы управления игрой
     startGame: async (roomId) => {
+        const room = await Room.getById(roomId);
+        if (!room) throw new Error('Room not found');
+
+        const durationSeconds = room.duration_seconds || 3600;
         const now = new Date();
-        const endTime = new Date(now.getTime() + 3600 * 1000); // по умолчанию 1 час
-        
+        const endTime = new Date(now.getTime() + durationSeconds * 1000);
+
         const result = await query(
             `UPDATE rooms 
              SET game_start_time = $1, game_end_time = $2, state = 'running'
              WHERE id = $3 RETURNING *`,
             [now.toISOString(), endTime.toISOString(), roomId]
         );
-        
-        return result.rows[0] || { id: roomId, game_start_time: now.toISOString(), game_end_time: endTime.toISOString() };
+
+        return result.rows[0] || { id: roomId, game_start_time: now.toISOString(), game_end_time: endTime.toISOString(), duration_seconds: durationSeconds };
     },
 
     pauseGame: async (roomId) => {

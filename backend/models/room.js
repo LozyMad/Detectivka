@@ -51,14 +51,20 @@ if (DB_TYPE === 'postgresql') {
   // Новая простая логика таймера
   startGame: (roomId) => {
     return new Promise((resolve, reject) => {
-      const now = new Date();
-      const endTime = new Date(now.getTime() + 3600 * 1000); // по умолчанию 1 час
-      
-      db.run(`UPDATE rooms 
-              SET game_start_time = ?, game_end_time = ?, state = 'running'
-              WHERE id = ?`, [now.toISOString(), endTime.toISOString(), roomId], function(err) {
+      db.get(`SELECT duration_seconds FROM rooms WHERE id = ?`, [roomId], (err, row) => {
         if (err) return reject(err);
-        resolve({ id: roomId, game_start_time: now.toISOString(), game_end_time: endTime.toISOString() });
+        if (!row) return reject(new Error('Room not found'));
+
+        const durationSeconds = row.duration_seconds || 3600;
+        const now = new Date();
+        const endTime = new Date(now.getTime() + durationSeconds * 1000);
+
+        db.run(`UPDATE rooms 
+                SET game_start_time = ?, game_end_time = ?, state = 'running'
+                WHERE id = ?`, [now.toISOString(), endTime.toISOString(), roomId], function(updateErr) {
+          if (updateErr) return reject(updateErr);
+          resolve({ id: roomId, game_start_time: now.toISOString(), game_end_time: endTime.toISOString(), duration_seconds: durationSeconds });
+        });
       });
     });
   },
