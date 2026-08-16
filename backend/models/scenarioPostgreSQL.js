@@ -170,7 +170,8 @@ const Scenario = {
             const Address = require('./address');
             const sourceAddresses = await Address.findByScenario(sourceId);
 
-            // Копируем адреса и их выборы
+            // Копируем адреса и их выборы; строим карту старых id → новых
+            const addressIdMap = {};
             for (const sourceAddress of sourceAddresses) {
                 console.log(`[COPY] Processing source address: ID ${sourceAddress.id}, ${sourceAddress.district}-${sourceAddress.house_number}`);
                 
@@ -179,8 +180,11 @@ const Scenario = {
                     scenario_id: newScenario.id,
                     district: sourceAddress.district,
                     house_number: sourceAddress.house_number,
-                    description: sourceAddress.description
+                    apartment: sourceAddress.apartment || '',
+                    description: sourceAddress.description,
+                    is_internet_cafe: !!(sourceAddress.is_internet_cafe)
                 });
+                addressIdMap[sourceAddress.id] = newAddress.id;
                 
                 console.log(`[COPY] Created new address: ID ${newAddress.id}, ${newAddress.district}-${newAddress.house_number}`);
 
@@ -198,6 +202,30 @@ const Scenario = {
                         choice_order: sourceChoice.choice_order
                     });
                 }
+            }
+
+            // Копируем интернет-страницы
+            try {
+                const InternetPage = require('./internetPage');
+                const sourcePages = await InternetPage.getByScenario(sourceId);
+                for (const page of sourcePages) {
+                    const newCafeId = addressIdMap[page.cafe_address_id];
+                    const newUnlockId = addressIdMap[page.unlock_address_id];
+                    if (!newCafeId || !newUnlockId) {
+                        console.log(`[COPY] Skipping internet page "${page.title}" — missing address mapping`);
+                        continue;
+                    }
+                    await InternetPage.create(newScenario.id, {
+                        title: page.title,
+                        content_html: page.content_html,
+                        unlock_address_id: newUnlockId,
+                        cafe_address_id: newCafeId,
+                        page_order: page.page_order,
+                        is_active: page.is_active !== false && page.is_active !== 0
+                    });
+                }
+            } catch (error) {
+                console.log('No internet pages to copy or error copying:', error.message);
             }
 
             // Копируем вопросы сценария

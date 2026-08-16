@@ -1138,3 +1138,210 @@ h1, h2, h3, h4, h5, h6 {
         font-size: 1.5rem;
     }
 }
+/* ===== Internet Cafe browser (early 2000s) ===== */
+.ie-cafe-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.ie-cafe-window {
+    width: min(980px, 100%);
+    height: min(720px, 92vh);
+    display: flex;
+    flex-direction: column;
+    background: #ece9d8;
+    border: 2px solid #0054e3;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+    font-family: Tahoma, 'MS Sans Serif', sans-serif;
+}
+
+.ie-cafe-titlebar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(180deg, #0a246a 0%, #3a6ea5 50%, #0a246a 100%);
+    color: #fff;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    user-select: none;
+}
+
+.ie-cafe-titlebar-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.ie-cafe-icon {
+    display: inline-flex;
+    width: 16px;
+    height: 16px;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    color: #0a246a;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.ie-cafe-close {
+    width: 22px;
+    height: 20px;
+    border: 1px solid #fff;
+    background: #c44;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.ie-cafe-close:hover {
+    background: #e55;
+}
+
+.ie-cafe-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #ece9d8;
+    border-bottom: 1px solid #aca899;
+}
+
+.ie-cafe-nav-btn {
+    font-size: 11px;
+    padding: 3px 8px;
+    background: #ece9d8;
+    border: 1px solid #aca899;
+    box-shadow: inset 1px 1px 0 #fff;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.ie-cafe-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.ie-cafe-address-bar {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.ie-cafe-addr-label {
+    font-size: 11px;
+    color: #222;
+}
+
+.ie-cafe-address-bar input {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    padding: 3px 6px;
+    border: 1px solid #7f9db9;
+    background: #fff;
+    color: #000;
+}
+
+.ie-cafe-statusbar {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: #ece9d8;
+    border-top: 1px solid #aca899;
+    color: #333;
+}
+
+.ie-cafe-content {
+    flex: 1;
+    background: #fff;
+    overflow: auto;
+    border: 1px solid #7f9db9;
+    margin: 0 4px;
+    min-height: 0;
+}
+
+.ie-cafe-home {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    padding: 2rem;
+    text-align: center;
+    color: #222;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.ie-cafe-home h2 {
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+    font-weight: normal;
+}
+
+.ie-cafe-site-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ie-cafe-site-list li {
+    margin: 0.75rem 0;
+}
+
+.ie-cafe-site-list a {
+    color: #0000ee;
+    font-size: 1.15rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.ie-cafe-site-list a:visited {
+    color: #551a8b;
+}
+
+.ie-cafe-frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #fff;
+}
+
+.trip-cafe-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    color: var(--noir-gold);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.trip-cafe-link:hover {
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .ie-cafe-window {
+        height: 95vh;
+    }
+    .ie-cafe-titlebar {
+        font-size: 11px;
+    }
+}

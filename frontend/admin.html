@@ -770,6 +770,12 @@
                                 <label for="addressDescription" class="form-label">Описание локации</label>
                                 <textarea class="form-control" id="addressDescription" rows="3" required></textarea>
                             </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="addressIsInternetCafe">
+                                <label class="form-check-label" for="addressIsInternetCafe">
+                                    Это интернет-кафе
+                                </label>
+                            </div>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-plus me-1"></i>Добавить адрес
                             </button>
@@ -806,16 +812,99 @@
                                             <th>Квартира</th>
                                             <th>Описание</th>
                                             <th>Выборы</th>
+                                            <th>Кафе</th>
                                             <th>Действия</th>
                                         </tr>
                                     </thead>
                                     <tbody id="addressesTable">
                                         <tr>
-                                            <td colspan="7" class="text-center">Выберите сценарий для просмотра адресов</td>
+                                            <td colspan="8" class="text-center">Выберите сценарий для просмотра адресов</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h4 class="mb-3"><i class="fas fa-globe me-2"></i>Интернет-страницы</h4>
+                    <p class="text-muted">Страницы, доступные игрокам в интернет-кафе после посещения адреса разблокировки.</p>
+
+                    <div class="form-section mb-4">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="internetPageScenario" class="form-label">Сценарий</label>
+                                <select class="form-select" id="internetPageScenario">
+                                    <option value="">Выберите сценарий...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <form id="internetPageForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="internetPageTitle" class="form-label">Название сайта</label>
+                                        <input type="text" class="form-control" id="internetPageTitle" required placeholder="Блог Бориса Лещака">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="internetPageOrder" class="form-label">Порядок</label>
+                                        <input type="number" class="form-control" id="internetPageOrder" value="1" min="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3 form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="internetPageActive" checked>
+                                        <label class="form-check-label" for="internetPageActive">Активна</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="internetPageCafeAddress" class="form-label">Адрес интернет-кафе</label>
+                                        <select class="form-select" id="internetPageCafeAddress" required>
+                                            <option value="">—</option>
+                                        </select>
+                                        <div class="form-text">Сначала отметьте адрес как «Интернет-кафе»</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="internetPageUnlockAddress" class="form-label">Адрес разблокировки</label>
+                                        <select class="form-select" id="internetPageUnlockAddress" required>
+                                            <option value="">—</option>
+                                        </select>
+                                        <div class="form-text">Игрок должен посетить этот адрес, чтобы увидеть сайт</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label for="internetPageContent" class="form-label mb-0">HTML контент страницы</label>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="insertBlogTemplateBtn">
+                                        Вставить шаблон блога
+                                    </button>
+                                </div>
+                                <textarea class="form-control font-monospace" id="internetPageContent" rows="10" required placeholder="HTML страницы сайта..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="internetPageSubmitBtn">
+                                <i class="fas fa-plus me-1"></i>Добавить страницу
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary ms-2" id="internetPageCancelBtn" style="display: none;">
+                                Отмена
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Список страниц сценария</h5>
+                        </div>
+                        <div class="card-body" id="internetPagesList">
+                            <p class="text-muted text-center mb-0">Выберите сценарий</p>
                         </div>
                     </div>
                 </div>
@@ -1420,9 +1509,10 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/admin.js?v=2"></script>
+    <script src="js/admin.js?v=3"></script>
     <script src="js/backup.js?v=2"></script>
     <script src="js/choices.js?v=1"></script>
+    <script src="js/internet-cafe-admin.js?v=1"></script>
     <script src="js/persist-inputs.js"></script>
     
     <script>

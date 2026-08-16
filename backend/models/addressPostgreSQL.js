@@ -3,18 +3,29 @@ const { query } = require('../config/database');
 
 const Address = {
     create: async (addressData) => {
-        const { scenario_id, district, house_number, apartment = '', description } = addressData;
+        const { scenario_id, district, house_number, apartment = '', description, is_internet_cafe = false } = addressData;
         const apt = String(apartment ?? '').trim();
         await ensureTables(scenario_id);
 
         const result = await queryScenario(
             scenario_id,
-            `INSERT INTO scenario_${scenario_id}.addresses (district, house_number, apartment, description) 
-             VALUES ($1, $2, $3, $4) RETURNING *`,
-            [district, house_number, apt, description]
+            `INSERT INTO scenario_${scenario_id}.addresses (district, house_number, apartment, description, is_internet_cafe) 
+             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [district, house_number, apt, description, !!is_internet_cafe]
         );
         const address = result.rows[0];
         return { ...address, scenario_id };
+    },
+
+    setInternetCafe: async (scenario_id, id, is_internet_cafe) => {
+        await ensureTables(scenario_id);
+        const result = await queryScenario(
+            scenario_id,
+            `UPDATE scenario_${scenario_id}.addresses
+             SET is_internet_cafe = $1 WHERE id = $2 RETURNING *`,
+            [!!is_internet_cafe, id]
+        );
+        return result.rows[0] || null;
     },
 
     findByScenarioAndAddress: async (scenario_id, district, house_number, apartment) => {
@@ -91,6 +102,18 @@ const Address = {
             );
         } catch (error) {
             console.log('Address choices table does not exist for scenario', scenario_id);
+        }
+
+        // 4b. Удаляем интернет-страницы, привязанные к адресу
+        try {
+            await queryScenario(
+                scenario_id,
+                `DELETE FROM scenario_${scenario_id}.internet_pages
+                 WHERE cafe_address_id = $1 OR unlock_address_id = $1`,
+                [id]
+            );
+        } catch (error) {
+            console.log('Internet pages table does not exist for scenario', scenario_id);
         }
         
         // 5. Удаляем из сценарий-специфичной таблицы

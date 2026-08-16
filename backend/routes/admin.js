@@ -11,6 +11,7 @@ const {
   createAddress,
   getAddresses,
   deleteAddress,
+  setAddressInternetCafe,
   getStatistics
 } = require('../controllers/adminController');
 const {
@@ -41,6 +42,7 @@ router.get('/statistics/:scenario_id', getStatistics);
 // Address routes
 router.post('/addresses', createAddress);
 router.get('/addresses/:scenario_id', getAddresses);
+router.patch('/addresses/:scenario_id/:id/internet-cafe', setAddressInternetCafe);
 router.delete('/addresses/:scenario_id/:id', deleteAddress);
 
 // Address book routes (просмотр доступен любому администратору)

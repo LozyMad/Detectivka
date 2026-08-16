@@ -34,12 +34,19 @@ const getUserAttempts = async (req, res) => {
 
         for (const a of attempts) {
             a.has_choices = false;
+            a.is_internet_cafe = false;
             if (a.found && a.address_id) {
                 try {
                     const hasCh = await Address.hasChoices(activeScenario.id, a.address_id);
                     a.has_choices = !!hasCh;
                 } catch (e) {
                     a.has_choices = false;
+                }
+                try {
+                    const addr = await Address.getById(activeScenario.id, a.address_id);
+                    a.is_internet_cafe = !!(addr && (addr.is_internet_cafe === true || addr.is_internet_cafe === 1 || addr.is_internet_cafe === '1'));
+                } catch (e) {
+                    a.is_internet_cafe = false;
                 }
             }
         }

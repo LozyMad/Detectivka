@@ -13,16 +13,50 @@ if (DB_TYPE === 'postgresql') {
   Address = {
     create: (addressData) => {
         return new Promise((resolve, reject) => {
-            const { scenario_id, district, house_number, apartment = '', description } = addressData;
+            const { scenario_id, district, house_number, apartment = '', description, is_internet_cafe = false } = addressData;
             const apt = String(apartment ?? '').trim();
+            const cafeFlag = is_internet_cafe ? 1 : 0;
             const db = getScenarioDb(scenario_id);
 
             db.run(
-                `INSERT INTO addresses (district, house_number, apartment, description) VALUES (?, ?, ?, ?)`,
-                [district, house_number, apt, description],
+                `INSERT INTO addresses (district, house_number, apartment, description, is_internet_cafe) VALUES (?, ?, ?, ?, ?)`,
+                [district, house_number, apt, description, cafeFlag],
                 function(err) {
                     if (err) reject(err);
-                    else resolve({ id: this.lastID, scenario_id, district, house_number, apartment: apt, description });
+                    else resolve({
+                        id: this.lastID,
+                        scenario_id,
+                        district,
+                        house_number,
+                        apartment: apt,
+                        description,
+                        is_internet_cafe: !!cafeFlag
+                    });
+                }
+            );
+        });
+    },
+
+    getById: (scenario_id, id) => {
+        return new Promise((resolve, reject) => {
+            const db = getScenarioDb(scenario_id);
+            db.get(`SELECT * FROM addresses WHERE id = ?`, [id], (err, row) => {
+                if (err) reject(err);
+                else resolve(row || null);
+            });
+        });
+    },
+
+    setInternetCafe: (scenario_id, id, is_internet_cafe) => {
+        return new Promise((resolve, reject) => {
+            const db = getScenarioDb(scenario_id);
+            const cafeFlag = is_internet_cafe ? 1 : 0;
+            db.run(
+                `UPDATE addresses SET is_internet_cafe = ? WHERE id = ?`,
+                [cafeFlag, id],
+                function(err) {
+                    if (err) reject(err);
+                    else resolve({ id, is_internet_cafe: !!cafeFlag, changes: this.changes });
                 }
             );
         });
@@ -66,9 +100,13 @@ if (DB_TYPE === 'postgresql') {
     delete: (scenario_id, id) => {
         return new Promise((resolve, reject) => {
             const db = getScenarioDb(scenario_id);
-            db.run(`DELETE FROM addresses WHERE id = ?`, [id], function(err) {
-                if (err) reject(err);
-                else resolve({ deletedId: id });
+            db.serialize(() => {
+                db.run(`DELETE FROM internet_pages WHERE cafe_address_id = ? OR unlock_address_id = ?`, [id, id]);
+                db.run(`DELETE FROM address_choices WHERE address_id = ?`, [id]);
+                db.run(`DELETE FROM addresses WHERE id = ?`, [id], function(err) {
+                    if (err) reject(err);
+                    else resolve({ deletedId: id });
+                });
             });
         });
     },

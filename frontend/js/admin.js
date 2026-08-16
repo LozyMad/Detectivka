@@ -1861,7 +1861,7 @@ async function loadAddressesForScenario() {
     const addressesTable = document.getElementById('addressesTable');
     
     if (!scenarioId) {
-        addressesTable.innerHTML = '<tr><td colspan="7" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
+        addressesTable.innerHTML = '<tr><td colspan="8" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
         return;
     }
     
@@ -1878,7 +1878,7 @@ async function loadAddressesForScenario() {
             const addresses = data.addresses || [];
             
             if (addresses.length === 0) {
-                addressesTable.innerHTML = '<tr><td colspan="7" class="text-center">Адреса для этого сценария не найдены</td></tr>';
+                addressesTable.innerHTML = '<tr><td colspan="8" class="text-center">Адреса для этого сценария не найдены</td></tr>';
             } else {
                 const addressesWithChoices = await Promise.all(
                     addresses.map(async (address) => {
@@ -1887,7 +1887,9 @@ async function loadAddressesForScenario() {
                     })
                 );
                 const esc = (s) => (s || '').replace(/'/g, "\\'").replace(/\\/g, '\\\\');
-                addressesTable.innerHTML = addressesWithChoices.map(address => `
+                addressesTable.innerHTML = addressesWithChoices.map(address => {
+                    const isCafe = !!(address.is_internet_cafe === true || address.is_internet_cafe === 1 || address.is_internet_cafe === '1');
+                    return `
                     <tr>
                         <td>${address.id}</td>
                         <td>${escapeHtml(address.district)}</td>
@@ -1900,6 +1902,12 @@ async function loadAddressesForScenario() {
                                 '<span class="badge bg-secondary">Нет</span>'
                             }
                         </td>
+                        <td class="text-center">
+                            ${isCafe
+                                ? '<span class="badge bg-info mb-1 d-block">Кафе</span><button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAddressInternetCafe(' + scenarioId + ', ' + address.id + ', false)">Снять</button>'
+                                : '<button type="button" class="btn btn-sm btn-outline-info" onclick="toggleAddressInternetCafe(' + scenarioId + ', ' + address.id + ', true)">Сделать кафе</button>'
+                            }
+                        </td>
                         <td class="table-actions">
                             <button class="btn btn-sm btn-outline-primary me-1" 
                                     onclick="openChoicesModal(${scenarioId}, ${address.id}, {district: '${esc(address.district)}', house_number: '${esc(address.house_number)}', apartment: '${esc(address.apartment || '')}', description: '${esc(address.description || '')}'})">
@@ -1910,17 +1918,18 @@ async function loadAddressesForScenario() {
                             </button>
                         </td>
                     </tr>
-                `).join('');
+                `;
+                }).join('');
             }
         } else {
             const data = await response.json();
             showMessage(data.error || 'Ошибка загрузки адресов', 'danger');
-            addressesTable.innerHTML = '<tr><td colspan="7" class="text-center">Ошибка загрузки адресов</td></tr>';
+            addressesTable.innerHTML = '<tr><td colspan="8" class="text-center">Ошибка загрузки адресов</td></tr>';
         }
     } catch (error) {
         console.error('Error loading addresses:', error);
         showMessage('Ошибка соединения', 'danger');
-        addressesTable.innerHTML = '<tr><td colspan="7" class="text-center">Ошибка соединения</td></tr>';
+        addressesTable.innerHTML = '<tr><td colspan="8" class="text-center">Ошибка соединения</td></tr>';
     }
 }
 
@@ -1986,6 +1995,7 @@ function populateScenarioDropdowns() {
     const addDropdown = document.getElementById('addressScenario');
     const viewDropdown = document.getElementById('viewAddressScenario');
     const copyDropdown = document.getElementById('sourceScenarioSelect');
+    const internetPageDropdown = document.getElementById('internetPageScenario');
 
     const options = scenarios.map(scenario =>
         `<option value="${scenario.id}">${scenario.name}</option>`
@@ -1996,6 +2006,10 @@ function populateScenarioDropdowns() {
 
     if (copyDropdown) {
         copyDropdown.innerHTML = '<option value="">Выберите сценарий для копирования</option>' + options;
+    }
+
+    if (internetPageDropdown) {
+        internetPageDropdown.innerHTML = '<option value="">Выберите сценарий...</option>' + options;
     }
 
     ensureStatsScenarioOptions();
@@ -3111,6 +3125,7 @@ async function handleAddAddress(e) {
     const house_number = document.getElementById('addressHouseNumber').value;
     const apartment = (document.getElementById('addressApartment') && document.getElementById('addressApartment').value) ? document.getElementById('addressApartment').value.trim() : '';
     const description = document.getElementById('addressDescription').value;
+    const is_internet_cafe = !!(document.getElementById('addressIsInternetCafe') && document.getElementById('addressIsInternetCafe').checked);
 
     try {
         const token = localStorage.getItem('token');
@@ -3120,7 +3135,7 @@ async function handleAddAddress(e) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ scenario_id, district, house_number, apartment, description })
+            body: JSON.stringify({ scenario_id, district, house_number, apartment, description, is_internet_cafe })
         });
 
         const data = await response.json();
@@ -3133,6 +3148,10 @@ async function handleAddAddress(e) {
             const addScenarioId = document.getElementById('addressScenario').value;
             if (viewScenarioId === addScenarioId) {
                 loadAddressesForScenario();
+            }
+            const ipScenario = document.getElementById('internetPageScenario');
+            if (ipScenario && ipScenario.value === String(scenario_id) && typeof loadInternetPagesSection === 'function') {
+                loadInternetPagesSection();
             }
         } else {
             showMessage(data.error || 'Ошибка добавления адреса', 'danger');

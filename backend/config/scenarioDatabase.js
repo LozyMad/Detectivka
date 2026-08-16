@@ -63,6 +63,24 @@ function ensureTables(db) {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(address_id) REFERENCES addresses(id) ON DELETE CASCADE
     )`);
+
+    db.run(`ALTER TABLE addresses ADD COLUMN is_internet_cafe INTEGER NOT NULL DEFAULT 0`, (err) => {
+      if (err && !err.message.includes('duplicate column')) console.error('addresses is_internet_cafe column:', err);
+    });
+
+    db.run(`CREATE TABLE IF NOT EXISTS internet_pages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content_html TEXT NOT NULL,
+      unlock_address_id INTEGER NOT NULL,
+      cafe_address_id INTEGER NOT NULL,
+      page_order INTEGER NOT NULL DEFAULT 1,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(unlock_address_id) REFERENCES addresses(id),
+      FOREIGN KEY(cafe_address_id) REFERENCES addresses(id) ON DELETE CASCADE
+    )`);
   });
 }
 

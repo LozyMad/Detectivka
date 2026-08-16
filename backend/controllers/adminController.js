@@ -253,7 +253,7 @@ const copyScenario = async (req, res) => {
 // Address management
 const createAddress = async (req, res) => {
   try {
-    const { scenario_id, district, house_number, apartment, description } = req.body;
+    const { scenario_id, district, house_number, apartment, description, is_internet_cafe } = req.body;
 
     if (!scenario_id || !district || !house_number || !description) {
       return res.status(400).json({ error: 'All fields are required' });
@@ -269,7 +269,8 @@ const createAddress = async (req, res) => {
       district,
       house_number,
       apartment: apartment != null ? String(apartment).trim() : '',
-      description
+      description,
+      is_internet_cafe: !!is_internet_cafe
     });
 
     res.status(201).json({ 
@@ -278,6 +279,26 @@ const createAddress = async (req, res) => {
     });
   } catch (error) {
     console.error('Create address error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const setAddressInternetCafe = async (req, res) => {
+  try {
+    const { scenario_id, id } = req.params;
+    const { is_internet_cafe } = req.body;
+
+    const result = await Address.setInternetCafe(scenario_id, id, !!is_internet_cafe);
+    if (!result || (result.changes !== undefined && result.changes === 0)) {
+      return res.status(404).json({ error: 'Address not found' });
+    }
+
+    res.json({
+      message: 'Address updated',
+      is_internet_cafe: !!is_internet_cafe
+    });
+  } catch (error) {
+    console.error('Set internet cafe error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -316,5 +337,6 @@ module.exports = {
   createAddress,
   getAddresses,
   deleteAddress,
+  setAddressInternetCafe,
   getStatistics
 };

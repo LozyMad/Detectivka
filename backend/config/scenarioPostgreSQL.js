@@ -80,6 +80,25 @@ const ensureTables = async (scenarioId) => {
       )
     `);
 
+    await pool.query(`
+      ALTER TABLE scenario_${scenarioId}.addresses
+      ADD COLUMN IF NOT EXISTS is_internet_cafe BOOLEAN NOT NULL DEFAULT FALSE
+    `).catch(() => {});
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS scenario_${scenarioId}.internet_pages (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        content_html TEXT NOT NULL,
+        unlock_address_id INTEGER NOT NULL,
+        cafe_address_id INTEGER NOT NULL,
+        page_order INTEGER NOT NULL DEFAULT 1,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     console.log(`Tables ensured for scenario ${scenarioId}`);
   } catch (error) {
     console.error(`Error ensuring tables for scenario ${scenarioId}:`, error);

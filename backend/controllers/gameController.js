@@ -96,7 +96,8 @@ const visitLocation = async (req, res) => {
       address_id: address.id,
       visited_location_id: visitResult.visit ? visitResult.visit.id : null,
       alreadyVisited: visitResult.alreadyVisited,
-      visitedAt: visitResult.alreadyVisited ? visitResult.visit.visited_at : new Date().toISOString()
+      visitedAt: visitResult.alreadyVisited ? visitResult.visit.visited_at : new Date().toISOString(),
+      is_internet_cafe: !!(address.is_internet_cafe === true || address.is_internet_cafe === 1 || address.is_internet_cafe === '1')
     });
   } catch (error) {
     console.error('Visit location error:', error);

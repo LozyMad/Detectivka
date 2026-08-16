@@ -7,6 +7,8 @@ let tripHistory = [];
 let cachedScenarioName = null; // Кэш для имени сценария
 let lastScenarioCheck = 0; // Время последней проверки сценария
 let roomEventSource = null;
+let currentCafeAddressId = null;
+let cafeViewMode = 'home'; // 'home' | 'page'
 
 function setScenarioTitle(text) {
     const el = document.getElementById('scenarioTitle');
@@ -179,7 +181,8 @@ async function visitLocation() {
                 timestamp: new Date().toISOString(),
                 alreadyVisited: false,
                 address_id: data.address_id || null,
-                visited_location_id: data.visited_location_id || null
+                visited_location_id: data.visited_location_id || null,
+                is_internet_cafe: !!data.is_internet_cafe
             };
             tripHistory.unshift(trip);
             updateTripHistory();
@@ -187,8 +190,12 @@ async function visitLocation() {
             document.getElementById('houseNumber').value = '';
             if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
             
+            // Интернет-кафе: открываем браузер
+            if (data.success && data.is_internet_cafe && data.address_id) {
+                openInternetCafe(data.address_id);
+            }
             // Проверяем, есть ли интерактивные выборы для этого адреса
-            if (data.success && data.address_id) {
+            else if (data.success && data.address_id) {
                 console.log('Visit successful, checking for choices:', data);
                 checkForInteractiveChoices(data.address_id, data.description, data.visited_location_id);
             }
@@ -318,7 +325,8 @@ async function loadTripHistory() {
                 alreadyVisited: false,
                 address_id: attempt.address_id || null,
                 visited_location_id: attempt.visited_location_id || null,
-                hasChoices: !!attempt.has_choices
+                hasChoices: !!attempt.has_choices,
+                is_internet_cafe: !!attempt.is_internet_cafe
             };
         }));
         
@@ -361,6 +369,9 @@ function updateTripHistory() {
                     `<strong>Найдено:</strong> ${trip.description}` : 
                     `<strong>По этому адресу нет информации</strong>`
                 }
+                ${trip.success && trip.is_internet_cafe && trip.address_id ?
+                    `<div><a href="#" class="trip-cafe-link" data-cafe-address-id="${trip.address_id}">Сесть за компьютер</a></div>` : ''
+                }
             </div>
         </div>
     `).join('');
@@ -372,6 +383,13 @@ function updateTripHistory() {
             const desc = btn.dataset.description || '';
             const vid = btn.dataset.visitedLocationId ? parseInt(btn.dataset.visitedLocationId, 10) : null;
             openChoiceHistory(id, desc, vid);
+        });
+    });
+    container.querySelectorAll('.trip-cafe-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const id = parseInt(link.dataset.cafeAddressId, 10);
+            if (id) openInternetCafe(id);
         });
     });
 }
@@ -1212,4 +1230,161 @@ document.getElementById('choiceModal').addEventListener('hidden.bs.modal', funct
     currentVisitedLocationId = null;
     currentScenarioId = null;
 });
+
+// ===== Интернет-кафе =====
+
+async function openInternetCafe(cafeAddressId) {
+    currentCafeAddressId = cafeAddressId;
+    cafeViewMode = 'home';
+
+    const overlay = document.getElementById('internetCafeOverlay');
+    const content = document.getElementById('ieCafeContent');
+    const addressBar = document.getElementById('ieCafeAddressBar');
+    const backBtn = document.getElementById('ieCafeBackBtn');
+    const titleEl = document.getElementById('ieCafeTitle');
+
+    if (!overlay || !content) return;
+
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden', 'false');
+    if (titleEl) titleEl.textContent = 'Internet Explorer — Интернет-кафе «Облако»';
+    if (addressBar) addressBar.value = 'http://localhost/';
+    if (backBtn) backBtn.disabled = true;
+    content.innerHTML = '<div class="ie-cafe-home"><p>Подключение...</p></div>';
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/internet-cafe/game/${cafeAddressId}/pages`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            content.innerHTML = `<div class="ie-cafe-home"><p>${data.error || 'Ошибка загрузки'}</p></div>`;
+            return;
+        }
+
+        renderCafeHome(data.pages || [], data.empty_message);
+    } catch (error) {
+        console.error('Error opening internet cafe:', error);
+        content.innerHTML = '<div class="ie-cafe-home"><p>Ошибка соединения</p></div>';
+    }
+}
+
+function renderCafeHome(pages, emptyMessage) {
+    const content = document.getElementById('ieCafeContent');
+    const addressBar = document.getElementById('ieCafeAddressBar');
+    const backBtn = document.getElementById('ieCafeBackBtn');
+    cafeViewMode = 'home';
+
+    if (addressBar) addressBar.value = 'http://localhost/';
+    if (backBtn) backBtn.disabled = true;
+
+    if (!pages || pages.length === 0) {
+        content.innerHTML = `
+            <div class="ie-cafe-home">
+                <h2>${emptyMessage || 'Вам нечего искать в сети интернет'}</h2>
+            </div>`;
+        return;
+    }
+
+    const links = pages.map(p =>
+        `<li><a href="#" data-page-id="${p.id}">${escapeCafeHtml(p.title)}</a></li>`
+    ).join('');
+
+    content.innerHTML = `
+        <div class="ie-cafe-home">
+            <h2>Выберите интернет страницу</h2>
+            <ul class="ie-cafe-site-list">${links}</ul>
+        </div>`;
+
+    content.querySelectorAll('.ie-cafe-site-list a').forEach(a => {
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pageId = parseInt(a.dataset.pageId, 10);
+            if (pageId) openCafePage(pageId);
+        });
+    });
+}
+
+async function openCafePage(pageId) {
+    const content = document.getElementById('ieCafeContent');
+    const addressBar = document.getElementById('ieCafeAddressBar');
+    const backBtn = document.getElementById('ieCafeBackBtn');
+    const titleEl = document.getElementById('ieCafeTitle');
+
+    content.innerHTML = '<div class="ie-cafe-home"><p>Загрузка страницы...</p></div>';
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/internet-cafe/game/pages/${pageId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            content.innerHTML = `<div class="ie-cafe-home"><p>${data.error || 'Страница недоступна'}</p></div>`;
+            return;
+        }
+
+        cafeViewMode = 'page';
+        if (backBtn) backBtn.disabled = false;
+        if (titleEl) titleEl.textContent = `Internet Explorer — ${data.page.title}`;
+        if (addressBar) {
+            const slug = (data.page.title || 'page')
+                .toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^a-zа-яё0-9\-]/gi, '');
+            addressBar.value = `http://www.${slug || 'site'}.ru/`;
+        }
+
+        const iframe = document.createElement('iframe');
+        iframe.className = 'ie-cafe-frame';
+        iframe.setAttribute('sandbox', 'allow-same-origin');
+        iframe.srcdoc = data.page.content_html;
+        content.innerHTML = '';
+        content.appendChild(iframe);
+    } catch (error) {
+        console.error('Error opening cafe page:', error);
+        content.innerHTML = '<div class="ie-cafe-home"><p>Ошибка соединения</p></div>';
+    }
+}
+
+function closeInternetCafe() {
+    const overlay = document.getElementById('internetCafeOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+    currentCafeAddressId = null;
+    cafeViewMode = 'home';
+}
+
+function escapeCafeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+(function initInternetCafeUi() {
+    const closeBtn = document.getElementById('ieCafeCloseBtn');
+    const backBtn = document.getElementById('ieCafeBackBtn');
+    const overlay = document.getElementById('internetCafeOverlay');
+
+    if (closeBtn) closeBtn.addEventListener('click', closeInternetCafe);
+    if (backBtn) {
+        backBtn.addEventListener('click', async () => {
+            if (cafeViewMode === 'page' && currentCafeAddressId) {
+                await openInternetCafe(currentCafeAddressId);
+            }
+        });
+    }
+    if (overlay) {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeInternetCafe();
+        });
+    }
+})();
 
