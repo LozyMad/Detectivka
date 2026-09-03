@@ -35,6 +35,74 @@ if (DB_TYPE === 'postgresql') {
     return { category, district, house_number, apartment, name, note };
   }
 
+  function loadSeedEntries() {
+    if (!fs.existsSync(ADDRESS_BOOK_JSON)) return [];
+    try {
+      const raw = fs.readFileSync(ADDRESS_BOOK_JSON, 'utf8');
+      const entries = JSON.parse(raw);
+      return Array.isArray(entries) ? entries : [];
+    } catch (e) {
+      console.error('addressBook.json read error:', e);
+      return [];
+    }
+  }
+
+  function swapTwoWordName(name) {
+    const parts = String(name || '').trim().split(/\s+/);
+    if (parts.length !== 2) return null;
+    return `${parts[1]} ${parts[0]}`;
+  }
+
+  /** Одноразовая миграция: частные лица «Имя Фамилия» → «Фамилия Имя» (по seed). */
+  async function ensurePrivateNamesSurnameFirst() {
+    const seedNames = new Set(
+      loadSeedEntries()
+        .filter((e) => e.category === 'Частные лица' && e.name)
+        .map((e) => String(e.name).trim())
+    );
+    if (seedNames.size === 0) return;
+
+    const rows = await new Promise((resolve, reject) => {
+      db.all(
+        `SELECT id, name FROM address_book_entries WHERE category = ?`,
+        ['Частные лица'],
+        (err, result) => (err ? reject(err) : resolve(result || []))
+      );
+    });
+
+    const updates = [];
+    for (const row of rows) {
+      const current = String(row.name || '').trim();
+      if (!current || seedNames.has(current)) continue;
+      const swapped = swapTwoWordName(current);
+      if (swapped && seedNames.has(swapped)) {
+        updates.push({ id: row.id, name: swapped });
+      }
+    }
+    if (updates.length === 0) return;
+
+    await new Promise((resolve, reject) => {
+      db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+        const stmt = db.prepare(
+          `UPDATE address_book_entries SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+        );
+        for (const u of updates) stmt.run([u.name, u.id]);
+        stmt.finalize((err) => {
+          if (err) {
+            db.run('ROLLBACK');
+            return reject(err);
+          }
+          db.run('COMMIT', (commitErr) => {
+            if (commitErr) return reject(commitErr);
+            console.log(`[AddressBook] Renamed ${updates.length} private entries to surname-first`);
+            resolve();
+          });
+        });
+      });
+    });
+  }
+
   async function ensureSeeded() {
     const countRow = await new Promise((resolve, reject) => {
       db.get('SELECT COUNT(*) as count FROM address_book_entries', (err, row) => {
@@ -43,46 +111,38 @@ if (DB_TYPE === 'postgresql') {
       });
     });
 
-    if (countRow && Number(countRow.count) > 0) return;
-
-    if (!fs.existsSync(ADDRESS_BOOK_JSON)) return;
-
-    let entries;
-    try {
-      const raw = fs.readFileSync(ADDRESS_BOOK_JSON, 'utf8');
-      entries = JSON.parse(raw);
-    } catch (e) {
-      console.error('addressBook.json read error:', e);
-      return;
+    if (!(countRow && Number(countRow.count) > 0)) {
+      const entries = loadSeedEntries();
+      if (entries.length > 0) {
+        await new Promise((resolve, reject) => {
+          db.serialize(() => {
+            db.run('BEGIN TRANSACTION');
+            const stmt = db.prepare(
+              `INSERT OR IGNORE INTO address_book_entries (category, district, house_number, apartment, name, note) VALUES (?, ?, ?, ?, ?, ?)`
+            );
+            for (const e of entries) {
+              stmt.run([
+                e.category || 'Частные лица',
+                e.district || '',
+                e.house_number || '',
+                e.apartment || '',
+                e.name || '',
+                e.note || ''
+              ]);
+            }
+            stmt.finalize((err) => {
+              if (err) {
+                db.run('ROLLBACK');
+                return reject(err);
+              }
+              db.run('COMMIT', (commitErr) => (commitErr ? reject(commitErr) : resolve()));
+            });
+          });
+        });
+      }
     }
 
-    if (!Array.isArray(entries) || entries.length === 0) return;
-
-    await new Promise((resolve, reject) => {
-      db.serialize(() => {
-        db.run('BEGIN TRANSACTION');
-        const stmt = db.prepare(
-          `INSERT OR IGNORE INTO address_book_entries (category, district, house_number, apartment, name, note) VALUES (?, ?, ?, ?, ?, ?)`
-        );
-        for (const e of entries) {
-          stmt.run([
-            e.category || 'Частные лица',
-            e.district || '',
-            e.house_number || '',
-            e.apartment || '',
-            e.name || '',
-            e.note || ''
-          ]);
-        }
-        stmt.finalize((err) => {
-          if (err) {
-            db.run('ROLLBACK');
-            return reject(err);
-          }
-          db.run('COMMIT', (commitErr) => (commitErr ? reject(commitErr) : resolve()));
-        });
-      });
-    });
+    await ensurePrivateNamesSurnameFirst();
   }
 
   AddressBook = {

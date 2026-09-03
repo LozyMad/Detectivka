@@ -25,57 +25,112 @@ function sanitizeEntryInput(input) {
   return { category, district, house_number, apartment, name, note };
 }
 
-async function ensureSeeded() {
-  const res = await query('SELECT COUNT(*)::int AS count FROM address_book_entries');
-  const count = res?.rows?.[0]?.count || 0;
-  if (count > 0) return;
-
-  if (!fs.existsSync(ADDRESS_BOOK_JSON)) return;
-
-  let entries;
+function loadSeedEntries() {
+  if (!fs.existsSync(ADDRESS_BOOK_JSON)) return [];
   try {
     const raw = fs.readFileSync(ADDRESS_BOOK_JSON, 'utf8');
-    entries = JSON.parse(raw);
+    const entries = JSON.parse(raw);
+    return Array.isArray(entries) ? entries : [];
   } catch (e) {
     console.error('addressBook.json read error:', e);
-    return;
+    return [];
   }
+}
 
-  if (!Array.isArray(entries) || entries.length === 0) return;
+function swapTwoWordName(name) {
+  const parts = String(name || '').trim().split(/\s+/);
+  if (parts.length !== 2) return null;
+  return `${parts[1]} ${parts[0]}`;
+}
+
+/** Одноразовая миграция: частные лица «Имя Фамилия» → «Фамилия Имя» (по seed). */
+async function ensurePrivateNamesSurnameFirst() {
+  const seedNames = new Set(
+    loadSeedEntries()
+      .filter((e) => e.category === 'Частные лица' && e.name)
+      .map((e) => String(e.name).trim())
+  );
+  if (seedNames.size === 0) return;
+
+  const res = await query(
+    `SELECT id, name FROM address_book_entries WHERE category = $1`,
+    ['Частные лица']
+  );
+  const rows = res.rows || [];
+  const updates = [];
+  for (const row of rows) {
+    const current = String(row.name || '').trim();
+    if (!current || seedNames.has(current)) continue;
+    const swapped = swapTwoWordName(current);
+    if (swapped && seedNames.has(swapped)) {
+      updates.push({ id: row.id, name: swapped });
+    }
+  }
+  if (updates.length === 0) return;
 
   const client = await getClient();
   try {
     await client.query('BEGIN');
-    const batchSize = 100;
-    for (let i = 0; i < entries.length; i += batchSize) {
-      const chunk = entries.slice(i, i + batchSize);
-      const values = [];
-      const placeholders = chunk.map((e, idx) => {
-        const base = idx * 6;
-        values.push(
-          e.category || 'Частные лица',
-          e.district || '',
-          e.house_number || '',
-          e.apartment || '',
-          e.name || '',
-          e.note || ''
-        );
-        return `($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6})`;
-      });
+    for (const u of updates) {
       await client.query(
-        `INSERT INTO address_book_entries (category, district, house_number, apartment, name, note)
-         VALUES ${placeholders.join(',')}
-         ON CONFLICT (category, district, house_number, apartment, name) DO NOTHING`,
-        values
+        `UPDATE address_book_entries SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+        [u.name, u.id]
       );
     }
     await client.query('COMMIT');
+    console.log(`[AddressBook] Renamed ${updates.length} private entries to surname-first`);
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();
   }
+}
+
+async function ensureSeeded() {
+  const res = await query('SELECT COUNT(*)::int AS count FROM address_book_entries');
+  const count = res?.rows?.[0]?.count || 0;
+
+  if (count === 0) {
+    const entries = loadSeedEntries();
+    if (entries.length > 0) {
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+        const batchSize = 100;
+        for (let i = 0; i < entries.length; i += batchSize) {
+          const chunk = entries.slice(i, i + batchSize);
+          const values = [];
+          const placeholders = chunk.map((e, idx) => {
+            const base = idx * 6;
+            values.push(
+              e.category || 'Частные лица',
+              e.district || '',
+              e.house_number || '',
+              e.apartment || '',
+              e.name || '',
+              e.note || ''
+            );
+            return `($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6})`;
+          });
+          await client.query(
+            `INSERT INTO address_book_entries (category, district, house_number, apartment, name, note)
+             VALUES ${placeholders.join(',')}
+             ON CONFLICT (category, district, house_number, apartment, name) DO NOTHING`,
+            values
+          );
+        }
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    }
+  }
+
+  await ensurePrivateNamesSurnameFirst();
 }
 
 const AddressBook = {
