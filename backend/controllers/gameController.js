@@ -1,8 +1,19 @@
 const Scenario = require('../models/scenario');
 const Address = require('../models/address');
+const AddressBook = require('../models/addressBook');
 const VisitedLocation = require('../models/visitedLocation');
 const VisitAttempt = require('../models/visitAttempt');
 const { broadcastNewTrip } = require('../sse/roomEvents');
+
+async function lookupLocationNames(district, house_number, apartment) {
+  try {
+    await AddressBook.ensureSeeded();
+    return await AddressBook.findNamesByAddress({ district, house_number, apartment });
+  } catch (err) {
+    console.error('Address book lookup error:', err);
+    return [];
+  }
+}
 
 const visitLocation = async (req, res) => {
   try {
@@ -66,6 +77,7 @@ const visitLocation = async (req, res) => {
     if (roomContext && roomContext.room_id) broadcastNewTrip(roomContext.room_id);
 
     if (!address) {
+      const location_names = await lookupLocationNames(district, house_number, apt);
       return res.status(404).json({
         success: false,
         error: 'Location not found in this scenario',
@@ -73,7 +85,8 @@ const visitLocation = async (req, res) => {
           district: district,
           house_number: house_number,
           apartment: apt
-        }
+        },
+        location_names
       });
     }
 
@@ -85,6 +98,12 @@ const visitLocation = async (req, res) => {
       roomContext ? roomContext.room_id : null
     );
 
+    const location_names = await lookupLocationNames(
+      address.district,
+      address.house_number,
+      address.apartment || ''
+    );
+
     res.json({
       success: true,
       description: address.description,
@@ -93,6 +112,7 @@ const visitLocation = async (req, res) => {
         house_number: address.house_number,
         apartment: address.apartment || ''
       },
+      location_names,
       address_id: address.id,
       visited_location_id: visitResult.visit ? visitResult.visit.id : null,
       alreadyVisited: visitResult.alreadyVisited,

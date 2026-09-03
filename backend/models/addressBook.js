@@ -146,6 +146,26 @@ if (DB_TYPE === 'postgresql') {
       });
     },
 
+    /** Имена/названия из адресной книги по адресу (район + дом + квартира). */
+    findNamesByAddress: async ({ district, house_number, apartment = '' } = {}) => {
+      const d = String(district || '').trim();
+      const h = String(house_number || '').trim();
+      const apt = String(apartment ?? '').trim();
+      if (!d || !h) return [];
+      return new Promise((resolve, reject) => {
+        db.all(
+          `SELECT DISTINCT name FROM address_book_entries
+           WHERE district = ? AND house_number = ? AND COALESCE(apartment, '') = ?
+           ORDER BY name`,
+          [d, h, apt],
+          (err, rows) => {
+            if (err) return reject(err);
+            resolve((rows || []).map(r => r.name).filter(Boolean));
+          }
+        );
+      });
+    },
+
     updateEntry: async (id, input) => {
       const entry = sanitizeEntryInput(input);
       return new Promise((resolve, reject) => {

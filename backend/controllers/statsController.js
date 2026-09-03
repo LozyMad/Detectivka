@@ -1,6 +1,7 @@
 const VisitAttempt = require('../models/visitAttempt');
 const Scenario = require('../models/scenario');
 const Address = require('../models/address');
+const AddressBook = require('../models/addressBook');
 
 const getUserAttempts = async (req, res) => {
     try {
@@ -32,9 +33,37 @@ const getUserAttempts = async (req, res) => {
             req.roomUser ? req.roomUser.room_id : null
         );
 
+        try {
+            await AddressBook.ensureSeeded();
+        } catch (e) {
+            console.error('Address book ensureSeeded:', e);
+        }
+
+        const namesCache = new Map();
+
         for (const a of attempts) {
             a.has_choices = false;
             a.is_internet_cafe = false;
+            a.location_names = [];
+
+            const cacheKey = `${a.district}|${a.house_number}|${String(a.apartment ?? '').trim()}`;
+            if (namesCache.has(cacheKey)) {
+                a.location_names = namesCache.get(cacheKey);
+            } else {
+                try {
+                    const names = await AddressBook.findNamesByAddress({
+                        district: a.district,
+                        house_number: a.house_number,
+                        apartment: a.apartment
+                    });
+                    namesCache.set(cacheKey, names);
+                    a.location_names = names;
+                } catch (e) {
+                    namesCache.set(cacheKey, []);
+                    a.location_names = [];
+                }
+            }
+
             if (a.found && a.address_id) {
                 try {
                     const hasCh = await Address.hasChoices(activeScenario.id, a.address_id);

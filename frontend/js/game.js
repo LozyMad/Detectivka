@@ -182,7 +182,8 @@ async function visitLocation() {
                 alreadyVisited: false,
                 address_id: data.address_id || null,
                 visited_location_id: data.visited_location_id || null,
-                is_internet_cafe: !!data.is_internet_cafe
+                is_internet_cafe: !!data.is_internet_cafe,
+                locationNames: Array.isArray(data.location_names) ? data.location_names : []
             };
             tripHistory.unshift(trip);
             updateTripHistory();
@@ -208,7 +209,8 @@ async function visitLocation() {
                 success: false,
                 description: data.error || 'Произошла ошибка',
                 timestamp: new Date().toISOString(),
-                alreadyVisited: false
+                alreadyVisited: false,
+                locationNames: Array.isArray(data.location_names) ? data.location_names : []
             };
             tripHistory.unshift(trip);
             updateTripHistory();
@@ -326,7 +328,8 @@ async function loadTripHistory() {
                 address_id: attempt.address_id || null,
                 visited_location_id: attempt.visited_location_id || null,
                 hasChoices: !!attempt.has_choices,
-                is_internet_cafe: !!attempt.is_internet_cafe
+                is_internet_cafe: !!attempt.is_internet_cafe,
+                locationNames: Array.isArray(attempt.location_names) ? attempt.location_names : []
             };
         }));
         
@@ -337,6 +340,13 @@ async function loadTripHistory() {
         tripHistory = [];
         updateTripHistory();
     }
+}
+
+function formatTripAddressLabel(trip) {
+    const address = `Дом ${trip.houseNumber}${trip.apartment ? ', кв. ' + trip.apartment : ''}`;
+    const names = Array.isArray(trip.locationNames) ? trip.locationNames.filter(Boolean) : [];
+    if (names.length === 0) return address;
+    return `${address} — ${names.join(' / ')}`;
 }
 
 // Обновление отображения истории поездок
@@ -353,7 +363,7 @@ function updateTripHistory() {
         <div class="trip-item ${trip.success ? 'success' : 'failure'}">
             <div class="trip-info">
                 <span class="badge district-badge bg-primary">${trip.district}</span>
-                <span class="ms-2">Дом ${trip.houseNumber}${trip.apartment ? ', кв. ' + trip.apartment : ''}</span>
+                <span class="ms-2">${formatTripAddressLabel(trip)}</span>
                 <span class="ms-2 text-muted">${formatTripTime(trip.timestamp)}</span>
                 ${trip.success && trip.address_id && trip.hasChoices ? 
                     `<button type="button" class="btn btn-sm btn-outline-warning ms-2 trip-choice-btn" title="Развилка по выборам"
