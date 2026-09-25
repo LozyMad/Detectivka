@@ -167,12 +167,14 @@ a:hover { color: #594511; }
     box-shadow: none !important;
 }
 .btn:not(.btn-sm):not(.btn-lg) { min-height: 38px; }
-.btn-primary, .modal-content .btn-primary, #goBtn, #submitAllAnswersBtn {
+.btn-primary, .btn-warning, .modal-content .btn-primary, .modal-content .btn-warning,
+#goBtn, #submitAllAnswersBtn {
     background: var(--color-gold) !important;
     border-color: var(--color-gold) !important;
     color: var(--color-ink) !important;
 }
-.btn-primary:hover, .modal-content .btn-primary:hover,
+.btn-primary:hover, .btn-warning:hover, .modal-content .btn-primary:hover,
+.modal-content .btn-warning:hover,
 #goBtn:hover, #submitAllAnswersBtn:hover {
     background: var(--color-gold-hover) !important;
     border-color: var(--color-gold-hover) !important;
@@ -206,6 +208,23 @@ a:hover { color: #594511; }
 }
 .btn-outline-secondary { border-color: var(--color-border-strong) !important; color: var(--color-text) !important; }
 .btn-outline-secondary:hover { background: var(--color-canvas) !important; color: var(--color-text) !important; }
+.btn-outline-info, .modal-content .btn-outline-info {
+    border-color: var(--color-border-strong) !important;
+    color: #66511B !important;
+}
+.btn-outline-info:hover, .modal-content .btn-outline-info:hover {
+    background: var(--color-gold-wash) !important;
+    border-color: var(--color-gold) !important;
+    color: var(--color-text) !important;
+}
+.btn-outline-success, .modal-content .btn-outline-success {
+    border-color: var(--color-success) !important;
+    color: var(--color-success) !important;
+}
+.btn-outline-success:hover, .modal-content .btn-outline-success:hover {
+    background: var(--color-success) !important;
+    color: #fff !important;
+}
 .btn-outline-danger, .modal-content .btn-outline-danger {
     border-color: var(--color-danger) !important;
     color: var(--color-danger) !important;
@@ -528,8 +547,34 @@ body.admin-login-body::after, body.game-login-body::after {
     padding: .35rem .75rem !important;
 }
 .back-btn:hover { border-color: var(--color-gold) !important; color: #F2D788 !important; }
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    white-space: nowrap;
+}
+.theme-toggle-login {
+    position: fixed !important;
+    top: 10px;
+    right: clamp(12px, 3vw, 30px);
+    z-index: 1001;
+    min-height: 40px !important;
+    padding: .35rem .75rem !important;
+    background: transparent !important;
+    border-color: #696252 !important;
+    color: #F5F0E5 !important;
+}
+.theme-toggle-login:hover {
+    background: #303330 !important;
+    border-color: var(--color-gold) !important;
+    color: #F2D788 !important;
+}
 .auth-container { position: relative; z-index: 1; padding-top: 2rem; padding-bottom: 2rem; }
+.game-login-body .auth-container .col-md-6,
+.admin-login-body .auth-container .col-md-6 { width: 100%; max-width: 440px; }
 .auth-card { padding: clamp(1.5rem, 4vw, 2.5rem) !important; }
+.auth-card { border-top: 2px solid var(--color-gold) !important; }
 .auth-title, .admin-login-body .card-title { color: var(--color-text) !important; }
 .auth-icon, .admin-icon, .game-icon {
     color: #755D1E !important;
@@ -546,6 +591,14 @@ body.admin-login-body::after, body.game-login-body::after {
 /* Player content */
 .game-container > .container { position: relative; }
 .game-container .game-card h2, .game-container .game-card h4 { margin-bottom: var(--space-4); }
+.game-container .question-item {
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border) !important;
+    border-left: 3px solid var(--color-gold) !important;
+    border-radius: var(--radius-md) !important;
+}
+.game-container .question-item h5 { font-size: 1.15rem; margin-bottom: var(--space-3) !important; }
+.game-container .question-item .form-control { background: var(--color-surface) !important; }
 @media (min-width: 768px) {
     #game .game-card .row.g-2 > .col-md-3 { width: 33.333333%; }
 }
@@ -619,11 +672,14 @@ body.admin-login-body::after, body.game-login-body::after {
 
 @media (max-width: 991.98px) {
     .content-area { padding: 1rem !important; }
+    .admin-interface .main-content { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
     body .container-fluid { max-width: 100%; }
     .sidebar { width: min(280px, 85vw) !important; padding-top: var(--admin-navbar-height, 56px) !important; }
     .sidebar .nav { padding-top: .5rem !important; }
 }
 @media (max-width: 767.98px) {
+    .theme-toggle [data-theme-label] { display: none; }
+    .theme-toggle-login { padding: .35rem .7rem !important; }
     body > .navbar .container-fluid {
         display: flex !important;
         flex-wrap: nowrap !important;

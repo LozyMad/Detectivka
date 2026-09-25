@@ -1,0 +1,215 @@
+/* Dark case-file palette for the player and administration workspaces. */
+html.theme-dark body.game-container,
+html.theme-dark body.admin-interface,
+html.theme-dark body.game-login-body,
+html.theme-dark body.admin-login-body {
+    --color-canvas: #191d1d;
+    --color-surface: #252a29;
+    --color-surface-raised: #303633;
+    --color-text: #f2eee4;
+    --color-muted: #bab9ae;
+    --color-success: #a0c8a6;
+    --color-danger: #e0a9ae;
+    --color-border: #404942;
+    --color-border-strong: #687168;
+    --color-success-wash: #273c30;
+    --color-danger-wash: #412e32;
+    --color-gold-wash: #3c3524;
+    --shadow-card: 0 10px 28px rgba(0, 0, 0, .16);
+    --shadow-modal: 0 24px 64px rgba(0, 0, 0, .45);
+    --noir-dark: #171a1c;
+    --noir-darker: #171a1c;
+    --noir-gray: #252a29;
+    --noir-light-gray: #303633;
+    --noir-gold: #c5a13a;
+    --noir-copper: #ae8b2e;
+    --noir-silver: #bab9ae;
+    --noir-cream: #f2eee4;
+    --noir-text: #f2eee4;
+    --noir-danger: #e0a9ae;
+    --noir-shadow: rgba(0, 0, 0, .2);
+    color-scheme: dark;
+}
+
+html.theme-dark body.game-container,
+html.theme-dark body.admin-interface,
+html.theme-dark body.game-login-body,
+html.theme-dark body.admin-login-body {
+    background: var(--color-canvas) !important;
+    color: var(--color-text) !important;
+}
+
+html.theme-dark body.game-container .game-card,
+html.theme-dark body.game-container .card,
+html.theme-dark body.admin-interface .card,
+html.theme-dark body.admin-interface .form-section {
+    border-top: 1px solid #62604b !important;
+}
+html.theme-dark body.game-login-body .auth-card,
+html.theme-dark body.admin-login-body .auth-card { border-top: 2px solid var(--color-gold) !important; }
+
+html.theme-dark body.game-container .game-card h2,
+html.theme-dark body.game-container .game-card h4,
+html.theme-dark body.admin-interface .content-area h1,
+html.theme-dark body.admin-interface .content-area h2 {
+    letter-spacing: .005em;
+}
+
+html.theme-dark body.game-container .game-card h2::after,
+html.theme-dark body.game-container .game-card h4::after {
+    content: '';
+    display: block;
+    width: 3rem;
+    height: 1px;
+    margin: .7rem auto 0;
+    background: var(--color-gold);
+    opacity: .8;
+}
+html.theme-dark body.game-container .game-card h4::after { margin-left: 0; }
+
+html.theme-dark body.game-container .navbar .navbar-brand,
+html.theme-dark body.game-container .navbar .navbar-text,
+html.theme-dark body.game-container .navbar .btn-outline-light,
+html.theme-dark body.game-container .navbar .btn-link,
+html.theme-dark body.admin-interface .navbar .navbar-brand,
+html.theme-dark body.admin-interface .navbar .navbar-brand *,
+html.theme-dark body.admin-interface .navbar .navbar-text,
+html.theme-dark body.admin-interface .navbar .btn-outline-light,
+html.theme-dark body.admin-interface .navbar .btn-link,
+html.theme-dark body.admin-interface .navbar .hamburger-btn { color: #f2eee4 !important; }
+html.theme-dark body.game-container .navbar .btn-outline-light:hover,
+html.theme-dark body.game-container .navbar .btn-link:hover,
+html.theme-dark body.admin-interface .navbar .btn-outline-light:hover,
+html.theme-dark body.admin-interface .navbar .btn-link:hover { color: #f1d68f !important; }
+html.theme-dark body.game-container .navbar .btn-group .btn.active,
+html.theme-dark body.admin-interface .navbar .btn-group .btn.active { color: var(--color-ink) !important; }
+
+html.theme-dark body.game-container a,
+html.theme-dark body.admin-interface .content-area a,
+html.theme-dark body.game-login-body a,
+html.theme-dark body.admin-login-body a { color: #e2bf67; }
+html.theme-dark body.game-container a:hover,
+html.theme-dark body.admin-interface .content-area a:hover,
+html.theme-dark body.game-login-body a:hover,
+html.theme-dark body.admin-login-body a:hover { color: #f1d68f; }
+
+html.theme-dark body.game-container .text-primary,
+html.theme-dark body.admin-interface .text-primary { color: #e2bf67 !important; }
+html.theme-dark body.game-container .text-light,
+html.theme-dark body.game-container .text-white,
+html.theme-dark body.admin-interface .text-light,
+html.theme-dark body.admin-interface .text-white { color: var(--color-text) !important; }
+
+html.theme-dark body.game-container .form-control:focus,
+html.theme-dark body.game-container .form-select:focus,
+html.theme-dark body.game-container #districtSelect:focus,
+html.theme-dark body.admin-interface .form-control:focus,
+html.theme-dark body.admin-interface .form-select:focus,
+html.theme-dark body.game-login-body .form-control:focus,
+html.theme-dark body.admin-login-body .form-control:focus,
+html.theme-dark body.game-container .modal-content .form-control:focus {
+    background: #393e39 !important;
+}
+html.theme-dark body.game-container .form-select,
+html.theme-dark body.admin-interface .form-select { color-scheme: dark; }
+html.theme-dark body.game-container .input-group-text,
+html.theme-dark body.admin-interface .input-group-text { background: var(--color-surface) !important; }
+
+html.theme-dark body.game-container .btn-secondary,
+html.theme-dark body.admin-interface .btn-secondary { background: var(--color-surface-raised) !important; }
+html.theme-dark body.game-container .btn-secondary:hover,
+html.theme-dark body.admin-interface .btn-secondary:hover,
+html.theme-dark body.game-container .btn-outline-secondary:hover,
+html.theme-dark body.admin-interface .btn-outline-secondary:hover { background: #414941 !important; }
+html.theme-dark body.game-container .btn-outline-primary,
+html.theme-dark body.game-container .btn-outline-warning,
+html.theme-dark body.game-container .btn-outline-info,
+html.theme-dark body.admin-interface .btn-outline-primary,
+html.theme-dark body.admin-interface .btn-outline-warning,
+html.theme-dark body.admin-interface .btn-outline-info { color: #e2bf67 !important; }
+html.theme-dark body.game-container .btn-outline-primary:hover,
+html.theme-dark body.game-container .btn-outline-warning:hover,
+html.theme-dark body.game-container .btn-outline-info:hover,
+html.theme-dark body.admin-interface .btn-outline-primary:hover,
+html.theme-dark body.admin-interface .btn-outline-warning:hover,
+html.theme-dark body.admin-interface .btn-outline-info:hover { color: var(--color-text) !important; }
+html.theme-dark body.game-container .btn-success,
+html.theme-dark body.admin-interface .btn-success { background: #446b4d !important; border-color: #689875 !important; color: #fff !important; }
+html.theme-dark body.game-container .btn-success:hover,
+html.theme-dark body.admin-interface .btn-success:hover { background: #527e5c !important; }
+html.theme-dark body.game-container .btn-danger,
+html.theme-dark body.admin-interface .btn-danger { background: #713840 !important; border-color: #a46972 !important; color: #fff !important; }
+html.theme-dark body.game-container .btn-danger:hover,
+html.theme-dark body.admin-interface .btn-danger:hover { background: #884650 !important; }
+html.theme-dark body.game-container .btn-outline-success,
+html.theme-dark body.admin-interface .btn-outline-success { color: var(--color-success) !important; }
+html.theme-dark body.game-container .btn-outline-danger,
+html.theme-dark body.admin-interface .btn-outline-danger { color: var(--color-danger) !important; }
+html.theme-dark body.game-container .btn-outline-success:hover,
+html.theme-dark body.admin-interface .btn-outline-success:hover { background: #446b4d !important; color: #fff !important; }
+html.theme-dark body.game-container .btn-outline-danger:hover,
+html.theme-dark body.admin-interface .btn-outline-danger:hover { background: #713840 !important; color: #fff !important; }
+
+html.theme-dark body.game-container .badge.bg-primary,
+html.theme-dark body.game-container .badge.bg-warning,
+html.theme-dark body.game-container .badge.bg-info,
+html.theme-dark body.game-container .district-badge,
+html.theme-dark body.admin-interface .badge.bg-primary,
+html.theme-dark body.admin-interface .badge.bg-warning,
+html.theme-dark body.admin-interface .badge.bg-info { border-color: #877442 !important; color: #f0d795 !important; }
+html.theme-dark body.game-container .badge.bg-success,
+html.theme-dark body.admin-interface .badge.bg-success { background: #365a3f !important; color: #f5f7f3 !important; }
+html.theme-dark body.game-container .badge.bg-danger,
+html.theme-dark body.admin-interface .badge.bg-danger { background: #713840 !important; color: #fff !important; }
+html.theme-dark body.game-container .badge.bg-secondary,
+html.theme-dark body.admin-interface .badge.bg-secondary { background: #414942 !important; color: var(--color-text) !important; }
+
+html.theme-dark body.game-container .alert-success,
+html.theme-dark body.admin-interface .alert-success { border-color: #5d8465 !important; }
+html.theme-dark body.game-container .alert-danger,
+html.theme-dark body.admin-interface .alert-danger { border-color: #a16b73 !important; }
+html.theme-dark body.game-container .alert-warning,
+html.theme-dark body.game-container .alert-info,
+html.theme-dark body.admin-interface .alert-warning,
+html.theme-dark body.admin-interface .alert-info { border-color: #897542 !important; }
+html.theme-dark body.game-container .alert-warning::before,
+html.theme-dark body.game-container .alert-info::before,
+html.theme-dark body.admin-interface .alert-warning::before,
+html.theme-dark body.admin-interface .alert-info::before { color: #e2bf67; }
+
+html.theme-dark body.game-container .table,
+html.theme-dark body.admin-interface .table { --bs-table-color: var(--color-text); --bs-table-bg: transparent; }
+html.theme-dark body.game-container .table thead th,
+html.theme-dark body.admin-interface .table thead th { background: #343b36 !important; color: var(--color-text) !important; }
+html.theme-dark body.game-container .table-striped tbody tr:nth-of-type(odd) td,
+html.theme-dark body.admin-interface .table-striped tbody tr:nth-of-type(odd) td { background: rgba(255, 255, 255, .025) !important; }
+html.theme-dark body.game-container .table-hover tbody tr:hover td,
+html.theme-dark body.admin-interface .table-hover tbody tr:hover td { background: rgba(197, 161, 58, .1) !important; }
+
+html.theme-dark body.game-container .trip-item.success,
+html.theme-dark body.game-container .attempt-item.success { border-left-color: var(--color-success) !important; }
+html.theme-dark body.game-container .trip-item.failure,
+html.theme-dark body.game-container .attempt-item.failure { border-left-color: var(--color-danger) !important; }
+html.theme-dark body.game-container .addressbook-tabs-game .btn:hover,
+html.theme-dark body.game-container .addressbook-tabs-game .btn.active,
+html.theme-dark body.game-container #choiceModal .choice-btn:hover { background: var(--color-gold-wash) !important; }
+html.theme-dark body.game-container .trip-cafe-link { color: #e2bf67 !important; }
+html.theme-dark body.game-container .trip-cafe-link:hover { color: #f1d68f !important; }
+html.theme-dark body.game-container .modal-content .btn-close,
+html.theme-dark body.admin-interface .modal-content .btn-close { filter: invert(1); }
+
+html.theme-dark body.game-login-body .back-btn,
+html.theme-dark body.admin-login-body .back-btn { color: #f2eee4 !important; border-color: #696252 !important; }
+html.theme-dark body.game-login-body .back-btn:hover,
+html.theme-dark body.admin-login-body .back-btn:hover { color: #f1d68f !important; border-color: var(--color-gold) !important; }
+html.theme-dark body.game-login-body .auth-icon,
+html.theme-dark body.game-login-body .game-icon,
+html.theme-dark body.admin-login-body .auth-icon,
+html.theme-dark body.admin-login-body .admin-icon { color: var(--color-gold) !important; }
+
+html.theme-dark body.admin-interface .content-area,
+html.theme-dark body.admin-interface .admin-content { background: var(--color-canvas) !important; }
+html.theme-dark body.admin-interface .content-area .card-header.bg-primary { background: #343b36 !important; }
+html.theme-dark body.admin-interface .content-area .card-header.bg-primary * { color: var(--color-text) !important; }
+html.theme-dark body.admin-interface .content-area .list-group-item { background: var(--color-surface) !important; color: var(--color-text) !important; }
+html.theme-dark body.admin-interface .content-area .list-group-item.active { background: var(--color-gold-wash) !important; color: var(--color-text) !important; }
