@@ -368,21 +368,19 @@ function updateTripHistory() {
                 ${trip.success && trip.address_id && trip.hasChoices ? 
                     `<button type="button" class="btn btn-sm btn-outline-warning ms-2 trip-choice-btn" title="Развилка по выборам"
                         data-address-id="${trip.address_id}"
-                        data-description="${(trip.description || '').replace(/"/g, '&quot;')}"
+                        data-description="${encodeURIComponent(trip.description || '')}"
                         data-visited-location-id="${trip.visited_location_id || ''}">
                         <i class="fas fa-code-branch"></i>
                     </button>` : ''
                 }
             </div>
-            <div class="trip-description">
-                ${trip.success ? 
-                    `<strong>Найдено:</strong> ${trip.description}` : 
-                    `<strong>По этому адресу нет информации</strong>`
-                }
-                ${trip.success && trip.is_internet_cafe && trip.address_id ?
-                    `<div><a href="#" class="trip-cafe-link" data-cafe-address-id="${trip.address_id}">Сесть за компьютер</a></div>` : ''
-                }
-            </div>
+            <div class="trip-description">${trip.success
+                ? `<strong>Найдено:</strong><div class="trip-description-text">${escapeHtmlPlayer(trip.description || '')}</div>`
+                : `<strong>По этому адресу нет информации</strong>`
+            }${trip.success && trip.is_internet_cafe && trip.address_id
+                ? `<div><a href="#" class="trip-cafe-link" data-cafe-address-id="${trip.address_id}">Сесть за компьютер</a></div>`
+                : ''
+            }</div>
         </div>
     `).join('');
 
@@ -390,7 +388,7 @@ function updateTripHistory() {
     container.querySelectorAll('.trip-choice-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const id = parseInt(btn.dataset.addressId, 10);
-            const desc = btn.dataset.description || '';
+            const desc = btn.dataset.description ? decodeURIComponent(btn.dataset.description) : '';
             const vid = btn.dataset.visitedLocationId ? parseInt(btn.dataset.visitedLocationId, 10) : null;
             openChoiceHistory(id, desc, vid);
         });
@@ -1218,10 +1216,8 @@ function showExistingChoice(choice, description) {
     
     // Показываем результат
     document.getElementById('choiceResponse').style.display = 'block';
-    document.getElementById('responseText').innerHTML = `
-        <strong>Ваш выбор:</strong> ${choice.choice_text}<br>
-        <strong>Результат:</strong> ${choice.response_text}
-    `;
+    document.getElementById('responseText').innerHTML =
+        `<strong>Ваш выбор:</strong> ${escapeHtmlPlayer(choice.choice_text)}\n\n<strong>Результат:</strong> ${escapeHtmlPlayer(choice.response_text)}`;
     
     // Показываем модальное окно
     const modal = new bootstrap.Modal(document.getElementById('choiceModal'));

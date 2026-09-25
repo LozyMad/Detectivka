@@ -102,6 +102,16 @@
             margin: 0.25rem 0;
             color: #f5f5dc;
         }
+        .trip-item .trip-description-text {
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin-top: 0.35rem;
+        }
+        #addressDescription,
+        #responseText {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
         
         /* Стили для верхней панели */
         .navbar .container {
@@ -424,7 +434,7 @@
                             <div class="col-md-3">
                                 <label for="districtSelect" class="form-label">Район</label>
                                 <select class="form-select" id="districtSelect">
-                                    <option value="">Выберите район...</option>
+                                    <option value="">Район</option>
                                     <option value="С">С</option>
                                     <option value="Ю">Ю</option>
                                     <option value="З">З</option>
@@ -442,7 +452,7 @@
                                 <input type="text" class="form-control" id="houseNumber" placeholder="Введите номер дома">
                             </div>
                             <div class="col-md-3">
-                                <label for="apartmentNumber" class="form-label">Квартира</label>
+                                <label for="apartmentNumber" class="form-label">Квартира/Офис</label>
                                 <input type="text" class="form-control" id="apartmentNumber" placeholder="Необязательно">
                             </div>
                         </div>
@@ -593,7 +603,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/game.js?v=8&t=20260716&encoding=fixed"></script>
+    <script src="js/game.js?v=9&t=20260925&encoding=fixed"></script>
     <script src="js/persist-inputs.js"></script>
 </body>
 </html>

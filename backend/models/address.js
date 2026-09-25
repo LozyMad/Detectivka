@@ -47,6 +47,30 @@ if (DB_TYPE === 'postgresql') {
         });
     },
 
+    update: (scenario_id, id, addressData) => {
+        return new Promise((resolve, reject) => {
+            const { district, house_number, apartment = '', description } = addressData;
+            const apt = String(apartment ?? '').trim();
+            const db = getScenarioDb(scenario_id);
+            db.run(
+                `UPDATE addresses SET district = ?, house_number = ?, apartment = ?, description = ? WHERE id = ?`,
+                [district, house_number, apt, description, id],
+                function(err) {
+                    if (err) reject(err);
+                    else resolve({
+                        id,
+                        scenario_id,
+                        district,
+                        house_number,
+                        apartment: apt,
+                        description,
+                        changes: this.changes
+                    });
+                }
+            );
+        });
+    },
+
     setInternetCafe: (scenario_id, id, is_internet_cafe) => {
         return new Promise((resolve, reject) => {
             const db = getScenarioDb(scenario_id);

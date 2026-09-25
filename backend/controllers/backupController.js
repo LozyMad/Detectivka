@@ -10,6 +10,20 @@ const COLS_TRIPS = ['Район', 'Номер дома', 'Квартира', 'И
 const COLS_QUESTIONS = ['Номер вопроса', 'Вопрос'];
 const COLS_CHOICES = ['Район', 'Номер дома', 'Квартира', 'Текст варианта выбора', 'Результат', 'Порядок'];
 
+// raw:true — иначе SheetJS берёт отформатированную строку и схлопывает переносы в пробелы
+function sheetRows(sheet) {
+  return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
+}
+
+function preserveMultiline(value) {
+  if (value == null) return '';
+  return String(value)
+    .replace(/_x000D_/gi, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/^\s+|\s+$/g, '');
+}
+
 const backupController = {
   // Экспорт одного сценария: XLSX с листами «Поездки», «Вопросы» и «Выборы».
   exportScenarios: async (req, res) => {
@@ -116,7 +130,7 @@ const backupController = {
       }
 
       const buf = req.file.buffer;
-      const wb = XLSX.read(buf, { type: 'buffer' });
+      const wb = XLSX.read(buf, { type: 'buffer', cellText: false, cellHTML: false });
       const sheetTrips = wb.Sheets[SHEET_TRIPS];
       const sheetQuestions = wb.Sheets[SHEET_QUESTIONS];
       const sheetChoices = wb.Sheets[SHEET_CHOICES];
@@ -153,7 +167,7 @@ const backupController = {
       const addressIdByKey = new Map();
 
       if (sheetTrips) {
-        const rows = XLSX.utils.sheet_to_json(sheetTrips, { header: 1, defval: '' });
+        const rows = sheetRows(sheetTrips);
         const header = (rows[0] || []).map(String).map(s => s.trim().toLowerCase());
         const districtIdx = header.findIndex(h => h.includes('район'));
         const houseIdx = header.findIndex(h => h.includes('номер') && h.includes('дом'));
@@ -161,7 +175,7 @@ const backupController = {
         const infoIdx = header.findIndex(h => h.includes('информация') || h.includes('адрес'));
         const d = districtIdx >= 0 ? districtIdx : 0;
         const h = houseIdx >= 0 ? houseIdx : 1;
-        const i = infoIdx >= 0 ? infoIdx : 2;
+        const i = infoIdx >= 0 ? infoIdx : (apartmentIdx >= 0 ? 3 : 2);
         for (let r = 1; r < rows.length; r++) {
           const row = rows[r] || [];
           const district = String(row[d] ?? '').trim();
@@ -173,14 +187,14 @@ const backupController = {
             district: district || '-',
             house_number: house_number || '-',
             apartment,
-            description: String(row[i] ?? '').trim()
+            description: preserveMultiline(row[i])
           });
           if (created && created.id) addressIdByKey.set(addressKey(district, house_number, apartment), created.id);
         }
       }
 
       if (sheetQuestions) {
-        const rows = XLSX.utils.sheet_to_json(sheetQuestions, { header: 1, defval: '' });
+        const rows = sheetRows(sheetQuestions);
         const header = (rows[0] || []).map(String).map(s => s.trim().toLowerCase());
         const questionIdx = header.findIndex(x => x.includes('вопрос') && !x.includes('номер'));
         const qCol = questionIdx >= 0 ? questionIdx : 1;
@@ -196,7 +210,7 @@ const backupController = {
       }
 
       if (sheetChoices && addressIdByKey.size > 0) {
-        const rows = XLSX.utils.sheet_to_json(sheetChoices, { header: 1, defval: '' });
+        const rows = sheetRows(sheetChoices);
         const header = (rows[0] || []).map(String).map(s => s.trim().toLowerCase());
         const districtIdx = header.findIndex(h => h.includes('район'));
         const houseIdx = header.findIndex(h => h.includes('номер') && h.includes('дом'));

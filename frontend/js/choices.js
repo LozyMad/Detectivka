@@ -7,11 +7,14 @@ let currentAddressInfo = null;
 function openChoicesModal(scenarioId, addressId, addressInfo) {
     currentScenarioId = scenarioId;
     currentAddressId = addressId;
+    if (!addressInfo && typeof currentScenarioAddresses !== 'undefined') {
+        addressInfo = currentScenarioAddresses.find(a => Number(a.id) === Number(addressId)) || {};
+    }
     currentAddressInfo = addressInfo;
     
-    // Обновить информацию об адресе
+    const apt = addressInfo && addressInfo.apartment ? `, кв. ${addressInfo.apartment}` : '';
     document.getElementById('choicesAddressInfo').textContent = 
-        `${addressInfo.district} район, дом ${addressInfo.house_number} - ${addressInfo.description}`;
+        `${addressInfo.district} район, дом ${addressInfo.house_number}${apt}`;
     
     // Загрузить существующие выборы
     loadAddressChoices();

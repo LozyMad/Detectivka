@@ -10,6 +10,7 @@ const {
   copyScenario,
   createAddress,
   getAddresses,
+  updateAddress,
   deleteAddress,
   setAddressInternetCafe,
   getStatistics
@@ -42,6 +43,7 @@ router.get('/statistics/:scenario_id', getStatistics);
 // Address routes
 router.post('/addresses', createAddress);
 router.get('/addresses/:scenario_id', getAddresses);
+router.put('/addresses/:scenario_id/:id', updateAddress);
 router.patch('/addresses/:scenario_id/:id/internet-cafe', setAddressInternetCafe);
 router.delete('/addresses/:scenario_id/:id', deleteAddress);
 

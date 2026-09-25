@@ -303,6 +303,49 @@ const setAddressInternetCafe = async (req, res) => {
   }
 };
 
+const updateAddress = async (req, res) => {
+  try {
+    const { scenario_id, id } = req.params;
+    const existing = await Address.getById(scenario_id, id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Address not found' });
+    }
+
+    const district = req.body.district != null ? String(req.body.district).trim() : existing.district;
+    const house_number = req.body.house_number != null ? String(req.body.house_number).trim() : existing.house_number;
+    const apartment = req.body.apartment != null ? String(req.body.apartment).trim() : (existing.apartment || '');
+    const description = req.body.description != null ? String(req.body.description) : existing.description;
+
+    if (!district || !house_number || description == null || String(description).trim() === '') {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    const validDistricts = ['С', 'Ю', 'З', 'В', 'Ц', 'П', 'СВ', 'СЗ', 'ЮВ', 'ЮЗ'];
+    if (!validDistricts.includes(district)) {
+      return res.status(400).json({ error: 'Invalid district' });
+    }
+
+    const address = await Address.update(scenario_id, id, {
+      district,
+      house_number,
+      apartment,
+      description
+    });
+
+    if (!address || (address.changes !== undefined && address.changes === 0)) {
+      return res.status(404).json({ error: 'Address not found' });
+    }
+
+    res.json({
+      message: 'Address updated successfully',
+      address
+    });
+  } catch (error) {
+    console.error('Update address error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 const getAddresses = async (req, res) => {
   try {
     const { scenario_id } = req.params;
@@ -336,6 +379,7 @@ module.exports = {
   copyScenario,
   createAddress,
   getAddresses,
+  updateAddress,
   deleteAddress,
   setAddressInternetCafe,
   getStatistics

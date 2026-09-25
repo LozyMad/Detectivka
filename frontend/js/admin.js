@@ -5,6 +5,8 @@ let roomsCache = null;
 let roomsCacheTime = 0;
 const CACHE_DURATION = 5000; // 5 секунд кэш
 let isSuperAdmin = false;
+let currentScenarioAddresses = [];
+let editAddressModalInstance = null;
 
 // Address book state
 let addressBookSections = null;
@@ -1861,6 +1863,7 @@ async function loadAddressesForScenario() {
     const addressesTable = document.getElementById('addressesTable');
     
     if (!scenarioId) {
+        currentScenarioAddresses = [];
         addressesTable.innerHTML = '<tr><td colspan="8" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
         return;
     }
@@ -1878,15 +1881,16 @@ async function loadAddressesForScenario() {
             const addresses = data.addresses || [];
             
             if (addresses.length === 0) {
+                currentScenarioAddresses = [];
                 addressesTable.innerHTML = '<tr><td colspan="8" class="text-center">Адреса для этого сценария не найдены</td></tr>';
             } else {
+                currentScenarioAddresses = addresses;
                 const addressesWithChoices = await Promise.all(
                     addresses.map(async (address) => {
                         const hasChoices = await checkAddressHasChoices(scenarioId, address.id);
                         return { ...address, hasChoices };
                     })
                 );
-                const esc = (s) => (s || '').replace(/'/g, "\\'").replace(/\\/g, '\\\\');
                 addressesTable.innerHTML = addressesWithChoices.map(address => {
                     const isCafe = !!(address.is_internet_cafe === true || address.is_internet_cafe === 1 || address.is_internet_cafe === '1');
                     return `
@@ -1895,7 +1899,7 @@ async function loadAddressesForScenario() {
                         <td>${escapeHtml(address.district)}</td>
                         <td>${escapeHtml(address.house_number)}</td>
                         <td>${escapeHtml(address.apartment || '-')}</td>
-                        <td>${escapeHtml(address.description || '-')}</td>
+                        <td class="address-desc-cell">${escapeHtml(address.description || '-')}</td>
                         <td class="text-center">
                             ${address.hasChoices ? 
                                 '<span class="badge bg-success"><i class="fas fa-check"></i> Есть</span>' : 
@@ -1909,8 +1913,12 @@ async function loadAddressesForScenario() {
                             }
                         </td>
                         <td class="table-actions">
-                            <button class="btn btn-sm btn-outline-primary me-1" 
-                                    onclick="openChoicesModal(${scenarioId}, ${address.id}, {district: '${esc(address.district)}', house_number: '${esc(address.house_number)}', apartment: '${esc(address.apartment || '')}', description: '${esc(address.description || '')}'})">
+                            <button class="btn btn-sm btn-outline-warning me-1" title="Редактировать текст"
+                                    onclick="openEditAddressModal(${scenarioId}, ${address.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary me-1" title="Выборы"
+                                    onclick="openChoicesModal(${scenarioId}, ${address.id})">
                                 <i class="fas fa-question-circle"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteAddress(${address.id})">
@@ -3221,6 +3229,63 @@ async function nuclearReset() {
 }
 
 
+
+function openEditAddressModal(scenarioId, addressId) {
+    const address = (currentScenarioAddresses || []).find(a => Number(a.id) === Number(addressId));
+    if (!address) {
+        showMessage('Адрес не найден', 'danger');
+        return;
+    }
+    document.getElementById('editAddressId').value = address.id;
+    document.getElementById('editAddressScenarioId').value = scenarioId;
+    document.getElementById('editAddressDistrict').value = address.district || '';
+    document.getElementById('editAddressHouseNumber').value = address.house_number || '';
+    document.getElementById('editAddressApartment').value = address.apartment || '';
+    document.getElementById('editAddressDescription').value = address.description || '';
+
+    const modalEl = document.getElementById('editAddressModal');
+    if (!editAddressModalInstance) {
+        editAddressModalInstance = new bootstrap.Modal(modalEl);
+    }
+    editAddressModalInstance.show();
+}
+
+async function saveEditedAddress() {
+    const scenarioId = document.getElementById('editAddressScenarioId').value;
+    const addressId = document.getElementById('editAddressId').value;
+    const district = document.getElementById('editAddressDistrict').value;
+    const house_number = document.getElementById('editAddressHouseNumber').value.trim();
+    const apartment = document.getElementById('editAddressApartment').value.trim();
+    const description = document.getElementById('editAddressDescription').value;
+
+    if (!scenarioId || !addressId || !district || !house_number || !String(description).trim()) {
+        showMessage('Заполните район, номер дома и текст адреса', 'warning');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/admin/addresses/${scenarioId}/${addressId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ district, house_number, apartment, description })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showMessage('Адрес обновлён', 'success');
+            if (editAddressModalInstance) editAddressModalInstance.hide();
+            loadAddressesForScenario();
+        } else {
+            showMessage(data.error || 'Ошибка сохранения адреса', 'danger');
+        }
+    } catch (error) {
+        console.error('Error updating address:', error);
+        showMessage('Ошибка соединения', 'danger');
+    }
+}
 
 async function deleteAddress(addressId) {
     if (!confirm('Вы уверены, что хотите удалить этот адрес?')) {
