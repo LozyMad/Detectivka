@@ -78,6 +78,16 @@ html.theme-dark #game { --board-ink: #191e1d; --trip-neutral: #292f2c; }
 #game .location-search-card .form-label { color: #34332d !important; margin-bottom: .32rem; font-size: .88rem; font-weight: 600; }
 #game .location-search-card .form-control, #game .location-search-card .form-select { min-height: 42px; color: #292923 !important; background: rgba(255, 252, 245, .72) !important; border: 1px solid #c9bca7 !important; }
 #game .location-search-card .form-control::placeholder { color: #80786d !important; opacity: 1; }
+html.theme-dark body.game-container #game .location-search-card .form-control:focus,
+html.theme-dark body.game-container #game .location-search-card .form-select:focus {
+    background: #fffdf8 !important;
+    color: #292923 !important;
+}
+html.theme-dark body.game-container #game #districtSelect { color-scheme: light; }
+html.theme-dark body.game-container #game #districtSelect option {
+    background: #fffdf8 !important;
+    color: #292923 !important;
+}
 #game #goBtn { margin-top: .9rem; min-height: 44px; border-radius: var(--radius-sm); }
 #game .trip-history-section { margin-top: 1.25rem; }
 #game .trip-history-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .85rem; }
