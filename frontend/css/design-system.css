@@ -782,6 +782,15 @@ body.admin-login-body::after, body.game-login-body::after {
 }
 @media (max-width: 767.98px) {
     body.main-body { background: #E8E0D0 !important; padding: 0 !important; }
+    body.main-body::before {
+        content: '' !important;
+        position: fixed;
+        inset: 0;
+        background: url('../assets/case-desk-background-mobile.jpg') 32% center / auto 100% no-repeat;
+        opacity: .46;
+        pointer-events: none;
+        z-index: 0;
+    }
     .main-body .hero-section { padding: 3.2rem 1rem 1rem !important; }
     .main-body .case-kicker { font-size: .59rem; letter-spacing: .13em; }
     .main-body .main-title { font-size: clamp(2.7rem, 11vw, 3.8rem) !important; letter-spacing: -.025em !important; }

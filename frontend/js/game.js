@@ -25,6 +25,8 @@ function setScenarioTitle(text) {
 function setScenarioBanner(scenarioId) {
     const image = document.getElementById('caseBannerImage');
     if (!image || !scenarioId) return;
+    if (image.dataset.scenarioId === String(scenarioId)) return;
+    image.dataset.scenarioId = String(scenarioId);
     image.hidden = true;
     image.onload = () => { image.hidden = false; };
     image.onerror = () => { image.hidden = true; };
@@ -85,6 +87,11 @@ function connectRoomSSE(roomId, token) {
 // Initialize game
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
+    // Start the banner request while room state and trip history are loading.
+    try {
+        const room = JSON.parse(localStorage.getItem('room') || 'null');
+        setScenarioBanner(room?.scenario_id);
+    } catch (_) {}
     setupDistrictSelect();
     loadTripCount();
     loadTripHistory();
@@ -586,7 +593,6 @@ async function loadScenarioInfo() {
 // ===== Room timer =====
 async function initRoomTimer() {
     await refreshRoomState();
-    await loadScenarioInfo(); // Загружаем информацию о сценарии при инициализации таймера
     renderTimer();
     if (roomTimerInterval) clearInterval(roomTimerInterval);
     roomTimerInterval = setInterval(async () => {

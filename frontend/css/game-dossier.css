@@ -141,6 +141,11 @@ html.theme-dark #game { --board-ink: #191e1d; --trip-neutral: #292f2c; }
     #game .case-banner-content { gap: .8rem; }
     #game .case-banner-icon { font-size: 2rem; }
     #game .dossier-layout { grid-template-columns: 1fr; padding: 1rem 0; }
+    #game .dossier-main { display: contents; }
+    #game .dossier-sidebar { order: 0; }
+    #game .location-search-card { order: 1; }
+    #game .trip-history-section { order: 2; }
+    #game #playerNotesText { min-height: 120px; }
     #game .location-search-card { padding: 1.1rem !important; }
     #game .trip-history-heading { align-items: stretch; flex-direction: column; }
     #game #tripSearch { width: 100%; }

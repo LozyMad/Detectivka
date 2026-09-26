@@ -34,7 +34,7 @@ router.get('/:id/banner', async (req, res) => {
     const scenario = await Scenario.getById(req.params.id);
     const banner = scenario && getBannerFile(req.params.id);
     if (!banner) return res.status(404).end();
-    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Cache-Control', 'private, max-age=300, must-revalidate');
     res.type(banner.extension === 'jpg' ? 'jpeg' : banner.extension);
     res.sendFile(banner.file);
   } catch (error) {
