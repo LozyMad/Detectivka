@@ -310,12 +310,9 @@ async function visitLocation() {
             document.getElementById('houseNumber').value = '';
             if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
             
-            // Интернет-кафе: открываем браузер
-            if (data.success && data.is_internet_cafe && data.address_id) {
-                openInternetCafe(data.address_id);
-            }
-            // Проверяем, есть ли интерактивные выборы для этого адреса
-            else if (data.success && data.address_id) {
+            // Интернет-кафе открывается только по ссылке в истории поездок.
+            // Проверяем интерактивные выборы для остальных адресов.
+            if (data.success && data.address_id && !data.is_internet_cafe) {
                 console.log('Visit successful, checking for choices:', data);
                 checkForInteractiveChoices(data.address_id, data.description, data.visited_location_id);
             }
@@ -1546,7 +1543,7 @@ async function openCafePage(pageId) {
 
         const iframe = document.createElement('iframe');
         iframe.className = 'ie-cafe-frame';
-        iframe.setAttribute('sandbox', 'allow-same-origin');
+        iframe.setAttribute('sandbox', 'allow-same-origin allow-popups allow-popups-to-escape-sandbox');
         iframe.srcdoc = data.page.content_html;
         content.innerHTML = '';
         content.appendChild(iframe);

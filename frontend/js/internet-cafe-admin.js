@@ -161,6 +161,140 @@ const BORIS_LESHCHAK_BLOG_TEMPLATE = `<!DOCTYPE html>
 let internetPagesCache = [];
 let editingInternetPageId = null;
 
+const INTERNET_BLOCK_TYPES = ['heading', 'text', 'image', 'link'];
+const INTERNET_BLOCK_MARKER = /<!-- detectivka-blocks:v1:([^\s]*?) -->/;
+
+function escapeInternetHtml(value) {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function internetPageUrl(value) {
+  try {
+    const input = String(value || '').trim();
+    if (!/^https?:\/\//i.test(input) && !/^\/(?!\/)/.test(input)) return null;
+    const url = new URL(input, window.location.origin);
+    return /^https?:$/.test(url.protocol) ? url.href : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function parseInternetBlocks(html) {
+  const marker = String(html || '').match(INTERNET_BLOCK_MARKER);
+  if (!marker) return null;
+  try {
+    const blocks = JSON.parse(decodeURIComponent(marker[1]));
+    return Array.isArray(blocks) && blocks.every(block =>
+      block && INTERNET_BLOCK_TYPES.includes(block.type) &&
+      Object.values(block).every(value => typeof value === 'string')) ? blocks : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function createInternetBlock(type, values = {}) {
+  if (!INTERNET_BLOCK_TYPES.includes(type)) return;
+  const block = document.createElement('div');
+  block.className = 'card card-body mb-2 internet-page-block';
+  block.dataset.type = type;
+  const labels = { heading: 'Заголовок', text: 'Текст', image: 'Изображение', link: 'Ссылка' };
+  const fields = {
+    heading: '<input class="form-control" data-block-field="text" placeholder="Заголовок раздела">',
+    text: '<textarea class="form-control" data-block-field="text" rows="4" placeholder="Текст и абзацы страницы"></textarea>',
+    image: '<input class="form-control mb-2" data-block-field="url" placeholder="https://... или /assets/..."><input class="form-control" data-block-field="alt" placeholder="Подпись или описание изображения">',
+    link: '<input class="form-control mb-2" data-block-field="text" placeholder="Текст ссылки"><input class="form-control" data-block-field="url" placeholder="https://... или /assets/...">'
+  };
+  block.innerHTML = `<div class="d-flex justify-content-between align-items-center mb-2">
+    <strong>${labels[type]}</strong><div class="btn-group btn-group-sm" aria-label="Порядок блока">
+      <button type="button" class="btn btn-outline-secondary" data-block-action="up" aria-label="Поднять блок">↑</button>
+      <button type="button" class="btn btn-outline-secondary" data-block-action="down" aria-label="Опустить блок">↓</button>
+      <button type="button" class="btn btn-outline-danger" data-block-action="remove" aria-label="Удалить блок">×</button>
+    </div></div>${fields[type]}`;
+  block.querySelectorAll('[data-block-field]').forEach(field => {
+    field.value = values[field.dataset.blockField] || '';
+  });
+  document.getElementById('internetPageBlocks').appendChild(block);
+}
+
+function readInternetBlocks() {
+  return [...document.querySelectorAll('#internetPageBlocks .internet-page-block')].map(block => {
+    const data = { type: block.dataset.type };
+    block.querySelectorAll('[data-block-field]').forEach(field => {
+      data[field.dataset.blockField] = field.value.trim();
+    });
+    return data;
+  });
+}
+
+function buildInternetPageHtml(title, blocks) {
+  if (!blocks.length) throw new Error('Добавьте хотя бы один блок страницы');
+  const content = blocks.map((block, index) => {
+    const number = index + 1;
+    if (block.type === 'heading' || block.type === 'text') {
+      if (!block.text) throw new Error(`Заполните блок ${number}`);
+      return block.type === 'heading'
+        ? `<h2>${escapeInternetHtml(block.text)}</h2>`
+        : `<p>${escapeInternetHtml(block.text)}</p>`;
+    }
+    const url = internetPageUrl(block.url);
+    if (!url) throw new Error(`Укажите корректный адрес в блоке ${number}`);
+    if (block.type === 'image') return `<figure><img src="${escapeInternetHtml(url)}" alt="${escapeInternetHtml(block.alt)}">${block.alt ? `<figcaption>${escapeInternetHtml(block.alt)}</figcaption>` : ''}</figure>`;
+    if (block.type === 'link') {
+      if (!block.text) throw new Error(`Укажите текст ссылки в блоке ${number}`);
+      return `<p><a href="${escapeInternetHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeInternetHtml(block.text)}</a></p>`;
+    }
+    throw new Error(`Неизвестный блок ${number}`);
+  }).join('\n');
+  const marker = `<!-- detectivka-blocks:v1:${encodeURIComponent(JSON.stringify(blocks))} -->`;
+  return `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeInternetHtml(title)}</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#e5e7eb;color:#222;font:16px/1.6 Arial,Helvetica,sans-serif}.site{max-width:860px;margin:20px auto;background:#fff;border:1px solid #aab3c0;box-shadow:0 2px 9px #0002}header{padding:24px 28px;background:#243b68;color:#fff;border-bottom:4px solid #b4c3df}h1{font-size:28px;margin:0}main{padding:28px}h2{font-size:22px;margin:1.4em 0 .5em;color:#243b68}h2:first-child{margin-top:0}p{margin:0 0 1.2em;white-space:pre-wrap;overflow-wrap:anywhere}a{color:#164ca0;text-decoration:underline}figure{margin:1.5em 0}img{display:block;max-width:100%;height:auto}figcaption{color:#596270;font-size:13px;margin-top:6px}@media(max-width:600px){.site{margin:0;border:0}header,main{padding:18px}}</style></head><body><div class="site"><header><h1>${escapeInternetHtml(title)}</h1></header><main>${content}</main></div>${marker}</body></html>`;
+}
+
+function internetEditorMode() {
+  return document.getElementById('internetPageHtmlMode').checked ? 'html' : 'blocks';
+}
+
+function setInternetEditorMode(mode, force = false) {
+  const htmlField = document.getElementById('internetPageContent');
+  const previousMode = document.getElementById('internetPageHtmlEditor').hidden ? 'blocks' : 'html';
+  if (!force && mode === 'blocks' && previousMode === 'html' && htmlField.value.trim()) {
+    if (!confirm('Переход к простому редактору заменит текущий HTML содержимым блоков. Продолжить?')) {
+      document.getElementById('internetPageHtmlMode').checked = true;
+      return;
+    }
+    document.getElementById('internetPageBlocks').innerHTML = '';
+    createInternetBlock('text');
+  }
+  if (!force && mode === 'html' && previousMode === 'blocks') {
+    try {
+      htmlField.value = buildInternetPageHtml(document.getElementById('internetPageTitle').value.trim(), readInternetBlocks())
+        .replace(INTERNET_BLOCK_MARKER, '');
+    } catch (_) {
+      htmlField.value = '';
+    }
+  }
+  document.getElementById(mode === 'html' ? 'internetPageHtmlMode' : 'internetPageBlocksMode').checked = true;
+  document.getElementById('internetPageBlocksEditor').hidden = mode !== 'blocks';
+  document.getElementById('internetPageHtmlEditor').hidden = mode !== 'html';
+  document.getElementById('internetPagePreview').style.display = 'none';
+}
+
+function previewInternetPage() {
+  try {
+    const title = document.getElementById('internetPageTitle').value.trim();
+    const html = internetEditorMode() === 'blocks'
+      ? buildInternetPageHtml(title, readInternetBlocks())
+      : document.getElementById('internetPageContent').value.trim();
+    if (!title || !html) throw new Error('Заполните название и содержимое страницы');
+    const preview = document.getElementById('internetPagePreview');
+    preview.srcdoc = html;
+    preview.style.display = 'block';
+  } catch (error) {
+    showMessage(error.message, 'danger');
+  }
+}
+
 function formatAddressLabel(a) {
   if (!a) return '';
   const apt = a.apartment ? `, кв. ${a.apartment}` : '';
@@ -257,6 +391,7 @@ function renderInternetPagesList(pages) {
               <div>
                 <strong>${escapeHtml(p.title)}</strong>
                 ${active ? '<span class="badge bg-success ms-2">Активна</span>' : '<span class="badge bg-secondary ms-2">Выкл</span>'}
+                <span class="badge bg-secondary ms-1">${parseInternetBlocks(p.content_html) ? 'Блоки' : 'HTML'}</span>
                 <div class="small text-muted mt-1">
                   Кафе: ${escapeHtml(cafeLabel)} · Разблокировка: ${escapeHtml(unlockLabel)}
                 </div>
@@ -290,6 +425,10 @@ function resetInternetPageForm() {
   editingInternetPageId = null;
   const form = document.getElementById('internetPageForm');
   if (form) form.reset();
+  document.getElementById('internetPageContent').value = '';
+  document.getElementById('internetPageBlocks').innerHTML = '';
+  createInternetBlock('text');
+  setInternetEditorMode('blocks', true);
   const btn = document.getElementById('internetPageSubmitBtn');
   if (btn) btn.innerHTML = '<i class="fas fa-plus me-1"></i>Добавить страницу';
   const cancelBtn = document.getElementById('internetPageCancelBtn');
@@ -303,6 +442,11 @@ function editInternetPage(pageId) {
   editingInternetPageId = pageId;
   document.getElementById('internetPageTitle').value = page.title || '';
   document.getElementById('internetPageContent').value = page.content_html || '';
+  document.getElementById('internetPageBlocks').innerHTML = '';
+  const blocks = parseInternetBlocks(page.content_html);
+  if (blocks) blocks.forEach(block => createInternetBlock(block.type, block));
+  else createInternetBlock('text');
+  setInternetEditorMode(blocks ? 'blocks' : 'html', true);
   document.getElementById('internetPageCafeAddress').value = page.cafe_address_id || '';
   document.getElementById('internetPageUnlockAddress').value = page.unlock_address_id || '';
   document.getElementById('internetPageOrder').value = page.page_order || 1;
@@ -346,11 +490,20 @@ async function handleInternetPageSubmit(e) {
   e.preventDefault();
   const scenarioId = document.getElementById('internetPageScenario').value;
   const title = document.getElementById('internetPageTitle').value.trim();
-  const content_html = document.getElementById('internetPageContent').value;
+  let content_html;
   const cafe_address_id = parseInt(document.getElementById('internetPageCafeAddress').value, 10);
   const unlock_address_id = parseInt(document.getElementById('internetPageUnlockAddress').value, 10);
   const page_order = parseInt(document.getElementById('internetPageOrder').value, 10) || 1;
   const is_active = document.getElementById('internetPageActive').checked;
+
+  try {
+    content_html = internetEditorMode() === 'blocks'
+      ? buildInternetPageHtml(title, readInternetBlocks())
+      : document.getElementById('internetPageContent').value.trim();
+  } catch (error) {
+    showMessage(error.message, 'danger');
+    return;
+  }
 
   if (!scenarioId || !title || !content_html || !cafe_address_id || !unlock_address_id) {
     showMessage('Заполните все обязательные поля', 'danger');
@@ -440,6 +593,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const templateBtn = document.getElementById('insertBlogTemplateBtn');
   if (templateBtn) templateBtn.addEventListener('click', insertBorisBlogTemplate);
 
+  document.querySelectorAll('[name="internetPageEditorMode"]').forEach(radio => {
+    radio.addEventListener('change', () => setInternetEditorMode(radio.value));
+  });
+  document.querySelectorAll('[data-add-internet-block]').forEach(button => {
+    button.addEventListener('click', () => createInternetBlock(button.dataset.addInternetBlock));
+  });
+  document.getElementById('internetPageBlocks')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-block-action]');
+    const block = button?.closest('.internet-page-block');
+    if (!block) return;
+    if (button.dataset.blockAction === 'remove') block.remove();
+    if (button.dataset.blockAction === 'up' && block.previousElementSibling) block.parentNode.insertBefore(block, block.previousElementSibling);
+    if (button.dataset.blockAction === 'down' && block.nextElementSibling) block.parentNode.insertBefore(block.nextElementSibling, block);
+  });
+  document.getElementById('previewInternetPageBtn')?.addEventListener('click', previewInternetPage);
+
   const cancelBtn = document.getElementById('internetPageCancelBtn');
   if (cancelBtn) cancelBtn.addEventListener('click', resetInternetPageForm);
+  resetInternetPageForm();
 });
