@@ -368,7 +368,7 @@
     </style>
     <link href="css/design-system.css?v=3" rel="stylesheet">
     <link href="css/dark-interface.css?v=2" rel="stylesheet">
-    <link href="css/game-dossier.css?v=6" rel="stylesheet">
+    <link href="css/game-dossier.css?v=7" rel="stylesheet">
 </head>
 <body class="game-container">
     <nav class="navbar navbar-dark bg-dark" id="gameNavbar">
@@ -376,23 +376,23 @@
             <!-- Мобильная строка: логотип + кнопка сворачивания -->
             <div class="d-md-none d-flex align-items-center justify-content-between w-100 py-1" style="min-height: 2.5rem;">
                 <span class="navbar-brand mb-0" style="line-height: 1;">Детектум</span>
-                <button class="btn btn-link text-light p-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-expanded="true" aria-controls="navbarCollapse" aria-label="Свернуть / развернуть шапку">
-                    <i class="fas fa-chevron-up" id="navbarToggleIcon"></i>
+                <button class="btn btn-link text-light p-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-expanded="false" aria-controls="navbarCollapse" aria-label="Открыть локацию и заметки">
+                    <i class="fas fa-chevron-down" id="navbarToggleIcon"></i>
                 </button>
             </div>
             <!-- Содержимое шапки (на мобильном сворачивается) -->
-            <div class="collapse show navbar-collapse" id="navbarCollapse">
+            <div class="collapse navbar-collapse" id="navbarCollapse">
                 <div class="d-flex align-items-center w-100 justify-content-between flex-wrap">
                     <!-- Левая часть: название игры и сценарий (на мобильном скрыта в первой строке) -->
                     <div class="d-none d-md-flex flex-column align-items-start" style="margin-left: 1rem;">
                         <span class="navbar-brand mb-0" style="line-height: 1;">Детектум</span>
                         <span class="navbar-text small mt-0" id="scenarioTitle">Сценарий не определен</span>
                     </div>
-                    <div class="d-md-none flex-column align-items-start flex-grow-1">
+                    <div class="d-md-none flex-column align-items-start flex-grow-1" id="mobileScenarioGroup">
                         <span class="navbar-text small mt-0" id="scenarioTitleMobile">Сценарий не определен</span>
                     </div>
                     <!-- Центральная часть: кнопки навигации -->
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center" id="playerNavTabs">
                         <div class="btn-group" role="group">
                             <button class="btn btn-outline-light active" id="game-tab" type="button">
                                 <i class="fas fa-map-marker-alt me-2"></i>Игра
@@ -407,14 +407,14 @@
                     </div>
                     <!-- Правая часть: таймер, счетчик и пользователь -->
                     <div class="d-flex align-items-center mt-2 mt-md-0">
-                        <div class="d-flex align-items-center me-3">
+                        <div class="d-flex align-items-center me-3" id="playerNavStats">
                             <div id="roomTimer" style="display: none;" class="me-2">
                                 <span class="badge bg-warning text-dark fs-6" id="timerDisplay">00:00</span>
                             </div>
                             <span class="badge trips-badge fs-6" id="tripCounter">Поездок: 0</span>
+                            <span class="navbar-text ms-3" id="usernameDisplay"></span>
                         </div>
                         <div class="d-flex align-items-center">
-                            <span class="navbar-text me-3" id="usernameDisplay"></span>
                             <button class="btn btn-outline-light btn-sm theme-toggle me-2" type="button" data-theme-toggle aria-label="Тёмная тема">
                                 <i class="fas fa-moon" data-theme-icon aria-hidden="true"></i><span data-theme-label>Тёмная тема</span>
                             </button>
@@ -426,6 +426,7 @@
         </div>
     </nav>
 
+    <div class="player-mobile-toolbar" id="playerMobileToolbar" aria-label="Навигация и состояние игры"></div>
 
     <div class="container mt-3">
         <div class="tab-content" id="gameTabContent">
@@ -618,7 +619,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/game.js?v=10&t=20260927&encoding=fixed"></script>
+    <script src="js/game.js?v=11&t=20260927&encoding=fixed"></script>
     <script src="js/persist-inputs.js"></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 /* Player case board. The fine grain is drawn in CSS so the layout needs no extra image asset. */
 body.game-container > .container.mt-3 { margin-top: 0 !important; }
+.player-mobile-toolbar { display: none; }
 body.game-container #questions, body.game-container #addressbook { padding-top: 1rem; }
 #game {
     --board-ink: #242927;
@@ -60,7 +61,7 @@ html.theme-dark #game { --board-ink: #191e1d; --trip-neutral: #292f2c; }
 #game .case-banner h1 { font: 600 clamp(1.75rem, 3vw, 2.5rem)/1.18 var(--font-display); color: #f0e8d8 !important; margin: 0; }
 #game .case-banner h1::after { content: ''; display: block; width: 3.2rem; height: 1px; margin-top: .8rem; background: #c5a13a; }
 #game .dossier-layout { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(260px, .88fr); align-items: start; gap: 1.5rem; padding: 1.5rem 0; }
-#game .dossier-main, #game .dossier-sidebar { min-width: 0; }
+#game .dossier-main, body.game-container .dossier-sidebar { min-width: 0; }
 #game .location-search-card {
     padding: 1.45rem 1.6rem 1.4rem !important;
     background:
@@ -121,31 +122,47 @@ html.theme-dark #game { --board-ink: #191e1d; --trip-neutral: #292f2c; }
 #game .trip-toggle i { transition: transform .18s ease; }
 #game .trip-item.is-collapsed .trip-description { display: none; }
 #game .trip-choice-btn { color: #dbbd75 !important; border-color: #8e784e !important; }
-#game .dossier-sidebar { padding: 1.2rem 1.25rem 1.3rem; border: 1px solid #575950; border-radius: var(--radius-md); background: rgba(24, 28, 27, .91); box-shadow: 0 10px 25px rgba(0,0,0,.16); }
-#game .dossier-sidebar h2 { margin: 0 0 .9rem; color: #d8bf84 !important; font: 600 1.12rem var(--font-display); }
-#game .latest-location { padding-bottom: 1.2rem; border-bottom: 1px solid #54554d; }
-#game .latest-location-content { color: #d7cfc0; font-size: .9rem; }
-#game .latest-location-address { display: flex; gap: .8rem; align-items: flex-start; }
-#game .latest-location-address i { font-size: 1.7rem; color: #c5a13a; padding-top: .2rem; }
-#game .latest-location-address strong { display: block; font: 600 1.18rem var(--font-display); color: #f0e4c8; }
-#game .latest-location-address small { display: block; margin-top: .2rem; color: #aaa394; }
-#game .player-notes { padding-top: 1.2rem; }
-#game .player-notes h2 i { margin-right: .35rem; }
-#game #playerNotesText { min-height: 180px; resize: vertical; background: #1e2221 !important; color: #efe9dc !important; border: 1px solid #626459 !important; line-height: 1.5; }
-#game #playerNotesText::placeholder { color: #b1aa9d !important; opacity: 1; }
-#game .notes-status { margin: .4rem 0 0; color: #aaa394; font-size: .75rem; }
+body.game-container .dossier-sidebar { padding: 1.2rem 1.25rem 1.3rem; border: 1px solid #575950; border-radius: var(--radius-md); background: rgba(24, 28, 27, .91); box-shadow: 0 10px 25px rgba(0,0,0,.16); }
+body.game-container .dossier-sidebar h2 { margin: 0 0 .9rem; color: #d8bf84 !important; font: 600 1.12rem var(--font-display); }
+body.game-container .latest-location { padding-bottom: 1.2rem; border-bottom: 1px solid #54554d; }
+body.game-container .latest-location-content { color: #d7cfc0; font-size: .9rem; }
+body.game-container .latest-location-address { display: flex; gap: .8rem; align-items: flex-start; }
+body.game-container .latest-location-address i { font-size: 1.7rem; color: #c5a13a; padding-top: .2rem; }
+body.game-container .latest-location-address strong { display: block; font: 600 1.18rem var(--font-display); color: #f0e4c8; }
+body.game-container .latest-location-address small { display: block; margin-top: .2rem; color: #aaa394; }
+body.game-container .player-notes { padding-top: 1.2rem; }
+body.game-container .player-notes h2 i { margin-right: .35rem; }
+body.game-container #playerNotesText { min-height: 180px; resize: vertical; background: #1e2221 !important; color: #efe9dc !important; border: 1px solid #626459 !important; line-height: 1.5; }
+body.game-container #playerNotesText::placeholder { color: #b1aa9d !important; opacity: 1; }
+body.game-container .notes-status { margin: .4rem 0 0; color: #aaa394; font-size: .75rem; }
 #game :is(input, select, textarea, button):focus-visible { outline: 2px solid #dfbb6a !important; outline-offset: 2px; box-shadow: none !important; }
 @media (max-width: 991.98px) { #game .dossier-layout { grid-template-columns: minmax(0, 1fr) minmax(235px, .7fr); gap: 1rem; } }
 @media (max-width: 767.98px) {
+    .player-mobile-toolbar {
+        display: grid;
+        gap: .65rem;
+        margin: .75rem 0 0;
+        padding: .8rem;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-card);
+    }
+    .player-mobile-toolbar #mobileScenarioGroup { display: block; color: var(--color-muted); font-size: .82rem; }
+    .player-mobile-toolbar #playerNavTabs { display: block !important; width: 100%; }
+    .player-mobile-toolbar .btn-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+    .player-mobile-toolbar .btn-group .btn { min-width: 0; padding: .5rem .25rem; font-size: .84rem; white-space: normal; background: var(--color-surface-raised); border-color: var(--color-border-strong); color: var(--color-text); }
+    .player-mobile-toolbar .btn-group .btn i { display: none; }
+    .player-mobile-toolbar .btn-group .btn.active { background: var(--color-gold); border-color: var(--color-gold); color: #171a1c; }
+    .player-mobile-toolbar #playerNavStats { display: flex; flex-wrap: wrap; gap: .5rem .75rem; width: 100%; margin: 0 !important; }
+    .player-mobile-toolbar #usernameDisplay { margin: 0 !important; color: var(--color-text); font-weight: 600; }
+    .player-mobile-toolbar .trips-badge { background: var(--color-gold-wash); border: 1px solid var(--color-gold); color: var(--color-text); }
+    #navbarCollapse .dossier-sidebar { width: 100%; margin: .75rem 0 .25rem; text-align: left; }
     #game .case-banner { min-height: 125px; padding: 1rem; }
     #game .case-banner-content { gap: .8rem; }
     #game .case-banner-icon { font-size: 2rem; }
     #game .dossier-layout { grid-template-columns: 1fr; padding: 1rem 0; }
-    #game .dossier-main { display: contents; }
-    #game .dossier-sidebar { order: 0; }
-    #game .location-search-card { order: 1; }
-    #game .trip-history-section { order: 2; }
-    #game #playerNotesText { min-height: 120px; }
+    body.game-container #playerNotesText { min-height: 120px; }
     #game .location-search-card { padding: 1.1rem !important; }
     #game .trip-history-heading { align-items: stretch; flex-direction: column; }
     #game #tripSearch { width: 100%; }
@@ -154,6 +171,15 @@ html.theme-dark #game { --board-ink: #191e1d; --trip-neutral: #292f2c; }
 
 /* Light player theme: quiet paper surfaces over one continuous case-board texture. */
 html:not(.theme-dark) body.game-container {
+    --light-canvas: #e7dfcd;
+    --light-surface: #f2ecde;
+    --light-surface-secondary: #ddd5c4;
+    --light-input: #fbf7ee;
+    --light-text: #242720;
+    --light-muted: #60594d;
+    --light-border: #b6a98f;
+    --light-gold: #b99732;
+    --light-shadow: 0 6px 17px rgba(76, 58, 35, .10);
     --light-paper-texture:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.62' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E"),
         radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, .08) 25%, rgba(114, 90, 57, .07) 100%);
@@ -193,7 +219,7 @@ html:not(.theme-dark) #game .location-search-card .form-label { color: var(--lig
 html:not(.theme-dark) #game .location-search-card .form-control,
 html:not(.theme-dark) #game .location-search-card .form-select,
 html:not(.theme-dark) #game #tripSearch,
-html:not(.theme-dark) #game #playerNotesText {
+html:not(.theme-dark) body.game-container #playerNotesText {
     background: var(--light-input) !important;
     color: var(--light-text) !important;
     border-color: var(--light-border) !important;
@@ -202,6 +228,7 @@ html:not(.theme-dark) #game :is(.location-search-card .form-control, #tripSearch
     color: var(--light-muted) !important;
     opacity: 1;
 }
+html:not(.theme-dark) body.game-container #playerNotesText::placeholder { color: var(--light-muted) !important; opacity: 1; }
 html:not(.theme-dark) #game #districtSelect {
     background-color: var(--light-input) !important;
     border-color: var(--light-border) !important;
@@ -256,19 +283,19 @@ html:not(.theme-dark) #game .trip-icon { color: #806523; }
 html:not(.theme-dark) #game .trip-item.failure .trip-icon { color: #7d4543; }
 html:not(.theme-dark) #game .trip-toggle { color: #71591e; }
 html:not(.theme-dark) #game .trip-choice-btn { color: #604913 !important; border-color: #a58c5e !important; }
-html:not(.theme-dark) #game .dossier-sidebar {
+html:not(.theme-dark) body.game-container .dossier-sidebar {
     background: var(--light-surface-secondary);
     border-color: var(--light-border);
     box-shadow: var(--light-shadow);
     color: var(--light-text);
 }
-html:not(.theme-dark) #game .dossier-sidebar h2 { color: #59451d !important; }
-html:not(.theme-dark) #game .latest-location { border-bottom-color: #b4a990; }
-html:not(.theme-dark) #game .latest-location-content,
-html:not(.theme-dark) #game .latest-location-address strong { color: var(--light-text); }
-html:not(.theme-dark) #game .latest-location-address small,
-html:not(.theme-dark) #game .notes-status { color: var(--light-muted); }
-html:not(.theme-dark) #game .latest-location-address i { color: #806523; }
+html:not(.theme-dark) body.game-container .dossier-sidebar h2 { color: #59451d !important; }
+html:not(.theme-dark) body.game-container .latest-location { border-bottom-color: #b4a990; }
+html:not(.theme-dark) body.game-container .latest-location-content,
+html:not(.theme-dark) body.game-container .latest-location-address strong { color: var(--light-text); }
+html:not(.theme-dark) body.game-container .latest-location-address small,
+html:not(.theme-dark) body.game-container .notes-status { color: var(--light-muted); }
+html:not(.theme-dark) body.game-container .latest-location-address i { color: #806523; }
 html:not(.theme-dark) #game :is(input, select, textarea, button):focus-visible {
     outline-color: #9b741e !important;
     box-shadow: 0 0 0 3px rgba(185, 151, 50, .22) !important;

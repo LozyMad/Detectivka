@@ -33,6 +33,73 @@ function setScenarioBanner(scenarioId) {
     image.src = `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/banner`;
 }
 
+function setupMobileGameLayout() {
+    const toolbar = document.getElementById('playerMobileToolbar');
+    const collapse = document.getElementById('navbarCollapse');
+    const scenario = document.getElementById('mobileScenarioGroup');
+    const tabs = document.getElementById('playerNavTabs');
+    const stats = document.getElementById('playerNavStats');
+    const sidebar = document.querySelector('.dossier-sidebar');
+    if (!toolbar || !collapse || !scenario || !tabs || !stats || !sidebar) return;
+
+    const tabHome = tabs.parentElement;
+    const statHome = stats.parentElement;
+    const sidebarHome = sidebar.parentElement;
+    const toolbarHome = toolbar.parentElement;
+    const toolbarNext = toolbar.nextSibling;
+    const mobile = window.matchMedia('(max-width: 767.98px)');
+    const arrange = () => {
+        if (mobile.matches) {
+            toolbar.append(scenario, tabs, stats);
+            const activePane = document.querySelector('#gameTabContent .tab-pane.active') || document.getElementById('game');
+            placeMobileToolbar(activePane);
+            collapse.append(sidebar);
+        } else {
+            tabHome.insertBefore(tabs, statHome);
+            tabHome.insertBefore(scenario, tabs);
+            statHome.prepend(stats);
+            sidebarHome.append(sidebar);
+            toolbarHome.insertBefore(toolbar, toolbarNext);
+        }
+    };
+    arrange();
+    if (mobile.addEventListener) mobile.addEventListener('change', arrange);
+    else mobile.addListener(arrange);
+}
+
+function placeMobileToolbar(pane) {
+    const toolbar = document.getElementById('playerMobileToolbar');
+    if (!toolbar || !pane || !window.matchMedia('(max-width: 767.98px)').matches) return;
+    if (pane.id === 'game') pane.querySelector('.case-banner')?.after(toolbar);
+    else pane.prepend(toolbar);
+}
+
+function tripCollapseStorageKey() {
+    try {
+        const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
+        if (roomUser?.id && roomUser?.room_id) return `detectum-collapsed-trips-room-${roomUser.room_id}-player-${roomUser.id}`;
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        return user?.id ? `detectum-collapsed-trips-user-${user.id}` : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function restoreCollapsedTrips() {
+    const key = tripCollapseStorageKey();
+    if (!key) return;
+    try {
+        const saved = JSON.parse(localStorage.getItem(key) || '[]');
+        if (Array.isArray(saved)) saved.filter(value => typeof value === 'string').forEach(value => collapsedTripKeys.add(value));
+    } catch (_) {}
+}
+
+function saveCollapsedTrips() {
+    const key = tripCollapseStorageKey();
+    if (!key) return;
+    try { localStorage.setItem(key, JSON.stringify([...collapsedTripKeys])); } catch (_) {}
+}
+
 function getPlayerNotesKey() {
     const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
     if (roomUser?.id && roomUser?.room_id) return `detectum-notes-room-${roomUser.room_id}-player-${roomUser.id}`;
@@ -86,7 +153,9 @@ function connectRoomSSE(roomId, token) {
 
 // Initialize game
 document.addEventListener('DOMContentLoaded', () => {
+    setupMobileGameLayout();
     checkAuth();
+    restoreCollapsedTrips();
     // Start the banner request while room state and trip history are loading.
     try {
         const room = JSON.parse(localStorage.getItem('room') || 'null');
@@ -101,9 +170,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const collapseEl = document.getElementById('navbarCollapse');
     const iconEl = document.getElementById('navbarToggleIcon');
+    const menuButton = document.querySelector('[data-bs-target="#navbarCollapse"]');
     if (collapseEl && iconEl) {
-        collapseEl.addEventListener('show.bs.collapse', () => { iconEl.classList.remove('fa-chevron-down'); iconEl.classList.add('fa-chevron-up'); });
-        collapseEl.addEventListener('hide.bs.collapse', () => { iconEl.classList.remove('fa-chevron-up'); iconEl.classList.add('fa-chevron-down'); });
+        collapseEl.addEventListener('show.bs.collapse', () => {
+            iconEl.classList.remove('fa-chevron-down'); iconEl.classList.add('fa-chevron-up');
+            menuButton?.setAttribute('aria-label', 'Закрыть локацию и заметки');
+        });
+        collapseEl.addEventListener('hide.bs.collapse', () => {
+            iconEl.classList.remove('fa-chevron-up'); iconEl.classList.add('fa-chevron-down');
+            menuButton?.setAttribute('aria-label', 'Открыть локацию и заметки');
+        });
     }
     
     // Setup tab switching
@@ -480,6 +556,7 @@ function updateTripHistory() {
             const key = button.dataset.tripKey;
             if (collapsedTripKeys.has(key)) collapsedTripKeys.delete(key);
             else collapsedTripKeys.add(key);
+            saveCollapsedTrips();
             updateTripHistory();
         });
     });
@@ -710,6 +787,7 @@ function setupTabSwitching() {
             const panes = [gameContent, questionsContent, addressbookContent];
             btn.classList.toggle('active', panes[i] === pane);
         });
+        placeMobileToolbar(pane);
     }
 
     if (gameTab && questionsTab && gameContent && questionsContent) {
