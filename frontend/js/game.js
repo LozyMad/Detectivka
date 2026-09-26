@@ -11,7 +11,8 @@ let cachedScenarioName = null; // Кэш для имени сценария
 let lastScenarioCheck = 0; // Время последней проверки сценария
 let roomEventSource = null;
 let currentCafeAddressId = null;
-let cafeViewMode = 'home'; // 'home' | 'page'
+let currentCafePage = null;
+let cafeViewMode = 'home'; // 'home' | 'page' | 'error'
 
 function setScenarioTitle(text) {
     const el = document.getElementById('scenarioTitle');
@@ -1462,6 +1463,7 @@ document.getElementById('choiceModal').addEventListener('hidden.bs.modal', funct
 
 async function openInternetCafe(cafeAddressId) {
     currentCafeAddressId = cafeAddressId;
+    currentCafePage = null;
     cafeViewMode = 'home';
 
     const overlay = document.getElementById('internetCafeOverlay');
@@ -1507,56 +1509,44 @@ function renderCafeHome(pages, emptyMessage) {
     if (addressBar) addressBar.value = 'http://localhost/';
     if (backBtn) backBtn.disabled = true;
 
-    const borisPage = (pages || []).find(page => /бориса?\s+лещ(?:ик|ак)/i.test(page.title || ''));
-    if (!borisPage) {
+    if (!pages || pages.length === 0) {
         content.innerHTML = `
             <div class="ie-cafe-home">
-                <p>${escapeCafeHtml(emptyMessage || 'Блог Бориса Лещика пока недоступен')}</p>
+                <p>${escapeCafeHtml(emptyMessage || 'Вам нечего искать в сети интернет')}</p>
             </div>`;
         return;
     }
+
+    const results = pages.map(page =>
+        `<button type="button" class="ie-cafe-search-result">${escapeCafeHtml(page.title)}</button>`
+    ).join('');
 
     content.innerHTML = `
         <div class="ie-cafe-home">
             <div class="ie-cafe-search">
                 <h2>Поиск в интернете</h2>
-                <form class="ie-cafe-search-form" role="search">
-                    <label class="visually-hidden" for="ieCafeSearchInput">Название сайта</label>
-                    <input id="ieCafeSearchInput" type="search" autocomplete="off" placeholder="Название сайта">
-                    <button type="submit">Найти</button>
-                </form>
-                <div class="ie-cafe-search-results">
-                    <button type="button" class="ie-cafe-search-result">Блог Бориса Лещика</button>
-                    <p class="ie-cafe-search-empty" hidden>Ничего не найдено</p>
+                <button type="button" class="ie-cafe-search-trigger" aria-expanded="false" aria-controls="ieCafeSearchResults">
+                    <span>Выберите страницу</span><span aria-hidden="true">▾</span>
+                </button>
+                <div class="ie-cafe-search-results" id="ieCafeSearchResults" hidden>
+                    ${results}
                 </div>
             </div>
         </div>`;
 
-    const searchInput = content.querySelector('#ieCafeSearchInput');
-    const searchForm = content.querySelector('.ie-cafe-search-form');
-    const searchResult = content.querySelector('.ie-cafe-search-result');
-    const emptyResult = content.querySelector('.ie-cafe-search-empty');
-    const updateResults = () => {
-        const query = searchInput.value.trim().toLocaleLowerCase('ru');
-        const matches = 'блог бориса лещика'.includes(query);
-        searchResult.hidden = !matches;
-        emptyResult.hidden = matches;
-        return matches;
-    };
-
-    searchInput.addEventListener('input', updateResults);
-    searchForm.addEventListener('submit', (event) => {
-        event.preventDefault();
-        if (updateResults()) openCafePage(borisPage.id);
+    const trigger = content.querySelector('.ie-cafe-search-trigger');
+    const resultList = content.querySelector('.ie-cafe-search-results');
+    trigger.addEventListener('click', () => {
+        resultList.hidden = !resultList.hidden;
+        trigger.setAttribute('aria-expanded', String(!resultList.hidden));
     });
-    searchResult.addEventListener('click', () => openCafePage(borisPage.id));
+    content.querySelectorAll('.ie-cafe-search-result').forEach((button, index) => {
+        button.addEventListener('click', () => openCafePage(pages[index].id));
+    });
 }
 
 async function openCafePage(pageId) {
     const content = document.getElementById('ieCafeContent');
-    const addressBar = document.getElementById('ieCafeAddressBar');
-    const backBtn = document.getElementById('ieCafeBackBtn');
-    const titleEl = document.getElementById('ieCafeTitle');
 
     content.innerHTML = '<div class="ie-cafe-home"><p>Загрузка страницы...</p></div>';
 
@@ -1572,27 +1562,68 @@ async function openCafePage(pageId) {
             return;
         }
 
-        cafeViewMode = 'page';
-        if (backBtn) backBtn.disabled = false;
-        if (titleEl) titleEl.textContent = `Internet Explorer — ${data.page.title}`;
-        if (addressBar) {
-            const slug = (data.page.title || 'page')
-                .toLowerCase()
-                .replace(/\s+/g, '-')
-                .replace(/[^a-zа-яё0-9\-]/gi, '');
-            addressBar.value = `http://www.${slug || 'site'}.ru/`;
-        }
-
-        const iframe = document.createElement('iframe');
-        iframe.className = 'ie-cafe-frame';
-        iframe.setAttribute('sandbox', 'allow-same-origin allow-popups allow-popups-to-escape-sandbox');
-        iframe.srcdoc = data.page.content_html;
-        content.innerHTML = '';
-        content.appendChild(iframe);
+        currentCafePage = data.page;
+        renderCafePage(data.page);
     } catch (error) {
         console.error('Error opening cafe page:', error);
         content.innerHTML = '<div class="ie-cafe-home"><p>Ошибка соединения</p></div>';
     }
+}
+
+function renderCafePage(page) {
+    const content = document.getElementById('ieCafeContent');
+    const addressBar = document.getElementById('ieCafeAddressBar');
+    const backBtn = document.getElementById('ieCafeBackBtn');
+    const titleEl = document.getElementById('ieCafeTitle');
+
+    cafeViewMode = 'page';
+    if (backBtn) backBtn.disabled = false;
+    if (titleEl) titleEl.textContent = `Internet Explorer — ${page.title}`;
+    if (addressBar) {
+        const slug = (page.title || 'page')
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-zа-яё0-9\-]/gi, '');
+        addressBar.value = `http://www.${slug || 'site'}.ru/`;
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.className = 'ie-cafe-frame';
+    iframe.setAttribute('sandbox', 'allow-same-origin');
+    iframe.addEventListener('load', () => {
+        iframe.contentDocument?.addEventListener('click', (event) => {
+            const link = event.target?.closest?.('a[href], area[href]');
+            if (!link) return;
+            event.preventDefault();
+            showCafeNetworkError(link.getAttribute('href'));
+        }, true);
+    });
+    iframe.srcdoc = page.content_html;
+    content.replaceChildren(iframe);
+}
+
+function showCafeNetworkError(href) {
+    const content = document.getElementById('ieCafeContent');
+    const addressBar = document.getElementById('ieCafeAddressBar');
+    const titleEl = document.getElementById('ieCafeTitle');
+    if (addressBar && href) {
+        try {
+            addressBar.value = new URL(href, addressBar.value).href;
+        } catch (_) {
+            addressBar.value = href;
+        }
+    }
+    cafeViewMode = 'error';
+    if (titleEl) titleEl.textContent = 'Internet Explorer — Ошибка сети';
+    content.innerHTML = `
+        <div class="ie-cafe-network-error">
+            <h2>Ошибка сети</h2>
+            <p>Не удаётся открыть эту страницу.</p>
+            <button type="button" class="ie-cafe-error-back">Вернуться назад</button>
+        </div>`;
+    content.querySelector('.ie-cafe-error-back').addEventListener('click', () => {
+        if (currentCafePage) renderCafePage(currentCafePage);
+    });
 }
 
 function closeInternetCafe() {
@@ -1602,6 +1633,7 @@ function closeInternetCafe() {
         overlay.setAttribute('aria-hidden', 'true');
     }
     currentCafeAddressId = null;
+    currentCafePage = null;
     cafeViewMode = 'home';
 }
 
@@ -1621,7 +1653,9 @@ function escapeCafeHtml(str) {
     if (closeBtn) closeBtn.addEventListener('click', closeInternetCafe);
     if (backBtn) {
         backBtn.addEventListener('click', async () => {
-            if (cafeViewMode === 'page' && currentCafeAddressId) {
+            if (cafeViewMode === 'error' && currentCafePage) {
+                renderCafePage(currentCafePage);
+            } else if (cafeViewMode === 'page' && currentCafeAddressId) {
                 await openInternetCafe(currentCafeAddressId);
             }
         });

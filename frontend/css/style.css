@@ -1242,44 +1242,42 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
 }
 
-.ie-cafe-search-form {
+.ie-cafe-search-trigger {
     display: flex;
-    gap: 8px;
-}
-
-.ie-cafe-search-form input {
-    flex: 1;
-    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
     padding: 10px 12px;
     border: 1px solid #7f9db9;
     background: #fff;
     color: #222;
     font-size: 16px;
-}
-
-.ie-cafe-search-form button {
-    padding: 9px 18px;
-    border: 1px solid #7f9db9;
-    background: #ece9d8;
-    color: #222;
+    text-align: left;
     cursor: pointer;
 }
 
-.ie-cafe-search-form button:hover,
-.ie-cafe-search-form button:focus-visible {
-    background: #dce8f5;
+.ie-cafe-search-trigger:hover,
+.ie-cafe-search-trigger:focus-visible {
+    border-color: #0054e3;
 }
 
 .ie-cafe-search-results {
-    margin-top: 20px;
+    margin-top: 4px;
+    border: 1px solid #7f9db9;
+    background: #fff;
+}
+
+.ie-cafe-search-results[hidden] {
+    display: none;
 }
 
 .ie-cafe-search-result {
     display: block;
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #d5dfea;
-    background: #f8fbff;
+    border: 0;
+    border-bottom: 1px solid #d5dfea;
+    background: #fff;
     color: #0000cc;
     text-align: left;
     text-decoration: underline;
@@ -1291,15 +1289,34 @@ h1, h2, h3, h4, h5, h6 {
     background: #eaf2fc;
 }
 
-.ie-cafe-search-result[hidden],
-.ie-cafe-search-empty[hidden] {
-    display: none;
+.ie-cafe-search-result:last-child {
+    border-bottom: 0;
 }
 
-.ie-cafe-search-empty {
-    margin: 0;
-    padding: 10px 12px;
-    font-size: 14px;
+.ie-cafe-network-error {
+    padding: 48px 32px;
+    color: #222;
+    font-family: Tahoma, Arial, sans-serif;
+}
+
+.ie-cafe-network-error h2 {
+    margin-bottom: 16px;
+    color: #222 !important;
+    font-family: Tahoma, Arial, sans-serif !important;
+    font-size: 24px;
+}
+
+.ie-cafe-network-error p {
+    color: #222;
+}
+
+.ie-cafe-error-back {
+    margin-top: 16px;
+    padding: 6px 12px;
+    border: 1px solid #7f9db9;
+    background: #ece9d8;
+    color: #222;
+    cursor: pointer;
 }
 
 .ie-cafe-frame {
