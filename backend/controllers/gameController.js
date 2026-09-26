@@ -64,7 +64,7 @@ const visitLocation = async (req, res) => {
       apt
     );
 
-    await VisitAttempt.create({
+    const attempt = await VisitAttempt.create({
       user_id: userId,
       scenario_id: activeScenario.id,
       room_id: roomContext ? roomContext.room_id : null,
@@ -80,6 +80,7 @@ const visitLocation = async (req, res) => {
       const location_names = await lookupLocationNames(district, house_number, apt);
       return res.status(404).json({
         success: false,
+        attempt_id: attempt && attempt.id,
         error: 'Location not found in this scenario',
         location: {
           district: district,
@@ -106,6 +107,7 @@ const visitLocation = async (req, res) => {
 
     res.json({
       success: true,
+      attempt_id: attempt && attempt.id,
       description: address.description,
       location: {
         district: address.district,

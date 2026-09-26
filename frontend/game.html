@@ -368,6 +368,7 @@
     </style>
     <link href="css/design-system.css?v=3" rel="stylesheet">
     <link href="css/dark-interface.css?v=2" rel="stylesheet">
+    <link href="css/game-dossier.css?v=5" rel="stylesheet">
 </head>
 <body class="game-container">
     <nav class="navbar navbar-dark bg-dark" id="gameNavbar">
@@ -430,55 +431,63 @@
         <div class="tab-content" id="gameTabContent">
             <!-- Вкладка игры -->
             <div class="tab-pane fade show active" id="game" role="tabpanel">
-        <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                <div class="game-card p-4">
-                    <h2 class="text-center mb-4">Поиск локаций</h2>
-                    
-                    <div class="mb-4">
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-3">
-                                <label for="districtSelect" class="form-label">Район</label>
-                                <select class="form-select" id="districtSelect">
-                                    <option value="">Район</option>
-                                    <option value="С">С</option>
-                                    <option value="Ю">Ю</option>
-                                    <option value="З">З</option>
-                                    <option value="В">В</option>
-                                    <option value="Ц">Ц</option>
-                                    <option value="П">П</option>
-                                    <option value="СВ">СВ</option>
-                                    <option value="СЗ">СЗ</option>
-                                    <option value="ЮВ">ЮВ</option>
-                                    <option value="ЮЗ">ЮЗ</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="houseNumber" class="form-label">Номер дома</label>
-                                <input type="text" class="form-control" id="houseNumber" placeholder="Введите номер дома">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="apartmentNumber" class="form-label">Квартира/Офис</label>
-                                <input type="text" class="form-control" id="apartmentNumber" placeholder="Необязательно">
-                            </div>
-                        </div>
+                <section class="case-banner" aria-labelledby="caseTitle">
+                    <img id="caseBannerImage" class="case-banner-image" alt="" hidden>
+                    <div class="case-banner-content">
+                        <i class="far fa-file-alt case-banner-icon" aria-hidden="true"></i>
+                        <div><div class="case-overline">ТЕКУЩЕЕ ДЕЛО</div><h1 id="caseTitle">Дело расследуется</h1></div>
                     </div>
-                    
-                    <button class="btn w-100" id="goBtn" onclick="visitLocation()">Поехали!</button>
-                </div>
-            </div>
-        </div>
-        <div class="row justify-content-center mt-4">
-            <div class="col-md-10 col-lg-9">
-                <!-- История поездок (шире в 1.5 раза) -->
-                <div class="game-card p-4">
-                    <h4 class="mb-3">История поездок</h4>
-                    <div id="tripHistory" class="trip-history">
-                        <p class="text-muted text-center">История поездок пуста</p>
+                </section>
+                <div class="dossier-layout">
+                    <div class="dossier-main">
+                        <section class="game-card location-search-card" aria-labelledby="locationSearchTitle">
+                            <h2 id="locationSearchTitle">Поиск локации</h2>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-5">
+                                    <label for="districtSelect" class="form-label">Район</label>
+                                    <select class="form-select" id="districtSelect">
+                                        <option value="">Выберите район</option>
+                                        <option value="С">С</option><option value="Ю">Ю</option><option value="З">З</option>
+                                        <option value="В">В</option><option value="Ц">Ц</option><option value="П">П</option>
+                                        <option value="СВ">СВ</option><option value="СЗ">СЗ</option>
+                                        <option value="ЮВ">ЮВ</option><option value="ЮЗ">ЮЗ</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="houseNumber" class="form-label">Номер дома</label>
+                                    <input type="text" class="form-control" id="houseNumber" placeholder="Введите номер дома">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="apartmentNumber" class="form-label">Квартира/Офис</label>
+                                    <input type="text" class="form-control" id="apartmentNumber" placeholder="Необязательно">
+                                </div>
+                            </div>
+                            <button class="btn w-100" id="goBtn" onclick="visitLocation()"><i class="fas fa-car me-2" aria-hidden="true"></i>Поехали!</button>
+                        </section>
+                        <section class="trip-history-section" aria-labelledby="tripHistoryTitle">
+                            <div class="trip-history-heading">
+                                <h2 id="tripHistoryTitle"><i class="far fa-clock" aria-hidden="true"></i> История поездок</h2>
+                                <label class="visually-hidden" for="tripSearch">Поиск по истории поездок</label>
+                                <input type="search" id="tripSearch" class="form-control" placeholder="Поиск по истории" autocomplete="off">
+                            </div>
+                            <div id="tripHistory" class="trip-history" aria-live="polite">
+                                <p class="trip-empty">История поездок пуста</p>
+                            </div>
+                        </section>
                     </div>
+                    <aside class="dossier-sidebar" aria-label="Локация и заметки">
+                        <section class="latest-location" aria-labelledby="latestLocationTitle">
+                            <h2 id="latestLocationTitle">Последняя локация</h2>
+                            <div id="latestLocationContent" class="latest-location-content">Пока нет поездок</div>
+                        </section>
+                        <section class="player-notes" aria-labelledby="playerNotesTitle">
+                            <h2 id="playerNotesTitle"><i class="far fa-sticky-note" aria-hidden="true"></i> Заметки</h2>
+                            <label class="visually-hidden" for="playerNotesText">Личные заметки по делу</label>
+                            <textarea id="playerNotesText" class="form-control" placeholder="Здесь можно делать заметки по текущему расследованию..."></textarea>
+                            <p id="playerNotesStatus" class="notes-status" role="status">Заметки сохраняются автоматически</p>
+                        </section>
+                    </aside>
                 </div>
-            </div>
-        </div>
             </div>
 
             <!-- Вкладка вопросов -->

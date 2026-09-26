@@ -1317,6 +1317,12 @@
                             <label for="editScenarioDescription" class="form-label">Описание</label>
                             <textarea class="form-control" id="editScenarioDescription" rows="3"></textarea>
                         </div>
+                        <div class="mb-3">
+                            <label for="editScenarioBanner" class="form-label">Фотография в шапке дела</label>
+                            <input type="file" class="form-control" id="editScenarioBanner" accept="image/jpeg,image/png,image/webp">
+                            <div class="form-text">JPG, PNG или WEBP до 5 МБ. Показывается игрокам этого сценария.</div>
+                            <img id="editScenarioBannerPreview" class="mt-2 rounded" alt="Текущее изображение сценария" style="display:none;max-width:100%;max-height:140px;object-fit:cover;">
+                        </div>
                         
                         <!-- Questions Section -->
                         <div class="mb-3">

@@ -1,0 +1,273 @@
+/* Player case board. The fine grain is drawn in CSS so the layout needs no extra image asset. */
+body.game-container > .container.mt-3 { margin-top: 0 !important; }
+body.game-container #questions, body.game-container #addressbook { padding-top: 1rem; }
+#game {
+    --board-ink: #242927;
+    --board-text: #eee5d2;
+    --board-muted: #b6ad9c;
+    --paper: #f5f0e5;
+    --paper-text: #252725;
+    --paper-border: #d7cab3;
+    --trip-neutral: #333835;
+    position: relative;
+    isolation: isolate;
+    min-height: calc(100vh - 7rem);
+    padding: 0 0 3rem;
+    color: var(--board-text);
+}
+html.theme-dark #game { --board-ink: #191e1d; --trip-neutral: #292f2c; }
+#game::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0 calc(50% - 50vw) -3rem;
+    background:
+        radial-gradient(ellipse at 65% 14%, rgba(178, 144, 91, .09), transparent 38%),
+        repeating-linear-gradient(27deg, transparent 0 3px, rgba(239, 227, 195, .012) 4px 5px),
+        repeating-linear-gradient(117deg, transparent 0 6px, rgba(0, 0, 0, .035) 7px 8px),
+        var(--board-ink);
+}
+#game .case-banner {
+    position: relative;
+    overflow: hidden;
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    padding: 1.45rem 2rem;
+    border-bottom: 1px solid rgba(209, 183, 128, .24);
+    background: linear-gradient(100deg, #151a19 8%, #252b28 100%);
+}
+#game .case-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(20, 25, 24, .97) 0%, rgba(20, 25, 24, .8) 40%, rgba(20, 25, 24, .14) 100%);
+    pointer-events: none;
+}
+#game .case-banner-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 46%;
+    filter: sepia(.32) saturate(.64) brightness(.77);
+}
+#game .case-banner-image[hidden] { display: none; }
+#game .case-banner-content { position: relative; z-index: 1; display: flex; align-items: center; gap: 1.4rem; min-width: 0; }
+#game .case-banner-icon { color: #cbb88d; font-size: 2.6rem; }
+#game .case-overline { font: .68rem var(--font-mono); letter-spacing: .28em; color: #bbae90; margin-bottom: .32rem; }
+#game .case-banner h1 { font: 600 clamp(1.75rem, 3vw, 2.5rem)/1.18 var(--font-display); color: #f0e8d8 !important; margin: 0; }
+#game .case-banner h1::after { content: ''; display: block; width: 3.2rem; height: 1px; margin-top: .8rem; background: #c5a13a; }
+#game .dossier-layout { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(260px, .88fr); align-items: start; gap: 1.5rem; padding: 1.5rem 0; }
+#game .dossier-main, #game .dossier-sidebar { min-width: 0; }
+#game .location-search-card {
+    padding: 1.45rem 1.6rem 1.4rem !important;
+    background:
+        radial-gradient(circle at 91% 15%, rgba(173, 130, 55, .065), transparent 35%),
+        repeating-linear-gradient(0deg, transparent 0 4px, rgba(91, 71, 43, .012) 5px 6px),
+        var(--paper) !important;
+    border: 1px solid var(--paper-border) !important;
+    border-top: 1px solid var(--paper-border) !important;
+    box-shadow: 0 9px 20px rgba(0, 0, 0, .14) !important;
+    color: var(--paper-text);
+}
+#game .location-search-card h2 { font: 700 1.55rem/1.25 var(--font-display); color: var(--paper-text) !important; text-align: left; margin: 0 0 1.15rem !important; }
+#game .location-search-card h2::after { display: none !important; }
+#game .location-search-card .form-label { color: #34332d !important; margin-bottom: .32rem; font-size: .88rem; font-weight: 600; }
+#game .location-search-card .form-control, #game .location-search-card .form-select { min-height: 42px; color: #292923 !important; background: rgba(255, 252, 245, .72) !important; border: 1px solid #c9bca7 !important; }
+#game .location-search-card .form-control::placeholder { color: #80786d !important; opacity: 1; }
+#game #goBtn { margin-top: .9rem; min-height: 44px; border-radius: var(--radius-sm); }
+#game .trip-history-section { margin-top: 1.25rem; }
+#game .trip-history-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .85rem; }
+#game .trip-history-heading h2 { margin: 0; color: #efe5d1 !important; font: 600 1.45rem/1.2 var(--font-display); }
+#game .trip-history-heading h2 i { color: #d8bb74; font-size: 1.2rem; margin-right: .3rem; }
+#game #tripSearch { width: min(225px, 45%); min-height: 38px; color: #eee6d8 !important; background: #242927 !important; border: 1px solid #666354 !important; }
+#game #tripSearch::placeholder { color: #c0b8a9 !important; opacity: 1; }
+#game #tripSearch::-webkit-search-cancel-button { cursor: pointer; }
+#game .trip-history { max-height: none; }
+#game .trip-empty { padding: 1.4rem; border: 1px dashed #777263; border-radius: var(--radius-sm); color: #d3cab8; text-align: center; }
+#game .trip-item {
+    display: flex;
+    gap: .9rem;
+    align-items: flex-start;
+    background: var(--trip-neutral) !important;
+    border: 1px solid #56594f !important;
+    border-left: 3px solid #b89b59 !important;
+    border-radius: var(--radius-sm) !important;
+    color: #efe8d9 !important;
+    padding: .9rem 1rem !important;
+    margin-bottom: .65rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,.11);
+}
+#game .trip-item.success { border-left-color: #b89b59 !important; }
+#game .trip-item.success.is-fresh { animation: found-trip 9s ease-out both; }
+#game .trip-item.failure { background: #442d2f !important; border-color: #694143 !important; border-left-color: #c17071 !important; }
+@keyframes found-trip { 0%, 43% { background: #375543; border-color: #64866b; box-shadow: 0 0 0 1px rgba(148, 199, 151, .15), 0 6px 18px rgba(56, 93, 66, .25); } 100% { background: var(--trip-neutral); border-color: #56594f; box-shadow: 0 4px 12px rgba(0,0,0,.11); } }
+#game .trip-icon { color: #c8aa63; font-size: 1.45rem; padding-top: .15rem; }
+#game .trip-item.failure .trip-icon { color: #d08483; }
+#game .trip-body { flex: 1; min-width: 0; }
+#game .trip-info { display: flex; gap: .45rem; align-items: baseline; flex-wrap: wrap; color: #dfd5c3 !important; font: .9rem var(--font-body); }
+#game .trip-address { font-weight: 600; }
+#game .trip-time { color: #b8ae9f; font-size: .8rem; white-space: nowrap; }
+#game .trip-status { color: #afd1b4; font-size: .78rem; }
+#game .trip-item.failure .trip-status { color: #ecb2b0; }
+#game .trip-description { margin: .35rem 0 0; color: #e9e3d8 !important; font-size: .92rem; line-height: 1.45; font-weight: 400; }
+#game .trip-description-text { margin-top: .12rem; }
+#game .trip-actions { display: flex; gap: .35rem; align-items: flex-start; }
+#game .trip-toggle { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: #dfc27d; }
+#game .trip-toggle:hover, #game .trip-toggle:focus-visible { background: rgba(197, 161, 58, .14); border-color: #a58a52; }
+#game .trip-toggle[aria-expanded="false"] i { transform: rotate(-90deg); }
+#game .trip-toggle i { transition: transform .18s ease; }
+#game .trip-item.is-collapsed .trip-description { display: none; }
+#game .trip-choice-btn { color: #dbbd75 !important; border-color: #8e784e !important; }
+#game .dossier-sidebar { padding: 1.2rem 1.25rem 1.3rem; border: 1px solid #575950; border-radius: var(--radius-md); background: rgba(24, 28, 27, .91); box-shadow: 0 10px 25px rgba(0,0,0,.16); }
+#game .dossier-sidebar h2 { margin: 0 0 .9rem; color: #d8bf84 !important; font: 600 1.12rem var(--font-display); }
+#game .latest-location { padding-bottom: 1.2rem; border-bottom: 1px solid #54554d; }
+#game .latest-location-content { color: #d7cfc0; font-size: .9rem; }
+#game .latest-location-address { display: flex; gap: .8rem; align-items: flex-start; }
+#game .latest-location-address i { font-size: 1.7rem; color: #c5a13a; padding-top: .2rem; }
+#game .latest-location-address strong { display: block; font: 600 1.18rem var(--font-display); color: #f0e4c8; }
+#game .latest-location-address small { display: block; margin-top: .2rem; color: #aaa394; }
+#game .player-notes { padding-top: 1.2rem; }
+#game .player-notes h2 i { margin-right: .35rem; }
+#game #playerNotesText { min-height: 180px; resize: vertical; background: #1e2221 !important; color: #efe9dc !important; border: 1px solid #626459 !important; line-height: 1.5; }
+#game #playerNotesText::placeholder { color: #b1aa9d !important; opacity: 1; }
+#game .notes-status { margin: .4rem 0 0; color: #aaa394; font-size: .75rem; }
+#game :is(input, select, textarea, button):focus-visible { outline: 2px solid #dfbb6a !important; outline-offset: 2px; box-shadow: none !important; }
+@media (max-width: 991.98px) { #game .dossier-layout { grid-template-columns: minmax(0, 1fr) minmax(235px, .7fr); gap: 1rem; } }
+@media (max-width: 767.98px) {
+    #game .case-banner { min-height: 125px; padding: 1rem; }
+    #game .case-banner-content { gap: .8rem; }
+    #game .case-banner-icon { font-size: 2rem; }
+    #game .dossier-layout { grid-template-columns: 1fr; padding: 1rem 0; }
+    #game .location-search-card { padding: 1.1rem !important; }
+    #game .trip-history-heading { align-items: stretch; flex-direction: column; }
+    #game #tripSearch { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { #game .trip-item.success.is-fresh { animation: none; background: #375543 !important; } #game .trip-toggle i { transition: none; } }
+
+/* Light player theme: quiet paper surfaces over one continuous case-board texture. */
+html:not(.theme-dark) body.game-container {
+    --light-paper-texture:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.62' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E"),
+        radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, .08) 25%, rgba(114, 90, 57, .07) 100%);
+    background: var(--light-paper-texture), #e7dfcd !important;
+}
+html:not(.theme-dark) #game {
+    --light-canvas: #e7dfcd;
+    --light-surface: #f2ecde;
+    --light-surface-secondary: #ddd5c4;
+    --light-input: #fbf7ee;
+    --light-text: #242720;
+    --light-muted: #60594d;
+    --light-border: #b6a98f;
+    --light-gold: #b99732;
+    --light-shadow: 0 6px 17px rgba(76, 58, 35, .10);
+    --board-text: var(--light-text);
+    background: rgba(255, 255, 255, .025);
+}
+html:not(.theme-dark) #game::before {
+    background: var(--light-paper-texture), var(--light-canvas);
+}
+html:not(.theme-dark) #game .case-banner {
+    border-bottom-color: #586251;
+    background: #252c27;
+}
+html:not(.theme-dark) #game .case-banner::after {
+    background: linear-gradient(90deg, rgba(37, 44, 39, .97) 0%, rgba(37, 44, 39, .81) 42%, rgba(37, 44, 39, .17) 100%);
+}
+html:not(.theme-dark) #game .location-search-card {
+    background: var(--light-surface) !important;
+    border-color: var(--light-border) !important;
+    box-shadow: var(--light-shadow) !important;
+    color: var(--light-text);
+}
+html:not(.theme-dark) #game .location-search-card h2,
+html:not(.theme-dark) #game .location-search-card .form-label { color: var(--light-text) !important; }
+html:not(.theme-dark) #game .location-search-card .form-control,
+html:not(.theme-dark) #game .location-search-card .form-select,
+html:not(.theme-dark) #game #tripSearch,
+html:not(.theme-dark) #game #playerNotesText {
+    background: var(--light-input) !important;
+    color: var(--light-text) !important;
+    border-color: var(--light-border) !important;
+}
+html:not(.theme-dark) #game :is(.location-search-card .form-control, #tripSearch, #playerNotesText)::placeholder {
+    color: var(--light-muted) !important;
+    opacity: 1;
+}
+html:not(.theme-dark) #game #districtSelect {
+    background-color: var(--light-input) !important;
+    border-color: var(--light-border) !important;
+    color: var(--light-text) !important;
+}
+html:not(.theme-dark) #game #goBtn {
+    background-color: var(--light-gold) !important;
+    border-color: var(--light-gold) !important;
+    color: #171a1c !important;
+}
+html:not(.theme-dark) #game #goBtn:hover { background-color: #a98523 !important; border-color: #a98523 !important; }
+html:not(.theme-dark) #game .trip-history-heading h2 { color: var(--light-text) !important; }
+html:not(.theme-dark) #game .trip-history-heading h2 i { color: #806523; }
+html:not(.theme-dark) #game .trip-empty { color: var(--light-muted); border-color: var(--light-border); }
+html:not(.theme-dark) #game .trip-item {
+    background: #e5dfd0 !important;
+    border-color: #b8af9b !important;
+    border-left-color: #9e854a !important;
+    color: var(--light-text) !important;
+    box-shadow: 0 3px 10px rgba(76, 58, 35, .07);
+}
+html:not(.theme-dark) #game .trip-item.success {
+    background: #d8d8c9 !important;
+    border-color: #a9b09c !important;
+    border-left-color: #617a60 !important;
+}
+html:not(.theme-dark) #game .trip-item.failure {
+    background: #dec5c2 !important;
+    border-color: #bd9892 !important;
+    border-left-color: #874b49 !important;
+    color: #542c2b !important;
+}
+html:not(.theme-dark) #game .trip-item.success.is-fresh { position: relative; isolation: isolate; animation: none; }
+html:not(.theme-dark) #game .trip-item.success.is-fresh::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: #78a07b;
+    pointer-events: none;
+    animation: found-trip-light 9s ease-out both;
+}
+@keyframes found-trip-light { 0%, 43% { opacity: .65; } 100% { opacity: 0; } }
+html:not(.theme-dark) #game .trip-info,
+html:not(.theme-dark) #game .trip-description { color: var(--light-text) !important; }
+html:not(.theme-dark) #game .trip-item.failure :is(.trip-info, .trip-description) { color: #542c2b !important; }
+html:not(.theme-dark) #game .trip-time { color: #5a5148; }
+html:not(.theme-dark) #game .trip-status { color: #38543e; font-weight: 600; }
+html:not(.theme-dark) #game .trip-item.failure .trip-status { color: #6b3432; }
+html:not(.theme-dark) #game .trip-icon { color: #806523; }
+html:not(.theme-dark) #game .trip-item.failure .trip-icon { color: #7d4543; }
+html:not(.theme-dark) #game .trip-toggle { color: #71591e; }
+html:not(.theme-dark) #game .trip-choice-btn { color: #604913 !important; border-color: #a58c5e !important; }
+html:not(.theme-dark) #game .dossier-sidebar {
+    background: var(--light-surface-secondary);
+    border-color: var(--light-border);
+    box-shadow: var(--light-shadow);
+    color: var(--light-text);
+}
+html:not(.theme-dark) #game .dossier-sidebar h2 { color: #59451d !important; }
+html:not(.theme-dark) #game .latest-location { border-bottom-color: #b4a990; }
+html:not(.theme-dark) #game .latest-location-content,
+html:not(.theme-dark) #game .latest-location-address strong { color: var(--light-text); }
+html:not(.theme-dark) #game .latest-location-address small,
+html:not(.theme-dark) #game .notes-status { color: var(--light-muted); }
+html:not(.theme-dark) #game .latest-location-address i { color: #806523; }
+html:not(.theme-dark) #game :is(input, select, textarea, button):focus-visible {
+    outline-color: #9b741e !important;
+    box-shadow: 0 0 0 3px rgba(185, 151, 50, .22) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+    html:not(.theme-dark) #game .trip-item.success.is-fresh::after { animation: none; opacity: .45; }
+}

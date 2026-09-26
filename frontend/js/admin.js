@@ -1302,6 +1302,12 @@ async function editScenario(scenarioId) {
     document.getElementById('editScenarioId').value = scenario.id;
     document.getElementById('editScenarioName').value = scenario.name;
     document.getElementById('editScenarioDescription').value = scenario.description || '';
+    document.getElementById('editScenarioBanner').value = '';
+    const bannerPreview = document.getElementById('editScenarioBannerPreview');
+    bannerPreview.style.display = 'none';
+    bannerPreview.onload = () => { bannerPreview.style.display = 'block'; };
+    bannerPreview.onerror = () => { bannerPreview.style.display = 'none'; };
+    bannerPreview.src = `${API_BASE}/scenarios/${scenario.id}/banner?v=${Date.now()}`;
 
     // Load questions for this scenario
     await loadScenarioQuestions(scenarioId);
@@ -1329,6 +1335,21 @@ async function updateScenario() {
         const data = await response.json();
 
         if (response.ok) {
+            const bannerFile = document.getElementById('editScenarioBanner').files[0];
+            if (bannerFile) {
+                const formData = new FormData();
+                formData.append('banner', bannerFile);
+                const bannerResponse = await fetch(`${API_BASE}/admin/scenarios/${id}/banner`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                if (!bannerResponse.ok) {
+                    const bannerError = await bannerResponse.json().catch(() => ({}));
+                    showMessage(bannerError.error || 'Не удалось загрузить изображение', 'danger');
+                    return;
+                }
+            }
             showMessage('Сценарий успешно обновлен', 'success');
             const modal = bootstrap.Modal.getInstance(document.getElementById('editScenarioModal'));
             modal.hide();

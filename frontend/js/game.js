@@ -4,6 +4,8 @@ let roomState = null;
 let roomTimerInterval = null;
 let tripCount = 0;
 let tripHistory = [];
+const collapsedTripKeys = new Set();
+let freshTripTimer = null;
 let cachedScenarioName = null; // Кэш для имени сценария
 let lastScenarioCheck = 0; // Время последней проверки сценария
 let roomEventSource = null;
@@ -15,6 +17,41 @@ function setScenarioTitle(text) {
     const elM = document.getElementById('scenarioTitleMobile');
     if (el) el.textContent = text;
     if (elM) elM.textContent = text;
+    const caseTitle = document.getElementById('caseTitle');
+    if (caseTitle) caseTitle.textContent = text && !/^(ошибка|нет |сценарий не)/i.test(text)
+        ? (/^дело(?:\s|$)/i.test(text) ? text : `Дело «${text}»`) : 'Дело расследуется';
+}
+
+function setScenarioBanner(scenarioId) {
+    const image = document.getElementById('caseBannerImage');
+    if (!image || !scenarioId) return;
+    image.hidden = true;
+    image.onload = () => { image.hidden = false; };
+    image.onerror = () => { image.hidden = true; };
+    image.src = `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/banner`;
+}
+
+function getPlayerNotesKey() {
+    const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
+    if (roomUser?.id && roomUser?.room_id) return `detectum-notes-room-${roomUser.room_id}-player-${roomUser.id}`;
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    return user?.id ? `detectum-notes-user-${user.id}` : null;
+}
+
+function setupPlayerNotes() {
+    const field = document.getElementById('playerNotesText');
+    const status = document.getElementById('playerNotesStatus');
+    const key = getPlayerNotesKey();
+    if (!field || !key) return;
+    try { field.value = localStorage.getItem(key) || ''; } catch (_) {}
+    field.addEventListener('input', () => {
+        try {
+            localStorage.setItem(key, field.value);
+            if (status) status.textContent = 'Заметки сохранены';
+        } catch (_) {
+            if (status) status.textContent = 'Не удалось сохранить заметки';
+        }
+    });
 }
 
 function connectRoomSSE(roomId, token) {
@@ -52,6 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTripCount();
     loadTripHistory();
     loadScenarioInfo();
+    setupPlayerNotes();
+    document.getElementById('tripSearch')?.addEventListener('input', updateTripHistory);
     
     const collapseEl = document.getElementById('navbarCollapse');
     const iconEl = document.getElementById('navbarToggleIcon');
@@ -173,6 +212,7 @@ async function visitLocation() {
         
         if (response.ok) {
             const trip = {
+                id: data.attempt_id || null,
                 district: selectedDistrict,
                 houseNumber: houseNumber,
                 apartment: (data.location && data.location.apartment) ? data.location.apartment : apartmentNumber,
@@ -203,6 +243,7 @@ async function visitLocation() {
             
         } else {
             const trip = {
+                id: data.attempt_id || null,
                 district: selectedDistrict,
                 houseNumber: houseNumber,
                 apartment: apartmentNumber,
@@ -318,6 +359,7 @@ async function loadTripHistory() {
             }
             
             return {
+                id: attempt.id,
                 district: attempt.district,
                 houseNumber: attempt.house_number,
                 apartment: attempt.apartment || '',
@@ -349,22 +391,62 @@ function formatTripAddressLabel(trip) {
     return `${address} — ${names.join(' / ')}`;
 }
 
+function tripKey(trip) {
+    return trip.id ? `attempt-${trip.id}` : `${trip.district}|${trip.houseNumber}|${trip.apartment}|${trip.timestamp}`;
+}
+
+function tripTimestampMs(timestamp) {
+    if (!timestamp) return NaN;
+    const normalized = typeof timestamp === 'string' && !/Z|[+-]\d{2}:?\d{2}$/.test(timestamp.trim())
+        ? timestamp.trim().replace(' ', 'T') + 'Z' : timestamp;
+    return new Date(normalized).getTime();
+}
+
+function updateLatestLocation() {
+    const target = document.getElementById('latestLocationContent');
+    if (!target) return;
+    const latest = tripHistory.find(trip => trip.success);
+    if (!latest) {
+        target.textContent = 'Пока не найдена ни одна локация';
+        return;
+    }
+    const names = Array.isArray(latest.locationNames) ? latest.locationNames.filter(Boolean) : [];
+    target.innerHTML = `<div class="latest-location-address"><i class="far fa-building" aria-hidden="true"></i><div><strong>${escapeHtmlPlayer(`Дом ${latest.houseNumber}`)}</strong>${names.length ? `<div>${escapeHtmlPlayer(names.join(' / '))}</div>` : ''}<small>${escapeHtmlPlayer(latest.district)} · ${escapeHtmlPlayer(formatTripTime(latest.timestamp))}</small></div></div>`;
+}
+
 // Обновление отображения истории поездок
 function updateTripHistory() {
     const container = document.getElementById('tripHistory');
     if (!container) return;
+    updateLatestLocation();
+    const query = (document.getElementById('tripSearch')?.value || '').trim().toLocaleLowerCase('ru-RU');
+    const matchingTrips = query ? tripHistory.filter(trip =>
+        [trip.district, formatTripAddressLabel(trip), trip.description, trip.success ? 'найдено' : 'не найдено']
+            .join(' ').toLocaleLowerCase('ru-RU').includes(query)) : tripHistory;
     
     if (tripHistory.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center">История поездок пуста</p>';
+        container.innerHTML = '<p class="trip-empty">История поездок пуста</p>';
+        return;
+    }
+    if (matchingTrips.length === 0) {
+        container.innerHTML = '<p class="trip-empty">По вашему запросу поездок не найдено</p>';
         return;
     }
 
-    const items = tripHistory.map(trip => `
-        <div class="trip-item ${trip.success ? 'success' : 'failure'}">
-            <div class="trip-info">
-                <span class="badge district-badge bg-primary">${trip.district}</span>
-                <span class="ms-2">${formatTripAddressLabel(trip)}</span>
-                <span class="ms-2 text-muted">${formatTripTime(trip.timestamp)}</span>
+    let nextFreshExpiry = Infinity;
+    const items = matchingTrips.map(trip => {
+        const key = tripKey(trip);
+        const collapsed = collapsedTripKeys.has(key);
+        const elapsed = Date.now() - tripTimestampMs(trip.timestamp);
+        const isFresh = trip.success && elapsed >= 0 && elapsed < 9000;
+        if (isFresh) nextFreshExpiry = Math.min(nextFreshExpiry, 9000 - elapsed);
+        return `
+        <article class="trip-item ${trip.success ? 'success' : 'failure'} ${collapsed ? 'is-collapsed' : ''} ${isFresh ? 'is-fresh' : ''}" ${isFresh ? `style="animation-delay:-${Math.max(0, elapsed)}ms"` : ''}>
+            <i class="far fa-building trip-icon" aria-hidden="true"></i>
+            <div class="trip-body"><div class="trip-info">
+                <span class="trip-address">${escapeHtmlPlayer(trip.district)} · ${escapeHtmlPlayer(formatTripAddressLabel(trip))}</span>
+                <span class="trip-time">${escapeHtmlPlayer(formatTripTime(trip.timestamp))}</span>
+                <span class="trip-status">${trip.success ? 'Найдено' : 'Не найдено'}</span>
                 ${trip.success && trip.address_id && trip.hasChoices ? 
                     `<button type="button" class="btn btn-sm btn-outline-warning ms-2 trip-choice-btn" title="Развилка по выборам"
                         data-address-id="${trip.address_id}"
@@ -375,16 +457,27 @@ function updateTripHistory() {
                 }
             </div>
             <div class="trip-description">${trip.success
-                ? `<strong>Найдено:</strong><div class="trip-description-text">${escapeHtmlPlayer(trip.description || '')}</div>`
+                ? `<div class="trip-description-text">${escapeHtmlPlayer(trip.description || '')}</div>`
                 : `<strong>По этому адресу нет информации</strong>`
             }${trip.success && trip.is_internet_cafe && trip.address_id
                 ? `<div><a href="#" class="trip-cafe-link" data-cafe-address-id="${trip.address_id}">Сесть за компьютер</a></div>`
                 : ''
-            }</div>
-        </div>
-    `).join('');
+            }</div></div>
+            <button type="button" class="trip-toggle" data-trip-key="${escapeHtmlPlayer(key)}" aria-expanded="${!collapsed}" aria-label="${collapsed ? 'Развернуть' : 'Свернуть'} поездку: ${escapeHtmlPlayer(formatTripAddressLabel(trip))}"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>
+        </article>
+    `; }).join('');
 
     container.innerHTML = items;
+    container.querySelectorAll('.trip-toggle').forEach(button => {
+        button.addEventListener('click', () => {
+            const key = button.dataset.tripKey;
+            if (collapsedTripKeys.has(key)) collapsedTripKeys.delete(key);
+            else collapsedTripKeys.add(key);
+            updateTripHistory();
+        });
+    });
+    if (freshTripTimer) clearTimeout(freshTripTimer);
+    if (nextFreshExpiry !== Infinity) freshTripTimer = setTimeout(updateTripHistory, Math.max(100, nextFreshExpiry + 20));
     container.querySelectorAll('.trip-choice-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const id = parseInt(btn.dataset.addressId, 10);
@@ -458,6 +551,7 @@ async function loadScenarioInfo() {
                 
                 if (scenarioName) {
                     setScenarioTitle(scenarioName);
+                    setScenarioBanner(data.room?.scenario_id || data.scenario_id || room?.scenario_id);
                     cachedScenarioName = scenarioName;
                     lastScenarioCheck = Date.now();
                     console.log('Scenario name loaded:', scenarioName);
@@ -476,6 +570,7 @@ async function loadScenarioInfo() {
             if (response.ok) {
                 const data = await response.json();
                 setScenarioTitle(data.scenario.name);
+                setScenarioBanner(data.scenario.id);
                 cachedScenarioName = data.scenario.name;
                 lastScenarioCheck = Date.now();
             } else {

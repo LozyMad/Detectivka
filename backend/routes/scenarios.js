@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Scenario = require('../models/scenario');
+const { getBannerFile } = require('../services/scenarioBanner');
 
 // Публичный endpoint для получения списка сценариев
 router.get('/', async (req, res) => {
@@ -24,6 +25,21 @@ router.get('/active', async (req, res) => {
   } catch (error) {
     console.error('Get active scenario error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Публичный endpoint для получения сценария по ID
+router.get('/:id/banner', async (req, res) => {
+  try {
+    const scenario = await Scenario.getById(req.params.id);
+    const banner = scenario && getBannerFile(req.params.id);
+    if (!banner) return res.status(404).end();
+    res.setHeader('Cache-Control', 'no-store');
+    res.type(banner.extension === 'jpg' ? 'jpeg' : banner.extension);
+    res.sendFile(banner.file);
+  } catch (error) {
+    console.error('Get scenario banner error:', error);
+    res.status(500).end();
   }
 });
 

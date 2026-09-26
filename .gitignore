@@ -83,6 +83,7 @@ migrate-to-postgresql.js
 
 # Backup files
 backups/
+backend/uploads/
 
 # Logs
 logs
