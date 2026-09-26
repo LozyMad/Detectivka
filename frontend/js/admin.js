@@ -593,6 +593,7 @@ function setupEventListeners() {
     // Rooms
     const createRoomForm = document.getElementById('createRoomForm');
     if (createRoomForm) createRoomForm.addEventListener('submit', handleCreateRoom);
+    document.getElementById('roomIsTest')?.addEventListener('change', toggleTestRoomDuration);
     const addRoomUserForm = document.getElementById('addRoomUserForm');
     if (addRoomUserForm) addRoomUserForm.addEventListener('submit', handleAddRoomUser);
     const roomSelectForUsers = document.getElementById('roomSelectForUsers');
@@ -743,6 +744,7 @@ async function loadInitialData() {
     populateScenarioDropdowns();
     ensureStatsScenarioOptions();
     ensureRoomScenarioOptions();
+    if (roomsCache) displayRooms(roomsCache);
     populateAnswersRoomSelect();
 }
 
@@ -2180,23 +2182,31 @@ function ensureRoomScenarioOptions() {
     select.innerHTML = '<option value="">Выберите сценарий...</option>' + options;
 }
 
+function toggleTestRoomDuration() {
+    const isTest = document.getElementById('roomIsTest').checked;
+    document.getElementById('roomDurationField').hidden = isTest;
+    document.getElementById('roomDuration').disabled = isTest;
+}
+
 async function handleCreateRoom(e) {
     e.preventDefault();
     const name = document.getElementById('roomName').value;
     const scenario_id = document.getElementById('roomScenario').value;
     const minutes = parseInt(document.getElementById('roomDuration').value || '60', 10);
-    const duration_seconds = Math.max(60, minutes * 60);
+    const is_test = document.getElementById('roomIsTest').checked;
+    const duration_seconds = is_test ? 0 : Math.max(60, minutes * 60);
     try {
         const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE}/rooms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ name, scenario_id, duration_seconds })
+            body: JSON.stringify({ name, scenario_id, duration_seconds, is_test })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Ошибка создания комнаты');
-        showMessage('Комната создана', 'success');
+        showMessage(is_test ? 'Тестовая комната создана' : 'Комната создана', 'success');
         (e.target).reset();
+        toggleTestRoomDuration();
         await loadRooms(true);
     } catch (err) {
         console.error(err);
@@ -2366,11 +2376,14 @@ function displayRooms(rooms) {
         return `
         <tr>
             <td>${r.id}</td>
-            <td>${r.name}</td>
-            <td style="color: var(--noir-cream) !important;">${scenarioName}</td>
+            <td>${escapeHtml(r.name)} ${r.is_test ? '<span class="badge bg-info text-dark">Тестовая</span>' : ''}</td>
+            <td style="color: var(--noir-cream) !important;">${r.is_test
+                ? `<select class="form-select form-select-sm" aria-label="Сценарий тестовой комнаты" onchange="changeTestRoomScenario(${r.id}, this.value)">${scenarios.map(s => `<option value="${s.id}" ${String(s.id) === String(r.scenario_id) ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select>`
+                : escapeHtml(scenarioName)}</td>
             <td>${r.game_start_time ? new Date(r.game_start_time).toLocaleString('ru-RU') : '-'}</td>
-            <td>${Math.floor((r.duration_seconds||3600)/60)} мин.</td>
+            <td>${r.is_test ? 'Без ограничения' : `${Math.floor((r.duration_seconds||3600)/60)} мин.`}</td>
             <td class="table-actions">
+                ${r.is_test ? `<button class="btn btn-sm btn-primary me-1" onclick="enterTestRoom(${r.id})" title="Войти в тестовую комнату"><i class="fas fa-sign-in-alt me-1"></i>Войти</button>` : `
                 <div class="btn-group btn-group-sm" role="group">
                     <button class="btn btn-outline-success" title="Старт" onclick="startRoom(${r.id})" ${r.state === 'running' ? 'disabled' : ''}>
                         <i class="fas fa-play"></i>
@@ -2384,10 +2397,8 @@ function displayRooms(rooms) {
                     <button class="btn btn-outline-danger" title="Стоп" onclick="stopRoom(${r.id})" ${r.state === 'finished' ? 'disabled' : ''}>
                         <i class="fas fa-stop"></i>
                     </button>
-                </div>
-                <button class="btn btn-sm btn-outline-primary" onclick="viewRoomUsers(${r.id})">
-                    <i class="fas fa-users"></i>
-                </button>
+                </div>`}
+                ${r.is_test ? '' : `<button class="btn btn-sm btn-outline-primary" onclick="viewRoomUsers(${r.id})"><i class="fas fa-users"></i></button>`}
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteRoom(${r.id})" title="Удалить комнату">
                     <i class="fas fa-trash"></i>
                 </button>
@@ -2397,10 +2408,47 @@ function displayRooms(rooms) {
     }).join('');
 }
 
+async function changeTestRoomScenario(roomId, scenarioId) {
+    try {
+        const res = await authFetch(`${API_BASE}/rooms/${roomId}/scenario`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scenario_id: scenarioId })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Не удалось сменить сценарий');
+        showMessage('Сценарий тестовой комнаты изменён', 'success');
+        await loadRooms(true);
+    } catch (error) {
+        showMessage(error.message, 'danger');
+        await loadRooms(true);
+    }
+}
+
+async function enterTestRoom(roomId) {
+    const tab = window.open('about:blank', `detectivka-test-room-${roomId}`);
+    const target = tab || window;
+    try {
+        const res = await authFetch(`${API_BASE}/rooms/${roomId}/test-login`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Не удалось войти в тестовую комнату');
+        target.sessionStorage.setItem('testRoomSession', '1');
+        target.sessionStorage.setItem('token', data.token);
+        target.sessionStorage.setItem('roomUser', JSON.stringify(data.user));
+        target.sessionStorage.setItem('room', JSON.stringify(data.room));
+        target.sessionStorage.removeItem('user');
+        target.location.replace(`/game?test-room=${roomId}`);
+        target.focus();
+    } catch (error) {
+        if (tab) tab.close();
+        showMessage(error.message || 'Не удалось войти в тестовую комнату', 'danger');
+    }
+}
+
 function populateRoomsForUsers(rooms) {
     const select = document.getElementById('roomSelectForUsers');
     if (!select) return;
-    const opts = rooms.map(r => `<option value="${r.id}">${r.name} (#${r.id})</option>`).join('');
+    const opts = rooms.filter(r => !r.is_test).map(r => `<option value="${r.id}">${escapeHtml(r.name)} (#${r.id})</option>`).join('');
     select.innerHTML = '<option value="">Выберите комнату...</option>' + opts;
 }
 
@@ -3822,7 +3870,7 @@ async function populateAnswersRoomSelect() {
         // Очищаем и добавляем опции
         select.innerHTML = '<option value="">Выберите комнату...</option>';
         
-        data.rooms.forEach(room => {
+        data.rooms.filter(room => !room.is_test).forEach(room => {
             const option = document.createElement('option');
             option.value = room.id;
             option.textContent = `${room.name} (${room.scenario_name})`;

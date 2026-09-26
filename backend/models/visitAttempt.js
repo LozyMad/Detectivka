@@ -60,7 +60,7 @@ if (DB_TYPE === 'postgresql') {
          FROM visit_attempts va
          LEFT JOIN users u ON va.user_id = u.id
          LEFT JOIN addresses a ON va.address_id = a.id
-         WHERE va.scenario_id = ?
+         WHERE va.scenario_id = ? AND (va.room_id IS NULL OR NOT EXISTS (SELECT 1 FROM rooms r WHERE r.id = va.room_id AND r.is_test = 1))
          ORDER BY va.attempted_at DESC`,
         [scenarioId],
         (err, rows) => {
@@ -80,7 +80,7 @@ if (DB_TYPE === 'postgresql') {
            SUM(CASE WHEN found = 1 THEN 1 ELSE 0 END) as found_count,
            SUM(CASE WHEN found = 0 THEN 1 ELSE 0 END) as not_found_count
          FROM visit_attempts 
-         WHERE scenario_id = ?
+         WHERE scenario_id = ? AND (room_id IS NULL OR NOT EXISTS (SELECT 1 FROM rooms r WHERE r.id = visit_attempts.room_id AND r.is_test = 1))
          GROUP BY district
          ORDER BY total_attempts DESC`,
         [scenarioId],

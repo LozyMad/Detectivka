@@ -9,7 +9,9 @@ const getRoomState = async (req, res) => {
     let state = room.state || 'pending';
     let remaining = null;
     
-    if (state === 'running' && room.game_start_time && room.game_end_time) {
+    if (room.is_test) {
+      state = 'running';
+    } else if (state === 'running' && room.game_start_time && room.game_end_time) {
       const now = new Date();
       const endTime = new Date(room.game_end_time);
       remaining = Math.max(0, Math.floor((endTime - now) / 1000));
@@ -38,7 +40,8 @@ const getRoomState = async (req, res) => {
         scenario_name: room.scenario_name,
         game_start_time: room.game_start_time,
         game_end_time: room.game_end_time,
-        duration_seconds: room.duration_seconds
+        duration_seconds: room.duration_seconds,
+        is_test: !!room.is_test
       },
       scenario_name: room.scenario_name, // Добавляем scenario_name на верхний уровень
       state,

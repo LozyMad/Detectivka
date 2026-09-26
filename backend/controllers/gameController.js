@@ -40,12 +40,12 @@ const visitLocation = async (req, res) => {
       if (!room) return res.status(403).json({ error: 'Room not found' });
       
       // Check game state
-      if (room.state === 'pending') return res.status(403).json({ error: 'Game has not started yet' });
-      if (room.state === 'paused') return res.status(403).json({ error: 'Game is paused' });
-      if (room.state === 'finished') return res.status(403).json({ error: 'Game time is over' });
+      if (!room.is_test && room.state === 'pending') return res.status(403).json({ error: 'Game has not started yet' });
+      if (!room.is_test && room.state === 'paused') return res.status(403).json({ error: 'Game is paused' });
+      if (!room.is_test && room.state === 'finished') return res.status(403).json({ error: 'Game time is over' });
       
       // Check if game time is over
-      if (room.state === 'running' && room.game_end_time) {
+      if (!room.is_test && room.state === 'running' && room.game_end_time) {
         const now = new Date();
         const endTime = new Date(room.game_end_time);
         if (now > endTime) return res.status(403).json({ error: 'Game time is over' });

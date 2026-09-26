@@ -2,6 +2,8 @@ const express = require('express');
 const { authenticateToken, adminRequired } = require('../middleware/auth');
 const {
   createRoom,
+  changeTestRoomScenario,
+  enterTestRoom,
   listRooms,
   addRoomUser,
   listRoomUsers,
@@ -21,6 +23,8 @@ router.use(adminRequired);
 router.post('/', createRoom);
 router.get('/', listRooms);
 router.delete('/:room_id', deleteRoom);
+router.patch('/:room_id/scenario', changeTestRoomScenario);
+router.post('/:room_id/test-login', enterTestRoom);
 router.post('/:room_id/users', addRoomUser);
 router.get('/:room_id/users', listRoomUsers);
 router.delete('/users/:user_id', removeRoomUser);

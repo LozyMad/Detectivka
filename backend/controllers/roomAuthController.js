@@ -12,6 +12,7 @@ const roomLogin = async (req, res) => {
     }
     const room = await Room.getById(room_id);
     if (!room) return res.status(404).json({ error: 'Room not found' });
+    if (room.is_test) return res.status(403).json({ error: 'Enter test rooms from the admin panel' });
 
     const user = await RoomUser.verifyCredentials(room_id, username, password);
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });

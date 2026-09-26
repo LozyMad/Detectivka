@@ -5,6 +5,7 @@
 (function () {
     const PREFIX = 'persist_';
     const DEBOUNCE_MS = 400;
+    const storage = sessionStorage.getItem('testRoomSession') === '1' ? sessionStorage : localStorage;
 
     function pageKey() {
         const path = typeof window !== 'undefined' && window.location ? window.location.pathname : '';
@@ -19,9 +20,9 @@
     function persistValue(key, value) {
         try {
             if (value == null || value === '') {
-                localStorage.removeItem(key);
+                storage.removeItem(key);
             } else {
-                localStorage.setItem(key, String(value));
+                storage.setItem(key, String(value));
             }
         } catch (e) {
             console.warn('persist-inputs: localStorage error', e);
@@ -30,7 +31,7 @@
 
     function restoreValue(key) {
         try {
-            return localStorage.getItem(key);
+            return storage.getItem(key);
         } catch (e) {
             return null;
         }

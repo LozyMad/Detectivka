@@ -55,7 +55,7 @@ class VisitAttempt {
             `SELECT va.*, u.username 
              FROM visit_attempts va 
              LEFT JOIN users u ON va.user_id = u.id 
-             WHERE va.scenario_id = $1 
+             WHERE va.scenario_id = $1 AND (va.room_id IS NULL OR NOT EXISTS (SELECT 1 FROM rooms r WHERE r.id = va.room_id AND r.is_test = TRUE))
              ORDER BY va.attempted_at DESC`,
             [scenarioId]
         );
@@ -71,7 +71,7 @@ class VisitAttempt {
                 COUNT(DISTINCT user_id) as unique_users,
                 COUNT(DISTINCT district) as districts_visited
             FROM visit_attempts 
-            WHERE scenario_id = $1
+            WHERE scenario_id = $1 AND (room_id IS NULL OR NOT EXISTS (SELECT 1 FROM rooms r WHERE r.id = visit_attempts.room_id AND r.is_test = TRUE))
         `, [scenarioId]);
         
         return result.rows[0];

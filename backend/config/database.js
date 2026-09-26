@@ -161,6 +161,7 @@ const init = async () => {
         scenario_id INTEGER NOT NULL,
         created_by INTEGER NOT NULL,
         duration_seconds INTEGER DEFAULT 3600,
+        is_test BOOLEAN NOT NULL DEFAULT 0,
         game_start_time DATETIME,
         game_end_time DATETIME,
         state TEXT DEFAULT 'pending',
@@ -184,6 +185,9 @@ const init = async () => {
       });
       db.run(`ALTER TABLE rooms ADD COLUMN state TEXT DEFAULT 'pending'`, (err) => {
         // Ignore error if column already exists
+      });
+      db.run(`ALTER TABLE rooms ADD COLUMN is_test BOOLEAN NOT NULL DEFAULT 0`, (err) => {
+        if (err && !err.message.includes('duplicate column')) console.error('rooms is_test:', err);
       });
 
       // Room users (players for a room) table

@@ -87,12 +87,14 @@ const createTables = async () => {
       scenario_id INTEGER REFERENCES scenarios(id),
       created_by INTEGER REFERENCES users(id),
       duration_seconds INTEGER DEFAULT 3600,
+      is_test BOOLEAN NOT NULL DEFAULT FALSE,
       game_start_time TIMESTAMP,
       game_end_time TIMESTAMP,
       state VARCHAR(50) DEFAULT 'pending',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_test BOOLEAN NOT NULL DEFAULT FALSE`);
 
   // Room users table
   await query(`

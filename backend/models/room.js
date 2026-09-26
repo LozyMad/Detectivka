@@ -11,14 +11,15 @@ if (DB_TYPE === 'postgresql') {
   const { db } = require('../config/database');
 
   Room = {
-  create: ({ name, scenario_id, created_by, duration_seconds = 3600 }) => {
+  create: ({ name, scenario_id, created_by, duration_seconds = 3600, is_test = false }) => {
     return new Promise((resolve, reject) => {
       db.run(
-        `INSERT INTO rooms (name, scenario_id, created_by, duration_seconds) VALUES (?, ?, ?, ?)`,
-        [name, scenario_id, created_by, duration_seconds],
+        `INSERT INTO rooms (name, scenario_id, created_by, duration_seconds, is_test, state, game_start_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [name, scenario_id, created_by, is_test ? 0 : duration_seconds, is_test ? 1 : 0,
+          is_test ? 'running' : 'pending', is_test ? new Date().toISOString() : null],
         function(err) {
           if (err) return reject(err);
-          resolve({ id: this.lastID, name, scenario_id, created_by, duration_seconds });
+          resolve({ id: this.lastID, name, scenario_id, created_by, duration_seconds: is_test ? 0 : duration_seconds, is_test });
         }
       );
     });
@@ -47,6 +48,13 @@ if (DB_TYPE === 'postgresql') {
       );
     });
   },
+
+  updateTestScenario: (roomId, scenarioId) => new Promise((resolve, reject) => {
+    db.run(`UPDATE rooms SET scenario_id = ? WHERE id = ? AND is_test = 1`, [scenarioId, roomId], function(err) {
+      if (err) return reject(err);
+      resolve(this.changes > 0);
+    });
+  }),
 
   // Новая простая логика таймера
   startGame: (roomId) => {
@@ -97,7 +105,24 @@ if (DB_TYPE === 'postgresql') {
     });
   },
 
-  delete: (roomId) => {
+  delete: async (roomId) => {
+    const room = await Room.getById(roomId);
+    if (room?.is_test) {
+      const run = (database, sql, params) => new Promise((resolve, reject) => {
+        database.run(sql, params, err => err ? reject(err) : resolve());
+      });
+      const scenarioIds = await new Promise((resolve, reject) => {
+        db.all(`SELECT id FROM scenarios`, [], (err, rows) => err ? reject(err) : resolve(rows));
+      });
+      const { getScenarioDb } = require('../config/scenarioDatabase');
+      for (const scenario of scenarioIds) {
+        await run(getScenarioDb(scenario.id), `DELETE FROM visited_locations WHERE room_id = ?`, [roomId]);
+      }
+      await run(db, `DELETE FROM game_choices WHERE room_user_id IN (SELECT id FROM room_users WHERE room_id = ?)`, [roomId]);
+      await run(db, `DELETE FROM question_answers WHERE room_user_id IN (SELECT id FROM room_users WHERE room_id = ?)`, [roomId]);
+      await run(db, `DELETE FROM visit_attempts WHERE room_id = ?`, [roomId]);
+      await run(db, `DELETE FROM room_users WHERE room_id = ?`, [roomId]);
+    }
     return new Promise((resolve, reject) => {
       db.run(`DELETE FROM rooms WHERE id = ?`, [roomId], function(err) {
         if (err) return reject(err);
@@ -109,5 +134,3 @@ if (DB_TYPE === 'postgresql') {
 }
 
 module.exports = Room;
-
-

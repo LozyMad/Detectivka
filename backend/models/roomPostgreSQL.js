@@ -2,12 +2,13 @@ const { query } = require('../config/database');
 
 const Room = {
     create: async (roomData) => {
-        const { name, scenario_id, created_by, duration_seconds = 3600 } = roomData;
+        const { name, scenario_id, created_by, duration_seconds = 3600, is_test = false } = roomData;
         
         const result = await query(
-            `INSERT INTO rooms (name, scenario_id, created_by, duration_seconds, state) 
-             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [name, scenario_id, created_by, duration_seconds, 'pending']
+            `INSERT INTO rooms (name, scenario_id, created_by, duration_seconds, is_test, state, game_start_time)
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+            [name, scenario_id, created_by, is_test ? 0 : duration_seconds, is_test,
+                is_test ? 'running' : 'pending', is_test ? new Date().toISOString() : null]
         );
         
         return result.rows[0];
@@ -23,6 +24,14 @@ const Room = {
         );
         
         return result.rows[0] || null;
+    },
+
+    updateTestScenario: async (roomId, scenarioId) => {
+        const result = await query(
+            `UPDATE rooms SET scenario_id = $1 WHERE id = $2 AND is_test = TRUE RETURNING id`,
+            [scenarioId, roomId]
+        );
+        return result.rows.length > 0;
     },
 
     getAll: async () => {
@@ -100,12 +109,17 @@ const Room = {
         // 4. Удаляем записи из visit_attempts
         await query(`DELETE FROM visit_attempts WHERE room_id = $1`, [id]);
         
-        // 5. Удаляем записи из visited_locations в схеме сценария
+        // 5. Удаляем посещения тестовой комнаты во всех сценариях, между которыми её переключали
         try {
-            const roomResult = await query(`SELECT scenario_id FROM rooms WHERE id = $1`, [id]);
+            const roomResult = await query(`SELECT scenario_id, is_test FROM rooms WHERE id = $1`, [id]);
             if (roomResult.rows.length > 0) {
-                const scenarioId = roomResult.rows[0].scenario_id;
-                await query(`DELETE FROM scenario_${scenarioId}.visited_locations WHERE room_id = $1`, [id]);
+                const room = roomResult.rows[0];
+                const scenarioIds = room.is_test
+                    ? (await query(`SELECT id FROM scenarios`)).rows.map(scenario => scenario.id)
+                    : [room.scenario_id];
+                for (const scenarioId of scenarioIds) {
+                    await query(`DELETE FROM scenario_${scenarioId}.visited_locations WHERE room_id = $1`, [id]);
+                }
             }
         } catch (error) {
             console.log('Visited locations table does not exist for room', id);
