@@ -1223,31 +1223,83 @@ h1, h2, h3, h4, h5, h6 {
     font-family: 'Times New Roman', Times, serif;
 }
 
-.ie-cafe-home h2 {
-    font-size: 1.4rem;
-    margin-bottom: 1.5rem;
-    font-weight: normal;
+.ie-cafe-home h2,
+.ie-cafe-home p {
+    color: #222 !important;
 }
 
-.ie-cafe-site-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+.ie-cafe-search {
+    width: min(100%, 540px);
+    text-align: left;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
-.ie-cafe-site-list li {
-    margin: 0.75rem 0;
+.ie-cafe-search h2 {
+    margin: 0 0 18px;
+    font-size: 26px;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-weight: normal !important;
+    text-align: center;
 }
 
-.ie-cafe-site-list a {
-    color: #0000ee;
-    font-size: 1.15rem;
+.ie-cafe-search-form {
+    display: flex;
+    gap: 8px;
+}
+
+.ie-cafe-search-form input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid #7f9db9;
+    background: #fff;
+    color: #222;
+    font-size: 16px;
+}
+
+.ie-cafe-search-form button {
+    padding: 9px 18px;
+    border: 1px solid #7f9db9;
+    background: #ece9d8;
+    color: #222;
+    cursor: pointer;
+}
+
+.ie-cafe-search-form button:hover,
+.ie-cafe-search-form button:focus-visible {
+    background: #dce8f5;
+}
+
+.ie-cafe-search-results {
+    margin-top: 20px;
+}
+
+.ie-cafe-search-result {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d5dfea;
+    background: #f8fbff;
+    color: #0000cc;
+    text-align: left;
     text-decoration: underline;
     cursor: pointer;
 }
 
-.ie-cafe-site-list a:visited {
-    color: #551a8b;
+.ie-cafe-search-result:hover,
+.ie-cafe-search-result:focus-visible {
+    background: #eaf2fc;
+}
+
+.ie-cafe-search-result[hidden],
+.ie-cafe-search-empty[hidden] {
+    display: none;
+}
+
+.ie-cafe-search-empty {
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 14px;
 }
 
 .ie-cafe-frame {

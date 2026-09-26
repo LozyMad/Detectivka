@@ -1507,31 +1507,49 @@ function renderCafeHome(pages, emptyMessage) {
     if (addressBar) addressBar.value = 'http://localhost/';
     if (backBtn) backBtn.disabled = true;
 
-    if (!pages || pages.length === 0) {
+    const borisPage = (pages || []).find(page => /бориса?\s+лещ(?:ик|ак)/i.test(page.title || ''));
+    if (!borisPage) {
         content.innerHTML = `
             <div class="ie-cafe-home">
-                <h2>${emptyMessage || 'Вам нечего искать в сети интернет'}</h2>
+                <p>${escapeCafeHtml(emptyMessage || 'Блог Бориса Лещика пока недоступен')}</p>
             </div>`;
         return;
     }
 
-    const links = pages.map(p =>
-        `<li><a href="#" data-page-id="${p.id}">${escapeCafeHtml(p.title)}</a></li>`
-    ).join('');
-
     content.innerHTML = `
         <div class="ie-cafe-home">
-            <h2>Выберите интернет страницу</h2>
-            <ul class="ie-cafe-site-list">${links}</ul>
+            <div class="ie-cafe-search">
+                <h2>Поиск в интернете</h2>
+                <form class="ie-cafe-search-form" role="search">
+                    <label class="visually-hidden" for="ieCafeSearchInput">Название сайта</label>
+                    <input id="ieCafeSearchInput" type="search" autocomplete="off" placeholder="Название сайта">
+                    <button type="submit">Найти</button>
+                </form>
+                <div class="ie-cafe-search-results">
+                    <button type="button" class="ie-cafe-search-result">Блог Бориса Лещика</button>
+                    <p class="ie-cafe-search-empty" hidden>Ничего не найдено</p>
+                </div>
+            </div>
         </div>`;
 
-    content.querySelectorAll('.ie-cafe-site-list a').forEach(a => {
-        a.addEventListener('click', (e) => {
-            e.preventDefault();
-            const pageId = parseInt(a.dataset.pageId, 10);
-            if (pageId) openCafePage(pageId);
-        });
+    const searchInput = content.querySelector('#ieCafeSearchInput');
+    const searchForm = content.querySelector('.ie-cafe-search-form');
+    const searchResult = content.querySelector('.ie-cafe-search-result');
+    const emptyResult = content.querySelector('.ie-cafe-search-empty');
+    const updateResults = () => {
+        const query = searchInput.value.trim().toLocaleLowerCase('ru');
+        const matches = 'блог бориса лещика'.includes(query);
+        searchResult.hidden = !matches;
+        emptyResult.hidden = matches;
+        return matches;
+    };
+
+    searchInput.addEventListener('input', updateResults);
+    searchForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (updateResults()) openCafePage(borisPage.id);
     });
+    searchResult.addEventListener('click', () => openCafePage(borisPage.id));
 }
 
 async function openCafePage(pageId) {
