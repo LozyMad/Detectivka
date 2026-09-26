@@ -1591,7 +1591,10 @@ function renderCafePage(page) {
     iframe.className = 'ie-cafe-frame';
     iframe.setAttribute('sandbox', 'allow-same-origin');
     iframe.addEventListener('load', () => {
-        iframe.contentDocument?.addEventListener('click', (event) => {
+        const pageDocument = iframe.contentDocument;
+        if (!pageDocument) return;
+        applyCafeBlogMobileLayout(pageDocument);
+        pageDocument.addEventListener('click', (event) => {
             const link = event.target?.closest?.('a[href], area[href]');
             if (!link) return;
             event.preventDefault();
@@ -1600,6 +1603,35 @@ function renderCafePage(page) {
     });
     iframe.srcdoc = page.content_html;
     content.replaceChildren(iframe);
+}
+
+function applyCafeBlogMobileLayout(pageDocument) {
+    if (!pageDocument.querySelector('.wrap .main .post') ||
+        !pageDocument.querySelector('.wrap .main .sidebar')) return;
+
+    if (!pageDocument.querySelector('meta[name="viewport"]')) {
+        const viewport = pageDocument.createElement('meta');
+        viewport.name = 'viewport';
+        viewport.content = 'width=device-width, initial-scale=1';
+        pageDocument.head.appendChild(viewport);
+    }
+
+    const style = pageDocument.createElement('style');
+    style.textContent = `
+        @media (max-width: 700px) {
+            .wrap { width: 100% !important; max-width: 100% !important; }
+            .header { padding: 22px 16px !important; }
+            .header h1 { font-size: 24px !important; line-height: 1.2 !important; }
+            .nav { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; gap: 8px 18px !important; }
+            .nav a { margin: 0 !important; }
+            .main { display: block !important; padding: 18px 16px !important; }
+            .post { width: 100% !important; padding-right: 0 !important; border-right: 0 !important; }
+            .post h2, .post p { overflow-wrap: anywhere !important; }
+            .post img { max-width: 100% !important; height: auto !important; }
+            .sidebar { width: 100% !important; padding: 20px 0 0 !important; margin-top: 24px !important; border-top: 1px solid #ccc !important; }
+        }
+    `;
+    pageDocument.head.appendChild(style);
 }
 
 function showCafeNetworkError(href) {
