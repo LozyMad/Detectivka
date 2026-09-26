@@ -66,12 +66,6 @@ body.main-body {
     font-family: var(--font-body);
     line-height: 1.5;
 }
-body::before,
-.game-container::before,
-.main-body::before,
-.admin-login-body::before,
-.game-login-body::before,
-.noir-rain::before { content: none !important; }
 body, .game-container, .main-body { overflow-x: clip; }
 h1, h2, h3, h4, h5, h6,
 .card-title, .modal-title {

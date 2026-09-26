@@ -224,20 +224,10 @@ html:not(.theme-dark) body.game-container {
     background: var(--light-paper-texture), #e7dfcd !important;
 }
 html:not(.theme-dark) #game {
-    --light-canvas: #e7dfcd;
-    --light-surface: #f2ecde;
-    --light-surface-secondary: #ddd5c4;
-    --light-input: #fbf7ee;
-    --light-text: #242720;
-    --light-muted: #60594d;
-    --light-border: #b6a98f;
-    --light-gold: #b99732;
-    --light-shadow: 0 6px 17px rgba(76, 58, 35, .10);
     --board-text: var(--light-text);
-    background: rgba(255, 255, 255, .025);
 }
 html:not(.theme-dark) #game::before {
-    background: var(--light-paper-texture), var(--light-canvas);
+    content: none;
 }
 html:not(.theme-dark) #game .case-banner {
     border-bottom-color: #586251;
