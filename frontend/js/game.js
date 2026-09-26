@@ -14,9 +14,7 @@ let cafeViewMode = 'home'; // 'home' | 'page'
 
 function setScenarioTitle(text) {
     const el = document.getElementById('scenarioTitle');
-    const elM = document.getElementById('scenarioTitleMobile');
     if (el) el.textContent = text;
-    if (elM) elM.textContent = text;
     const caseTitle = document.getElementById('caseTitle');
     if (caseTitle) caseTitle.textContent = text && !/^(ошибка|нет |сценарий не)/i.test(text)
         ? (/^дело(?:\s|$)/i.test(text) ? text : `Дело «${text}»`) : 'Дело расследуется';
@@ -36,11 +34,10 @@ function setScenarioBanner(scenarioId) {
 function setupMobileGameLayout() {
     const toolbar = document.getElementById('playerMobileToolbar');
     const collapse = document.getElementById('navbarCollapse');
-    const scenario = document.getElementById('mobileScenarioGroup');
     const tabs = document.getElementById('playerNavTabs');
     const stats = document.getElementById('playerNavStats');
     const sidebar = document.querySelector('.dossier-sidebar');
-    if (!toolbar || !collapse || !scenario || !tabs || !stats || !sidebar) return;
+    if (!toolbar || !collapse || !tabs || !stats || !sidebar) return;
 
     const tabHome = tabs.parentElement;
     const statHome = stats.parentElement;
@@ -50,13 +47,12 @@ function setupMobileGameLayout() {
     const mobile = window.matchMedia('(max-width: 767.98px)');
     const arrange = () => {
         if (mobile.matches) {
-            toolbar.append(scenario, tabs, stats);
+            toolbar.append(tabs, stats);
             const activePane = document.querySelector('#gameTabContent .tab-pane.active') || document.getElementById('game');
             placeMobileToolbar(activePane);
             collapse.append(sidebar);
         } else {
             tabHome.insertBefore(tabs, statHome);
-            tabHome.insertBefore(scenario, tabs);
             statHome.prepend(stats);
             sidebarHome.append(sidebar);
             toolbarHome.insertBefore(toolbar, toolbarNext);

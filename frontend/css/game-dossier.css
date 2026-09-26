@@ -152,8 +152,6 @@ body.game-container .notes-status { margin: .4rem 0 0; color: #aaa394; font-size
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-card);
     }
-    .player-mobile-toolbar #mobileScenarioGroup { display: block; min-width: 0; }
-    .player-mobile-toolbar #scenarioTitleMobile { display: block; color: var(--toolbar-text) !important; font-size: .78rem !important; font-weight: 600; line-height: 1.25; opacity: .82; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .player-mobile-toolbar #playerNavTabs { display: block !important; width: 100%; }
     .player-mobile-toolbar .btn-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; width: 100%; }
     body.game-container .player-mobile-toolbar .btn-group .btn {
