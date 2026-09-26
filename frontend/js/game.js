@@ -536,7 +536,7 @@ function updateTripHistory() {
                 }
             </div>
             <div class="trip-description">${trip.success
-                ? `<div class="trip-description-text">${escapeHtmlPlayer(trip.description || '')}</div>`
+                ? `<div class="trip-description-text">${renderScenarioText(trip.description || '')}</div>`
                 : `<strong>По этому адресу нет информации</strong>`
             }${trip.success && trip.is_internet_cafe && trip.address_id
                 ? `<div><a href="#" class="trip-cafe-link" data-cafe-address-id="${trip.address_id}">Сесть за компьютер</a></div>`
@@ -817,6 +817,31 @@ function escapeHtmlPlayer(s) {
     if (s == null || s === undefined) return '';
     const t = String(s);
     return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderScenarioText(text) {
+    const source = String(text || '');
+    const anchorPattern = /<a\b[^>]*>[\s\S]*?<\/a\s*>/gi;
+    let result = '';
+    let offset = 0;
+
+    for (const match of source.matchAll(anchorPattern)) {
+        result += escapeHtmlPlayer(source.slice(offset, match.index));
+        const anchor = match[0];
+        const openingTag = anchor.match(/^<a\b[^>]*>/i)?.[0] || '';
+        const href = openingTag.match(/\bhref\s*=\s*(["'])(.*?)\1/i)?.[2];
+        const label = anchor.slice(openingTag.length).replace(/<\/a\s*>$/i, '').replace(/<[^>]*>/g, '').trim();
+        const number = label.match(/^Приложение\s*№?\s*(\d+)$/i)?.[1];
+        let url;
+        try { if (href) url = new URL(href.replace(/&amp;/gi, '&')); } catch (_) {}
+
+        result += number && url && /^https?:$/.test(url.protocol)
+            ? `<a href="${escapeHtmlPlayer(url.href)}" target="_blank" rel="noopener noreferrer">Приложение ${number}</a>`
+            : escapeHtmlPlayer(anchor);
+        offset = match.index + anchor.length;
+    }
+
+    return result + escapeHtmlPlayer(source.slice(offset));
 }
 
 async function loadPlayerAddressBookSectionsAndEntries() {
@@ -1206,7 +1231,7 @@ function showInteractiveChoiceModal(choices, description) {
     // Обновляем описание адреса
     const addressDescElement = document.getElementById('addressDescription');
     if (addressDescElement) {
-        addressDescElement.textContent = description || 'Вы нашли интересное место...';
+        addressDescElement.innerHTML = renderScenarioText(description || 'Вы нашли интересное место...');
     }
     
     // Создаем кнопки выборов
@@ -1317,7 +1342,7 @@ function showChoiceResponse(responseText) {
     
     // Показываем результат
     document.getElementById('choiceResponse').style.display = 'block';
-    document.getElementById('responseText').textContent = responseText;
+    document.getElementById('responseText').innerHTML = renderScenarioText(responseText);
 }
 
 // Открыть выборы из истории поездок
@@ -1384,7 +1409,7 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
 // Показать уже сделанные выборы
 function showExistingChoice(choice, description) {
     // Обновляем описание адреса
-    document.getElementById('addressDescription').textContent = description || 'Локация найдена';
+    document.getElementById('addressDescription').innerHTML = renderScenarioText(description || 'Локация найдена');
     
     // Скрываем варианты выбора
     document.getElementById('choiceOptions').style.display = 'none';
@@ -1392,7 +1417,7 @@ function showExistingChoice(choice, description) {
     // Показываем результат
     document.getElementById('choiceResponse').style.display = 'block';
     document.getElementById('responseText').innerHTML =
-        `<strong>Ваш выбор:</strong> ${escapeHtmlPlayer(choice.choice_text)}\n\n<strong>Результат:</strong> ${escapeHtmlPlayer(choice.response_text)}`;
+        `<strong>Ваш выбор:</strong> ${renderScenarioText(choice.choice_text)}\n\n<strong>Результат:</strong> ${renderScenarioText(choice.response_text)}`;
     
     // Показываем модальное окно
     const modal = new bootstrap.Modal(document.getElementById('choiceModal'));
