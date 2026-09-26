@@ -17,7 +17,7 @@ function setScenarioTitle(text) {
     if (el) el.textContent = text;
     const caseTitle = document.getElementById('caseTitle');
     if (caseTitle) caseTitle.textContent = text && !/^(ошибка|нет |сценарий не)/i.test(text)
-        ? (/^дело(?:\s|$)/i.test(text) ? text : `Дело «${text}»`) : 'Дело расследуется';
+        ? text : 'Дело расследуется';
 }
 
 function setScenarioBanner(scenarioId) {
