@@ -139,24 +139,46 @@ body.game-container .notes-status { margin: .4rem 0 0; color: #aaa394; font-size
 @media (max-width: 991.98px) { #game .dossier-layout { grid-template-columns: minmax(0, 1fr) minmax(235px, .7fr); gap: 1rem; } }
 @media (max-width: 767.98px) {
     .player-mobile-toolbar {
+        --toolbar-surface: #f7f2e8;
+        --toolbar-tab: #ebe3d3;
+        --toolbar-tab-border: #b9ab91;
+        --toolbar-text: #302d27;
         display: grid;
-        gap: .65rem;
+        gap: .55rem;
         margin: .75rem 0 0;
-        padding: .8rem;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border-strong);
+        padding: .72rem;
+        background: var(--toolbar-surface);
+        border: 1px solid var(--toolbar-tab-border);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-card);
     }
-    .player-mobile-toolbar #mobileScenarioGroup { display: block; color: var(--color-muted); font-size: .82rem; }
+    .player-mobile-toolbar #mobileScenarioGroup { display: block; min-width: 0; }
+    .player-mobile-toolbar #scenarioTitleMobile { display: block; color: var(--toolbar-text) !important; font-size: .78rem !important; font-weight: 600; line-height: 1.25; opacity: .82; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .player-mobile-toolbar #playerNavTabs { display: block !important; width: 100%; }
-    .player-mobile-toolbar .btn-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
-    .player-mobile-toolbar .btn-group .btn { min-width: 0; padding: .5rem .25rem; font-size: .84rem; white-space: normal; background: var(--color-surface-raised); border-color: var(--color-border-strong); color: var(--color-text); }
+    .player-mobile-toolbar .btn-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; width: 100%; }
+    body.game-container .player-mobile-toolbar .btn-group .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        min-height: 44px;
+        padding: .3rem .35rem !important;
+        border: 1px solid var(--toolbar-tab-border) !important;
+        border-radius: 6px !important;
+        background: var(--toolbar-tab) !important;
+        color: var(--toolbar-text) !important;
+        font-size: .79rem !important;
+        font-weight: 600;
+        line-height: 1.12;
+        white-space: normal;
+    }
+    body.game-container .player-mobile-toolbar .btn-group .btn:hover { border-color: #a78743 !important; background: var(--color-gold-wash) !important; }
     .player-mobile-toolbar .btn-group .btn i { display: none; }
-    .player-mobile-toolbar .btn-group .btn.active { background: var(--color-gold); border-color: var(--color-gold); color: #171a1c; }
-    .player-mobile-toolbar #playerNavStats { display: flex; flex-wrap: wrap; gap: .5rem .75rem; width: 100%; margin: 0 !important; }
-    .player-mobile-toolbar #usernameDisplay { margin: 0 !important; color: var(--color-text); font-weight: 600; }
-    .player-mobile-toolbar .trips-badge { background: var(--color-gold-wash); border: 1px solid var(--color-gold); color: var(--color-text); }
+    body.game-container .player-mobile-toolbar .btn-group .btn.active { background: #9a7734 !important; border-color: #9a7734 !important; color: #fffaf0 !important; }
+    .player-mobile-toolbar #playerNavStats { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .35rem .5rem; width: 100%; margin: .1rem 0 0 !important; }
+    .player-mobile-toolbar #playerNavStats .badge { padding: .3rem .48rem !important; font-size: .72rem !important; line-height: 1.1; }
+    .player-mobile-toolbar #usernameDisplay { max-width: 48%; margin: 0 !important; color: var(--toolbar-text) !important; font-size: .78rem !important; font-weight: 600; opacity: .86; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    body.game-container .player-mobile-toolbar .trips-badge { background: #eadfbd !important; border: 1px solid #baa66e !important; color: #49391d !important; }
     #navbarCollapse .dossier-sidebar { width: 100%; margin: .75rem 0 .25rem; text-align: left; }
     #game .case-banner { min-height: 125px; padding: 1rem; }
     #game .case-banner-content { gap: .8rem; }
@@ -166,6 +188,24 @@ body.game-container .notes-status { margin: .4rem 0 0; color: #aaa394; font-size
     #game .location-search-card { padding: 1.1rem !important; }
     #game .trip-history-heading { align-items: stretch; flex-direction: column; }
     #game #tripSearch { width: 100%; }
+}
+@media (max-width: 767.98px) {
+    html.theme-dark body.game-container .player-mobile-toolbar {
+        --toolbar-surface: #292e2b;
+        --toolbar-tab: #363d38;
+        --toolbar-tab-border: #707366;
+        --toolbar-text: #f0eadc;
+    }
+    html.theme-dark body.game-container .player-mobile-toolbar .btn-group .btn.active {
+        background: #d2ad5d !important;
+        border-color: #d2ad5d !important;
+        color: #20241f !important;
+    }
+    html.theme-dark body.game-container .player-mobile-toolbar .trips-badge {
+        background: #463c28 !important;
+        border-color: #a48b52 !important;
+        color: #f1d795 !important;
+    }
 }
 @media (prefers-reduced-motion: reduce) { #game .trip-item.success.is-fresh { animation: none; background: #375543 !important; } #game .trip-toggle i { transition: none; } }
 
