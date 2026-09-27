@@ -164,6 +164,8 @@ const init = async () => {
         is_test BOOLEAN NOT NULL DEFAULT 0,
         game_start_time DATETIME,
         game_end_time DATETIME,
+        paused_at DATETIME,
+        halfway_paused INTEGER NOT NULL DEFAULT 0,
         state TEXT DEFAULT 'pending',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(scenario_id) REFERENCES scenarios(id),
@@ -189,6 +191,13 @@ const init = async () => {
       db.run(`ALTER TABLE rooms ADD COLUMN is_test BOOLEAN NOT NULL DEFAULT 0`, (err) => {
         if (err && !err.message.includes('duplicate column')) console.error('rooms is_test:', err);
       });
+      db.run(`ALTER TABLE rooms ADD COLUMN paused_at DATETIME`, (err) => {
+        if (err && !err.message.includes('duplicate column')) console.error('rooms paused_at:', err);
+      });
+      db.run(`ALTER TABLE rooms ADD COLUMN halfway_paused INTEGER NOT NULL DEFAULT 0`, (err) => {
+        if (err && !err.message.includes('duplicate column')) console.error('rooms halfway_paused:', err);
+      });
+      db.run(`UPDATE rooms SET paused_at = ? WHERE state = 'paused' AND paused_at IS NULL`, [new Date().toISOString()]);
 
       // Room users (players for a room) table
       db.run(`CREATE TABLE IF NOT EXISTS room_users (

@@ -39,6 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAdminAuth();
     setupEventListeners();
     loadInitialData();
+    setInterval(() => {
+        if (document.visibilityState === 'visible' && document.getElementById('rooms-tab')?.style.display === 'block') {
+            loadRooms(true);
+        }
+    }, 5000);
 });
 
 function checkAdminAuth() {
@@ -641,14 +646,7 @@ function switchTab(tabName) {
         ensureStatsScenarioOptions();
         // Don't auto-load; let user click refresh
     } else if (tabName === 'rooms') {
-        // Если данные уже загружены, показываем их сразу
-        if (roomsCache && roomsCache.length > 0) {
-            displayRooms(roomsCache);
-            populateRoomsForUsers(roomsCache);
-        } else {
-            // Иначе загружаем без показа индикатора загрузки
-            loadRooms();
-        }
+        loadRooms(true);
         ensureRoomScenarioOptions();
     } else if (tabName === 'answers') {
         populateAnswersRoomSelect();
@@ -1810,7 +1808,7 @@ async function deleteScenario(scenarioId) {
             // If we're viewing addresses for this scenario, clear the table
             const viewScenarioId = document.getElementById('viewAddressScenario').value;
             if (viewScenarioId === scenarioId.toString()) {
-                document.getElementById('addressesTable').innerHTML = '<tr><td colspan="5" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
+                document.getElementById('addressesTable').innerHTML = '<tr><td colspan="9" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
             }
         } else {
             const data = await response.json();
@@ -1887,7 +1885,7 @@ async function loadAddressesForScenario() {
     
     if (!scenarioId) {
         currentScenarioAddresses = [];
-        addressesTable.innerHTML = '<tr><td colspan="8" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
+        addressesTable.innerHTML = '<tr><td colspan="9" class="text-center">Выберите сценарий для просмотра адресов</td></tr>';
         return;
     }
     
@@ -1905,7 +1903,7 @@ async function loadAddressesForScenario() {
             
             if (addresses.length === 0) {
                 currentScenarioAddresses = [];
-                addressesTable.innerHTML = '<tr><td colspan="8" class="text-center">Адреса для этого сценария не найдены</td></tr>';
+                addressesTable.innerHTML = '<tr><td colspan="9" class="text-center">Адреса для этого сценария не найдены</td></tr>';
             } else {
                 currentScenarioAddresses = addresses;
                 const addressesWithChoices = await Promise.all(
@@ -1924,6 +1922,11 @@ async function loadAddressesForScenario() {
                         <td>${escapeHtml(address.apartment || '-')}</td>
                         <td class="address-desc-cell">${escapeHtml(address.description || '-')}</td>
                         <td class="text-center">
+                            ${(address.application_numbers || []).length
+                                ? address.application_numbers.map(number => `<span class="badge bg-warning text-dark d-inline-block mb-1">Приложение ${Number(number)}</span>`).join(' ')
+                                : '<span class="text-muted">—</span>'}
+                        </td>
+                        <td class="text-center">
                             ${address.hasChoices ? 
                                 '<span class="badge bg-success"><i class="fas fa-check"></i> Есть</span>' : 
                                 '<span class="badge bg-secondary">Нет</span>'
@@ -1936,7 +1939,7 @@ async function loadAddressesForScenario() {
                             }
                         </td>
                         <td class="table-actions">
-                            <button class="btn btn-sm btn-outline-warning me-1" title="Редактировать текст"
+                            <button class="btn btn-sm btn-outline-warning me-1" title="Редактировать адрес и приложения"
                                     onclick="openEditAddressModal(${scenarioId}, ${address.id})">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -1955,12 +1958,12 @@ async function loadAddressesForScenario() {
         } else {
             const data = await response.json();
             showMessage(data.error || 'Ошибка загрузки адресов', 'danger');
-            addressesTable.innerHTML = '<tr><td colspan="8" class="text-center">Ошибка загрузки адресов</td></tr>';
+            addressesTable.innerHTML = '<tr><td colspan="9" class="text-center">Ошибка загрузки адресов</td></tr>';
         }
     } catch (error) {
         console.error('Error loading addresses:', error);
         showMessage('Ошибка соединения', 'danger');
-        addressesTable.innerHTML = '<tr><td colspan="8" class="text-center">Ошибка соединения</td></tr>';
+        addressesTable.innerHTML = '<tr><td colspan="9" class="text-center">Ошибка соединения</td></tr>';
     }
 }
 
@@ -2376,7 +2379,7 @@ function displayRooms(rooms) {
         return `
         <tr>
             <td>${r.id}</td>
-            <td>${escapeHtml(r.name)} ${r.is_test ? '<span class="badge bg-info text-dark">Тестовая</span>' : ''}</td>
+            <td>${escapeHtml(r.name)} ${r.is_test ? '<span class="badge bg-info text-dark">Тестовая</span>' : ''}${r.state === 'paused' ? ' <span class="badge bg-warning text-dark">На паузе</span>' : ''}</td>
             <td style="color: var(--noir-cream) !important;">${r.is_test
                 ? `<select class="form-select form-select-sm" aria-label="Сценарий тестовой комнаты" onchange="changeTestRoomScenario(${r.id}, this.value)">${scenarios.map(s => `<option value="${s.id}" ${String(s.id) === String(r.scenario_id) ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select>`
                 : escapeHtml(scenarioName)}</td>
@@ -2385,14 +2388,11 @@ function displayRooms(rooms) {
             <td class="table-actions">
                 ${r.is_test ? `<button class="btn btn-sm btn-primary me-1" onclick="enterTestRoom(${r.id})" title="Войти в тестовую комнату"><i class="fas fa-sign-in-alt me-1"></i>Войти</button>` : `
                 <div class="btn-group btn-group-sm" role="group">
-                    <button class="btn btn-outline-success" title="Старт" onclick="startRoom(${r.id})" ${r.state === 'running' ? 'disabled' : ''}>
+                    <button class="btn btn-outline-success" title="${r.state === 'paused' ? 'Продолжить' : 'Старт'}" onclick="${r.state === 'paused' ? 'resumeRoom' : 'startRoom'}(${r.id})" ${r.state === 'running' ? 'disabled' : ''}>
                         <i class="fas fa-play"></i>
                     </button>
                     <button class="btn btn-outline-warning" title="Пауза" onclick="pauseRoom(${r.id})" ${r.state !== 'running' ? 'disabled' : ''}>
                         <i class="fas fa-pause"></i>
-                    </button>
-                    <button class="btn btn-outline-info" title="Продолжить" onclick="resumeRoom(${r.id})" ${r.state !== 'paused' ? 'disabled' : ''}>
-                        <i class="fas fa-rotate-right"></i>
                     </button>
                     <button class="btn btn-outline-danger" title="Стоп" onclick="stopRoom(${r.id})" ${r.state === 'finished' ? 'disabled' : ''}>
                         <i class="fas fa-stop"></i>
@@ -3311,12 +3311,92 @@ function openEditAddressModal(scenarioId, addressId) {
     document.getElementById('editAddressHouseNumber').value = address.house_number || '';
     document.getElementById('editAddressApartment').value = address.apartment || '';
     document.getElementById('editAddressDescription').value = address.description || '';
+    document.getElementById('applicationNumber').value = '';
+    document.getElementById('applicationFolder').value = '';
+    loadAddressApplications(scenarioId, addressId);
 
     const modalEl = document.getElementById('editAddressModal');
     if (!editAddressModalInstance) {
         editAddressModalInstance = new bootstrap.Modal(modalEl);
     }
     editAddressModalInstance.show();
+}
+
+async function loadAddressApplications(scenarioId, addressId) {
+    const target = document.getElementById('editAddressApplications');
+    target.textContent = 'Загрузка…';
+    try {
+        const response = await authFetch(`${API_BASE}/applications/admin/scenarios/${scenarioId}/addresses/${addressId}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Не удалось загрузить приложения');
+        if (document.getElementById('editAddressId').value !== String(addressId)) return;
+        target.innerHTML = data.applications.length ? data.applications.map(app => `
+            <div class="border rounded p-2 mb-2">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                    <strong>Приложение ${app.number}</strong>
+                    <button type="button" class="btn btn-sm btn-outline-danger application-delete-btn" data-number="${app.number}">Удалить</button>
+                </div>
+                <div class="small text-muted">${app.files.map((file, index) => escapeHtml(displayAdminApplicationFileName(file, index))).join(' · ')}</div>
+            </div>`).join('') : '<span class="text-muted">Пока ничего не прикреплено</span>';
+        target.querySelectorAll('.application-delete-btn').forEach(button => button.addEventListener('click', () =>
+            deleteAddressApplication(scenarioId, addressId, button.dataset.number)));
+    } catch (error) {
+        target.textContent = error.message;
+    }
+}
+
+function displayAdminApplicationFileName(file, index) {
+    const base = String(file?.name || '').replace(/\.(?:png|jpe?g|webp|pdf)$/i, '').trim();
+    return !base || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(base)
+        ? `Материал ${index + 1}` : base;
+}
+
+async function uploadAddressApplication() {
+    const scenarioId = document.getElementById('editAddressScenarioId').value;
+    const addressId = document.getElementById('editAddressId').value;
+    const number = Number(document.getElementById('applicationNumber').value);
+    const files = [...document.getElementById('applicationFolder').files];
+    if (!Number.isSafeInteger(number) || number < 1 || !files.length) {
+        showMessage('Укажите номер приложения и выберите папку', 'warning');
+        return;
+    }
+    if (files.some(file => !/\.(png|jpe?g|webp|pdf)$/i.test(file.name))) {
+        showMessage('В папке должны быть только изображения или PDF', 'warning');
+        return;
+    }
+    const button = document.getElementById('uploadApplicationBtn');
+    const form = new FormData();
+    files.forEach(file => form.append('files', file, file.name));
+    button.disabled = true;
+    button.textContent = 'Загрузка…';
+    try {
+        const response = await authFetch(`${API_BASE}/applications/admin/scenarios/${scenarioId}/addresses/${addressId}/${number}`, {
+            method: 'POST', body: form
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Не удалось загрузить папку');
+        document.getElementById('applicationFolder').value = '';
+        showMessage(`Приложение ${number} прикреплено`, 'success');
+        await loadAddressApplications(scenarioId, addressId);
+        if (document.getElementById('viewAddressScenario').value === String(scenarioId)) await loadAddressesForScenario();
+    } catch (error) {
+        showMessage(error.message, 'danger');
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Прикрепить папку';
+    }
+}
+
+async function deleteAddressApplication(scenarioId, addressId, number) {
+    if (!confirm(`Удалить приложение ${number} с этого адреса?`)) return;
+    try {
+        const response = await authFetch(`${API_BASE}/applications/admin/scenarios/${scenarioId}/addresses/${addressId}/${number}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error((await response.json()).error || 'Не удалось удалить приложение');
+        await loadAddressApplications(scenarioId, addressId);
+        if (document.getElementById('viewAddressScenario').value === String(scenarioId)) await loadAddressesForScenario();
+    } catch (error) {
+        showMessage(error.message, 'danger');
+    }
 }
 
 async function saveEditedAddress() {

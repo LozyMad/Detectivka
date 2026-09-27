@@ -5,6 +5,8 @@ let roomState = null;
 let roomTimerInterval = null;
 let tripCount = 0;
 let tripHistory = [];
+let receivedApplications = new Map();
+let receivedApplicationAddresses = new Map();
 const collapsedTripKeys = new Set();
 let freshTripTimer = null;
 let cachedScenarioName = null; // Кэш для имени сценария
@@ -13,6 +15,8 @@ let roomEventSource = null;
 let currentCafeAddressId = null;
 let currentCafePage = null;
 let cafeViewMode = 'home'; // 'home' | 'page' | 'error'
+let applicationObjectUrl = null;
+let applicationRequestId = 0;
 
 function setScenarioTitle(text) {
     const el = document.getElementById('scenarioTitle');
@@ -176,11 +180,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (collapseEl && iconEl) {
         collapseEl.addEventListener('show.bs.collapse', () => {
             iconEl.classList.remove('fa-chevron-down'); iconEl.classList.add('fa-chevron-up');
-            menuButton?.setAttribute('aria-label', 'Закрыть локацию и заметки');
+            menuButton?.setAttribute('aria-label', 'Закрыть приложения и заметки');
         });
         collapseEl.addEventListener('hide.bs.collapse', () => {
             iconEl.classList.remove('fa-chevron-up'); iconEl.classList.add('fa-chevron-down');
-            menuButton?.setAttribute('aria-label', 'Открыть локацию и заметки');
+            menuButton?.setAttribute('aria-label', 'Открыть приложения и заметки');
         });
     }
     
@@ -242,6 +246,10 @@ function setupDistrictSelect() {
 }
 
 async function visitLocation() {
+    if (roomState?.state === 'paused') {
+        showRoomPausedPopup();
+        return;
+    }
     if (roomState && roomState.state !== 'running') {
         alert('Игра еще не началась или уже завершилась');
         return;
@@ -290,6 +298,13 @@ async function visitLocation() {
         });
         
         const data = await response.json();
+
+        if (response.status === 403 && data.error === 'Game is paused') {
+            await refreshRoomState();
+            renderTimer();
+            if (roomState?.state !== 'paused') showRoomPausedPopup();
+            return;
+        }
         
         // Увеличиваем счетчик поездок независимо от результата
         tripCount++;
@@ -312,6 +327,7 @@ async function visitLocation() {
             };
             tripHistory.unshift(trip);
             updateTripHistory();
+            refreshAvailableApplications();
             
             document.getElementById('houseNumber').value = '';
             if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
@@ -357,6 +373,15 @@ async function visitLocation() {
         updateTripHistory();
         document.getElementById('houseNumber').value = '';
         if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
+    }
+}
+
+function showRoomPausedPopup() {
+    const modal = document.getElementById('roomPausedModal');
+    if (modal && window.bootstrap?.Modal) {
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+    } else {
+        alert('Игра на паузе. Новые поездки пока недоступны.');
     }
 }
 
@@ -458,6 +483,7 @@ async function loadTripHistory() {
         }));
         
         updateTripHistory();
+        await refreshAvailableApplications();
         
     } catch (error) {
         console.error('Error loading trip history:', error);
@@ -484,23 +510,50 @@ function tripTimestampMs(timestamp) {
     return new Date(normalized).getTime();
 }
 
-function updateLatestLocation() {
-    const target = document.getElementById('latestLocationContent');
+async function refreshAvailableApplications() {
+    const token = gameStorage.getItem('token');
+    if (!token) return;
+    try {
+        const response = await fetch(`${API_BASE}/applications/game/available`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Не удалось загрузить приложения');
+        const data = await response.json();
+        receivedApplications = new Map((data.addresses || []).map(item => [Number(item.address_id), item.applications || []]));
+        receivedApplicationAddresses = new Map((data.addresses || []).map(item => [Number(item.address_id), item]));
+        updateTripHistory();
+    } catch (error) {
+        console.error('Error loading available applications:', error);
+    }
+}
+
+function updateReceivedApplications() {
+    const target = document.getElementById('receivedApplicationsList');
     if (!target) return;
-    const latest = tripHistory.find(trip => trip.success);
-    if (!latest) {
-        target.textContent = 'Пока не найдена ни одна локация';
+    const items = [];
+    for (const [addressId, applications] of receivedApplications) {
+        const address = receivedApplicationAddresses.get(addressId) || {};
+        const label = `${address.district || ''} · Дом ${address.house_number || ''}${address.apartment ? ', кв. ' + address.apartment : ''}`;
+        for (const app of applications) {
+            items.push({ ...app, addressId, address: label });
+        }
+    }
+    items.sort((a, b) => a.number - b.number);
+    if (!items.length) {
+        target.textContent = 'Пока нет приложений';
         return;
     }
-    const names = Array.isArray(latest.locationNames) ? latest.locationNames.filter(Boolean) : [];
-    target.innerHTML = `<div class="latest-location-address"><i class="far fa-building" aria-hidden="true"></i><div><strong>${escapeHtmlPlayer(`Дом ${latest.houseNumber}`)}</strong>${names.length ? `<div>${escapeHtmlPlayer(names.join(' / '))}</div>` : ''}<small>${escapeHtmlPlayer(latest.district)} · ${escapeHtmlPlayer(formatTripTime(latest.timestamp))}</small></div></div>`;
+    target.innerHTML = items.map(app => `<button type="button" class="received-application scenario-application-link" data-address-id="${app.addressId}" data-number="${app.number}">
+        <i class="far fa-folder-open" aria-hidden="true"></i> Приложение ${app.number}
+        <small>${escapeHtmlPlayer(app.address)} · ${app.file_count} файл(ов)</small>
+    </button>`).join('');
 }
 
 // Обновление отображения истории поездок
 function updateTripHistory() {
     const container = document.getElementById('tripHistory');
     if (!container) return;
-    updateLatestLocation();
+    updateReceivedApplications();
     const query = (document.getElementById('tripSearch')?.value || '').trim().toLocaleLowerCase('ru-RU');
     const matchingTrips = query ? tripHistory.filter(trip =>
         [trip.district, formatTripAddressLabel(trip), trip.description, trip.success ? 'найдено' : 'не найдено']
@@ -518,6 +571,7 @@ function updateTripHistory() {
     let nextFreshExpiry = Infinity;
     const items = matchingTrips.map(trip => {
         const key = tripKey(trip);
+        const apps = trip.success && trip.address_id ? (receivedApplications.get(Number(trip.address_id)) || []) : [];
         const collapsed = collapsedTripKeys.has(key);
         const elapsed = Date.now() - tripTimestampMs(trip.timestamp);
         const isFresh = trip.success && elapsed >= 0 && elapsed < 9000;
@@ -529,6 +583,7 @@ function updateTripHistory() {
                 <span class="trip-address">${escapeHtmlPlayer(trip.district)} · ${escapeHtmlPlayer(formatTripAddressLabel(trip))}</span>
                 <span class="trip-time">${escapeHtmlPlayer(formatTripTime(trip.timestamp))}</span>
                 <span class="trip-status">${trip.success ? 'Найдено' : 'Не найдено'}</span>
+                ${apps.map(app => `<button type="button" class="trip-app-badge scenario-application-link" data-address-id="${Number(trip.address_id)}" data-number="${app.number}" title="Открыть приложение ${app.number}"><i class="far fa-folder-open" aria-hidden="true"></i> №${app.number}</button>`).join('')}
                 ${trip.success && trip.address_id && trip.hasChoices ? 
                     `<button type="button" class="btn btn-sm btn-outline-warning ms-2 trip-choice-btn" title="Развилка по выборам"
                         data-address-id="${trip.address_id}"
@@ -539,8 +594,13 @@ function updateTripHistory() {
                 }
             </div>
             <div class="trip-description">${trip.success
-                ? `<div class="trip-description-text">${renderScenarioText(trip.description || '')}</div>`
+                ? `<div class="trip-description-text">${renderScenarioText(trip.description || '', trip.address_id)}</div>`
                 : `<strong>По этому адресу нет информации</strong>`
+            }${apps.length
+                ? `<div class="trip-application-links">${apps.map(app =>
+                    `<button type="button" class="trip-application-button scenario-application-link" data-address-id="${Number(trip.address_id)}" data-number="${app.number}"><i class="far fa-folder-open" aria-hidden="true"></i> Приложение ${app.number}</button>`
+                ).join('')}</div>`
+                : ''
             }${trip.success && trip.is_internet_cafe && trip.address_id
                 ? `<div><a href="#" class="trip-cafe-link" data-cafe-address-id="${trip.address_id}">Сесть за компьютер</a></div>`
                 : ''
@@ -688,7 +748,11 @@ async function refreshRoomState() {
             }
         });
         if (!res.ok) return;
+        const previousState = roomState?.state;
         roomState = await res.json();
+        if (roomState.state === 'paused' && previousState !== 'paused') {
+            showRoomPausedPopup();
+        }
         if (roomState?.room?.is_test && String(roomState.room.scenario_id) !== String(room.scenario_id)) {
             gameStorage.setItem('room', JSON.stringify({ ...room, scenario_id: roomState.room.scenario_id }));
             window.location.reload();
@@ -841,14 +905,34 @@ function escapeHtmlPlayer(s) {
     return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function renderScenarioText(text) {
+function displayApplicationFileName(file, index) {
+    const base = String(file?.name || '').replace(/\.(?:png|jpe?g|webp|pdf)$/i, '').trim();
+    return !base || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(base)
+        ? `Материал ${index + 1}` : base;
+}
+
+function applicationLink(number, addressId, fallbackUrl = '') {
+    return `<a href="#" class="scenario-application-link" data-address-id="${Number(addressId)}" data-number="${Number(number)}"${fallbackUrl ? ` data-fallback-url="${escapeHtmlPlayer(fallbackUrl)}"` : ''}>Приложение ${Number(number)}</a>`;
+}
+
+function renderScenarioText(text, addressId = null) {
     const source = String(text || '');
     const anchorPattern = /<a\b[^>]*>[\s\S]*?<\/a\s*>/gi;
     let result = '';
     let offset = 0;
 
+    const renderPlainText = value => {
+        if (!addressId) return escapeHtmlPlayer(value);
+        return value.replace(/Приложение\s*№?\s*(\d+)/gi, (match, number, index) => {
+            const before = value.slice(0, index).slice(-1);
+            if (before && /[\p{L}\p{N}]/u.test(before)) return match;
+            return `\u0000${number}\u0000`;
+        }).split(/(\u0000\d+\u0000)/).map(part => /^\u0000\d+\u0000$/.test(part)
+            ? applicationLink(part.slice(1, -1), addressId) : escapeHtmlPlayer(part)).join('');
+    };
+
     for (const match of source.matchAll(anchorPattern)) {
-        result += escapeHtmlPlayer(source.slice(offset, match.index));
+        result += renderPlainText(source.slice(offset, match.index));
         const anchor = match[0];
         const openingTag = anchor.match(/^<a\b[^>]*>/i)?.[0] || '';
         const href = openingTag.match(/\bhref\s*=\s*(["'])(.*?)\1/i)?.[2];
@@ -857,14 +941,124 @@ function renderScenarioText(text) {
         let url;
         try { if (href) url = new URL(href.replace(/&amp;/gi, '&')); } catch (_) {}
 
-        result += number && url && /^https?:$/.test(url.protocol)
+        result += number && addressId
+            ? applicationLink(number, addressId, url && /^https?:$/.test(url.protocol) ? url.href : '')
+            : number && url && /^https?:$/.test(url.protocol)
             ? `<a href="${escapeHtmlPlayer(url.href)}" target="_blank" rel="noopener noreferrer">Приложение ${number}</a>`
             : escapeHtmlPlayer(anchor);
         offset = match.index + anchor.length;
     }
 
-    return result + escapeHtmlPlayer(source.slice(offset));
+    return result + renderPlainText(source.slice(offset));
 }
+
+function clearApplicationPreview() {
+    document.getElementById('applicationPreview').replaceChildren();
+    if (applicationObjectUrl) URL.revokeObjectURL(applicationObjectUrl);
+    applicationObjectUrl = null;
+}
+
+function closeApplicationFolder() {
+    applicationRequestId++;
+    clearApplicationPreview();
+    const overlay = document.getElementById('applicationOverlay');
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = overlay.dataset.previousOverflow || '';
+}
+
+function showApplicationFiles() {
+    clearApplicationPreview();
+    document.getElementById('applicationPreview').style.display = 'none';
+    document.getElementById('applicationFiles').style.display = 'block';
+    document.getElementById('applicationBackBtn').disabled = true;
+    document.getElementById('applicationTitle').textContent = document.getElementById('applicationOverlay').dataset.title || 'Приложение';
+}
+
+async function openApplicationFolder(addressId, number, fallbackUrl = '') {
+    const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
+    const token = gameStorage.getItem('token');
+    if (!scenarioId || !token) return;
+    const requestId = ++applicationRequestId;
+    const overlay = document.getElementById('applicationOverlay');
+    overlay.dataset.title = `Приложение ${number}`;
+    if (!overlay.classList.contains('is-open')) overlay.dataset.previousOverflow = document.body.style.overflow;
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    showApplicationFiles();
+    const list = document.getElementById('applicationFiles');
+    list.textContent = 'Загрузка файлов…';
+    const base = `${API_BASE}/applications/game/scenarios/${encodeURIComponent(scenarioId)}/addresses/${encodeURIComponent(addressId)}/${encodeURIComponent(number)}`;
+    try {
+        const response = await fetch(base, { headers: { Authorization: `Bearer ${token}` } });
+        if (response.status === 404 && fallbackUrl) {
+            if (requestId === applicationRequestId) {
+                list.innerHTML = `<p>Эта папка ещё не загружена в сценарий.</p><a href="${escapeHtmlPlayer(fallbackUrl)}" target="_blank" rel="noopener noreferrer">Открыть прежнюю ссылку</a>`;
+            }
+            return;
+        }
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Не удалось открыть приложение');
+        if (requestId !== applicationRequestId) return;
+        const files = data.application.files || [];
+        list.innerHTML = files.length ? files.map((file, index) => `
+            <button type="button" class="application-file" data-file-index="${index}">
+                <i class="fas ${file.type === 'application/pdf' ? 'fa-file-pdf' : 'fa-file-image'}" aria-hidden="true"></i>
+                <span>${escapeHtmlPlayer(displayApplicationFileName(file, index))}</span>
+            </button>`).join('') : 'В этой папке пока нет файлов';
+        list.querySelectorAll('.application-file').forEach(button => button.addEventListener('click', () =>
+            openApplicationFile(base, files[Number(button.dataset.fileIndex)], Number(button.dataset.fileIndex), token)));
+    } catch (error) {
+        if (requestId === applicationRequestId) list.textContent = error.message;
+    }
+}
+
+async function openApplicationFile(base, file, index, token) {
+    const requestId = ++applicationRequestId;
+    const preview = document.getElementById('applicationPreview');
+    preview.style.display = 'block';
+    document.getElementById('applicationFiles').style.display = 'none';
+    document.getElementById('applicationBackBtn').disabled = false;
+    const displayName = displayApplicationFileName(file, index);
+    document.getElementById('applicationTitle').textContent = displayName;
+    clearApplicationPreview();
+    preview.textContent = 'Загрузка файла…';
+    try {
+        const response = await fetch(`${base}/files/${encodeURIComponent(file.id)}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Не удалось загрузить файл');
+        const blob = await response.blob();
+        if (requestId !== applicationRequestId) return;
+        clearApplicationPreview();
+        applicationObjectUrl = URL.createObjectURL(blob);
+        const viewer = document.createElement(file.type === 'application/pdf' ? 'iframe' : 'img');
+        viewer.src = applicationObjectUrl;
+        viewer.title = displayName;
+        viewer.alt = displayName;
+        preview.append(viewer);
+    } catch (error) {
+        if (requestId === applicationRequestId) preview.textContent = error.message;
+    }
+}
+
+document.addEventListener('click', event => {
+    const link = event.target.closest('.scenario-application-link');
+    if (!link) return;
+    event.preventDefault();
+    openApplicationFolder(link.dataset.addressId, link.dataset.number, link.dataset.fallbackUrl || '');
+});
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('applicationCloseBtn')?.addEventListener('click', closeApplicationFolder);
+    document.getElementById('applicationBackBtn')?.addEventListener('click', () => { applicationRequestId++; showApplicationFiles(); });
+    document.getElementById('applicationOverlay')?.addEventListener('click', event => {
+        if (event.target.id === 'applicationOverlay') closeApplicationFolder();
+    });
+});
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && document.getElementById('applicationOverlay')?.classList.contains('is-open')) closeApplicationFolder();
+});
 
 async function loadPlayerAddressBookSectionsAndEntries() {
     const token = gameStorage.getItem('token');
@@ -1253,7 +1447,7 @@ function showInteractiveChoiceModal(choices, description) {
     // Обновляем описание адреса
     const addressDescElement = document.getElementById('addressDescription');
     if (addressDescElement) {
-        addressDescElement.innerHTML = renderScenarioText(description || 'Вы нашли интересное место...');
+        addressDescElement.innerHTML = renderScenarioText(description || 'Вы нашли интересное место...', currentAddressId);
     }
     
     // Создаем кнопки выборов
@@ -1364,12 +1558,13 @@ function showChoiceResponse(responseText) {
     
     // Показываем результат
     document.getElementById('choiceResponse').style.display = 'block';
-    document.getElementById('responseText').innerHTML = renderScenarioText(responseText);
+    document.getElementById('responseText').innerHTML = renderScenarioText(responseText, currentAddressId);
 }
 
 // Открыть выборы из истории поездок
 async function openChoiceHistory(addressId, description, visitedLocationId) {
     try {
+        currentAddressId = addressId;
         const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
         if (!scenarioId) {
             console.log('No scenario ID available');
@@ -1431,7 +1626,7 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
 // Показать уже сделанные выборы
 function showExistingChoice(choice, description) {
     // Обновляем описание адреса
-    document.getElementById('addressDescription').innerHTML = renderScenarioText(description || 'Локация найдена');
+    document.getElementById('addressDescription').innerHTML = renderScenarioText(description || 'Локация найдена', currentAddressId);
     
     // Скрываем варианты выбора
     document.getElementById('choiceOptions').style.display = 'none';
@@ -1439,7 +1634,7 @@ function showExistingChoice(choice, description) {
     // Показываем результат
     document.getElementById('choiceResponse').style.display = 'block';
     document.getElementById('responseText').innerHTML =
-        `<strong>Ваш выбор:</strong> ${renderScenarioText(choice.choice_text)}\n\n<strong>Результат:</strong> ${renderScenarioText(choice.response_text)}`;
+        `<strong>Ваш выбор:</strong> ${renderScenarioText(choice.choice_text, currentAddressId)}\n\n<strong>Результат:</strong> ${renderScenarioText(choice.response_text, currentAddressId)}`;
     
     // Показываем модальное окно
     const modal = new bootstrap.Modal(document.getElementById('choiceModal'));
@@ -1594,6 +1789,7 @@ function renderCafePage(page) {
         const pageDocument = iframe.contentDocument;
         if (!pageDocument) return;
         applyCafeBlogMobileLayout(pageDocument);
+        window.protectPageFromCopy?.(pageDocument);
         pageDocument.addEventListener('click', (event) => {
             const link = event.target?.closest?.('a[href], area[href]');
             if (!link) return;

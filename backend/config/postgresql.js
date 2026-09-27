@@ -90,11 +90,16 @@ const createTables = async () => {
       is_test BOOLEAN NOT NULL DEFAULT FALSE,
       game_start_time TIMESTAMP,
       game_end_time TIMESTAMP,
+      paused_at TIMESTAMP,
+      halfway_paused BOOLEAN NOT NULL DEFAULT FALSE,
       state VARCHAR(50) DEFAULT 'pending',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
   await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_test BOOLEAN NOT NULL DEFAULT FALSE`);
+  await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS paused_at TIMESTAMP`);
+  await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS halfway_paused BOOLEAN NOT NULL DEFAULT FALSE`);
+  await query(`UPDATE rooms SET paused_at = $1 WHERE state = 'paused' AND paused_at IS NULL`, [new Date().toISOString()]);
 
   // Room users table
   await query(`
