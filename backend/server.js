@@ -135,6 +135,10 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
+app.get('/corporate', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/corporate.html'));
+});
+
 app.get('/enter', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/enter.html'));
 });

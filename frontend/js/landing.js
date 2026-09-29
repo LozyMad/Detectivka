@@ -13,12 +13,22 @@ if ('IntersectionObserver' in window && !reducedMotion.matches) {
     '.people-section .section-heading',
     '.photo-grid img',
     '.story-copy',
-    '.newspaper-sheet img',
+    '.newspaper-stack',
     '.faq-section .section-heading',
     '.faq-grid details',
     '.closing-section h2',
     '.closing-section p',
-    '.closing-section .button'
+    '.closing-section .button',
+    '.corporate-intro .section-heading',
+    '.corporate-benefit',
+    '.corporate-scene',
+    '.corporate-flow .section-heading',
+    '.corporate-step',
+    '.corporate-format .section-heading',
+    '.format-card',
+    '.corporate-close h2',
+    '.corporate-close p',
+    '.corporate-close .button'
   ].join(', '));
 
   const revealObserver = new IntersectionObserver(entries => {
@@ -33,7 +43,7 @@ if ('IntersectionObserver' in window && !reducedMotion.matches) {
     // Keep the first visible screen readable while the rest of the page waits for scroll.
     if (element.getBoundingClientRect().top < window.innerHeight * 0.88) return;
 
-    if (element.matches('.feature-card, .steps article, .photo-grid img, .faq-grid details')) {
+    if (element.matches('.feature-card, .steps article, .photo-grid img, .faq-grid details, .corporate-benefit, .corporate-step, .format-card')) {
       const siblings = [...element.parentElement.children];
       element.style.setProperty('--reveal-delay', `${Math.min(siblings.indexOf(element) * 75, 225)}ms`);
     }
