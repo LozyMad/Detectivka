@@ -227,7 +227,7 @@ function checkAuth() {
     
     if (!token || (!user.id && !roomUser?.id)) {
         console.log('Auth failed, redirecting to home');
-        window.location.href = '/';
+        window.location.href = '/enter';
         return;
     }
     
@@ -840,7 +840,7 @@ function logout() {
         gameStorage.removeItem('testRoomSession');
         window.location.href = '/admin';
     } else {
-        window.location.href = '/';
+        window.location.href = '/enter';
     }
 }
 

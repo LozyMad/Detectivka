@@ -51,7 +51,7 @@ function checkAdminAuth() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     
     if (!token || !user.id || !user.is_admin) {
-        window.location.href = '/';
+        window.location.href = '/enter';
         return;
     }
     
@@ -3690,7 +3690,7 @@ function createToastContainer() {
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/';
+    window.location.href = '/enter';
 }
 
 // ===== Answers Functions =====

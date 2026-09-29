@@ -1,86 +1,112 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Детектум - Главная</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+Pro:wght@300;400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
-    <link href="css/style.css?v=7" rel="stylesheet">
-    <link href="css/design-system.css?v=4" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c0908">
+  <meta name="description" content="Детектум — командная детективная игра в браузере. Исследуйте город, собирайте улики, обсуждайте версии и раскройте дело вместе.">
+  <title>Детектум — командная детективная игра</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="/assets/landing/noir-hero-v3.webp">
+  <link rel="stylesheet" href="/css/landing.css?v=4">
+  <script src="/js/landing.js?v=4" defer></script>
 </head>
-<body class="main-body">
-    <div class="container-fluid">
-        <!-- Hero Section -->
-        <div class="hero-section">
-            <div class="container">
-                <div class="row justify-content-center text-center">
-                    <div class="col-lg-8">
-                        <span class="case-kicker">АРХИВ РАССЛЕДОВАНИЙ</span>
-                        <h1 class="main-title">Детектум</h1>
-                        <p class="subtitle">Командная детективная игра</p>
-                        <span class="hero-divider" aria-hidden="true"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Choice Section -->
-        <div class="choice-section">
-            <div class="container">
-                <div class="row justify-content-center g-3 g-lg-4">
-                    <div class="col-md-6">
-                        <a class="choice-card player-card card border-0" href="/game-login">
-                            <span class="choice-label" aria-hidden="true">ИГРОВАЯ КОМНАТА</span>
-                            <div class="card-body text-center p-5">
-                                <div class="choice-icon">
-                                    <i class="fas fa-folder-open"></i>
-                                </div>
-                                <h2 class="card-title mb-3">Вход в игру</h2>
-                                <p class="card-text">
-                                    Присоединиться к игровой комнате и начать детективное расследование
-                                </p>
-                                <span class="choice-action">Присоединиться <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-md-6">
-                        <a class="choice-card admin-card card border-0" href="/admin-login">
-                            <span class="choice-label" aria-hidden="true">УПРАВЛЕНИЕ</span>
-                            <div class="card-body text-center p-5">
-                                <div class="choice-icon">
-                                    <i class="fas fa-user-shield"></i>
-                                </div>
-                                <h2 class="card-title mb-3">Админ-панель</h2>
-                                <p class="card-text">
-                                    Управление сценариями, пользователями и игровыми комнатами
-                                </p>
-                                <span class="choice-action">Открыть панель <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Info Section -->
-        <div class="info-section">
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-12">
-                        <span class="info-label">АРХИВНАЯ СПРАВКА</span>
-                        <h2 class="info-title">О чём игра?</h2>
-                        <p class="info-text">
-                            Детектум - это интерактивная командная детективная игра, где участники ищут локации по районам города,
-                            отвечают на вопросы и соревнуются с другими детективными агентствами.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<body>
+  <a class="skip-link" href="#main">К содержанию</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="/" aria-label="Детектум — главная"><img class="brand-mark" src="/assets/landing/brand-mark.webp" alt="" width="550" height="646"><span>ДЕТЕКТУМ</span></a>
+      <nav aria-label="Разделы сайта">
+        <a href="#about">Об игре</a>
+        <a href="#how">Как играть</a>
+        <a href="#atmosphere">Атмосфера</a>
+        <a href="#questions">Вопросы</a>
+      </nav>
+      <a class="button button-small" href="/game-login">Войти в игру</a>
     </div>
+  </header>
 
-    <script src="js/no-copy.js?v=1"></script>
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <img class="hero-art" src="/assets/landing/noir-hero-v3.webp" width="1671" height="941" alt="" fetchpriority="high">
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-content shell">
+        <h1 id="hero-title"><span class="sr-only">Детектум</span><img src="/assets/landing/wordmark-v3.webp" alt="" aria-hidden="true" width="2172" height="724"></h1>
+        <p class="hero-subtitle">Командная детективная игра</p>
+        <p class="hero-description">Город хранит тайны.<br>Соберите команду, чтобы их раскрыть.</p>
+        <a class="button" href="#about">Начать знакомство</a>
+      </div>
+    </section>
+
+    <section class="section intro-section" id="about" aria-labelledby="about-title">
+      <div class="shell">
+        <div class="section-heading centered">
+          <h2 id="about-title">Вы — главные герои<br>этого расследования</h2>
+          <p>Ищите зацепки в городе, сопоставляйте факты и обсуждайте версии.<br class="desktop-break"> Каждая находка приближает вашу команду к разгадке.</p>
+        </div>
+        <div class="evidence-scene">
+          <img src="/assets/landing/evidence-desk-v2.webp" alt="Карта города, фотографии и улики, соединённые красной нитью" loading="lazy" width="1536" height="1024">
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card"><h3>Исследуйте город</h3><p>Находите адреса в книге, выбирайте локации и узнавайте, какие истории скрываются за их дверями.</p></article>
+          <article class="feature-card"><h3>Собирайте улики</h3><p>Изучайте документы и рассказы, делайте заметки. Важная деталь может оказаться совсем незаметной.</p></article>
+          <article class="feature-card"><h3>Проверяйте версии</h3><p>Обсуждайте догадки с командой и отвечайте на вопросы дела. Решение складывается из ваших находок.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section how-section" id="how" aria-labelledby="how-title">
+      <div class="shell">
+        <div class="section-heading centered"><h2 id="how-title">Как проходит игра</h2><p>Всё расследование — в одном интерфейсе.<br>Локации, материалы дела, заметки и вопросы всегда под рукой.</p></div>
+        <div class="how-layout">
+          <div class="game-preview"><img src="/assets/landing/game-interface.webp" alt="Интерфейс игры: поиск локации, история поездок и заметки" loading="lazy" width="1400" height="703"></div>
+          <div class="steps">
+            <article><h3>Войдите в комнату</h3><p>Получите номер комнаты, логин и пароль у организатора.</p></article>
+            <article><h3>Отправляйтесь по адресам</h3><p>Выбирайте локации и изучайте найденные сведения.</p></article>
+            <article><h3>Соберите картину событий</h3><p>Обсуждайте версии и фиксируйте важные детали.</p></article>
+            <article><h3>Раскройте дело</h3><p>Сформулируйте выводы и ответьте на вопросы сценария.</p></article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section people-section" id="atmosphere" aria-labelledby="people-title">
+      <div class="shell">
+        <div class="section-heading centered"><h2 id="people-title">Одна команда.<br>Десятки догадок.</h2><p>Спорьте, замечайте, делитесь находками.<br>Самая неожиданная мысль может изменить ход расследования.</p></div>
+        <div class="photo-grid">
+          <img src="/assets/landing/detective-notes.webp" alt="Участница внимательно изучает материалы дела" loading="lazy" width="1100" height="1650">
+          <img class="photo-wide" src="/assets/landing/team-table.webp" alt="Команда обсуждает расследование за общим столом" loading="lazy" width="1600" height="900">
+          <img src="/assets/landing/team-screen.webp" alt="Участники сопоставляют найденную информацию" loading="lazy" width="1600" height="900">
+        </div>
+      </div>
+    </section>
+
+    <section class="story-section" aria-labelledby="story-title">
+      <div class="paper-seam" aria-hidden="true"></div>
+      <div class="shell story-layout">
+        <div class="story-copy"><h2 id="story-title">Всё начинается<br>с одной зацепки</h2><p>Газетная заметка. Знакомое имя. Адрес на другом конце города. Из таких деталей складывается история, которую предстоит восстановить вашей команде.</p><p>Игровая газета — лишь одна из находок, которые встретятся вам по ходу расследования.</p></div>
+        <figure class="newspaper-sheet"><img src="/assets/landing/newspaper.webp" alt="Полная первая полоса игровой газеты «Городское время»" loading="lazy" width="1055" height="1491"></figure>
+      </div>
+    </section>
+
+    <section class="section faq-section" id="questions" aria-labelledby="faq-title">
+      <div class="shell"><div class="section-heading centered"><h2 id="faq-title">Остались вопросы?</h2></div>
+        <div class="faq-grid">
+          <details><summary>Как получить доступ к игре?<span aria-hidden="true">+</span></summary><p>Организатор выдаёт номер игровой комнаты, логин и пароль. С этими данными вы сможете войти в игру.</p></details>
+          <details><summary>Нужно ли устанавливать приложение?<span aria-hidden="true">+</span></summary><p>Нет, игровой интерфейс работает в браузере. Для входа нужны данные вашей игровой комнаты.</p></details>
+          <details><summary>Как искать локации?<span aria-hidden="true">+</span></summary><p>Используйте адресную книгу, выберите район и укажите адрес в поиске локаций. Найденные сведения появятся в истории поездок.</p></details>
+          <details><summary>Где хранятся материалы дела?<span aria-hidden="true">+</span></summary><p>В игре есть история поездок, полученные приложения и поле для заметок. К найденной информации можно возвращаться во время расследования.</p></details>
+          <details><summary>Как команда отвечает на вопросы?<span aria-hidden="true">+</span></summary><p>Обсудите находки, сформулируйте общую версию и запишите выводы в разделе вопросов сценария.</p></details>
+          <details><summary>Что делать, если не получается войти?<span aria-hidden="true">+</span></summary><p>Проверьте номер комнаты, логин и пароль. Если данные не подходят, обратитесь к организатору игры.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="closing-section"><div class="shell centered"><h2>Ваше дело ждёт.</h2><p>Есть данные для входа? Самое время начать расследование.</p><a class="button" href="/game-login">Войти в игру</a></div></section>
+  </main>
+
+  <footer class="site-footer"><div class="shell footer-inner"><a class="brand" href="/" aria-label="Детектум — главная"><img class="brand-mark" src="/assets/landing/brand-mark.webp" alt="" width="550" height="646"><span>ДЕТЕКТУМ</span></a><p>Командная детективная игра</p><a href="/enter">Выбор входа</a><a href="/admin-login">Организаторам</a></div></footer>
 </body>
 </html>
