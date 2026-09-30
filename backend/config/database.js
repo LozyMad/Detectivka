@@ -242,6 +242,35 @@ const init = async () => {
         UNIQUE(category, district, house_number, apartment, name)
       )`);
 
+      // Shared investigation board for each game room and its current scenario.
+      db.run(`CREATE TABLE IF NOT EXISTS investigation_notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        room_id INTEGER NOT NULL,
+        scenario_id INTEGER NOT NULL,
+        address_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        address_label TEXT NOT NULL,
+        comment TEXT NOT NULL DEFAULT '',
+        color TEXT NOT NULL DEFAULT 'yellow',
+        x REAL NOT NULL,
+        y REAL NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(room_id, scenario_id, address_id)
+      )`);
+      db.run(`CREATE TABLE IF NOT EXISTS investigation_links (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        room_id INTEGER NOT NULL,
+        scenario_id INTEGER NOT NULL,
+        note_a INTEGER NOT NULL,
+        note_b INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(room_id, scenario_id, note_a, note_b),
+        CHECK(note_a < note_b)
+      )`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_investigation_notes_room ON investigation_notes(room_id, scenario_id)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_investigation_links_room ON investigation_links(room_id, scenario_id)`);
+
       // Create default super admin user
       const bcrypt = require('bcryptjs');
       const hashedPassword = bcrypt.hashSync('admin123', 10);

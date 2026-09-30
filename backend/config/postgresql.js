@@ -222,6 +222,34 @@ const createTables = async () => {
     )
   `);
 
+  await query(`CREATE TABLE IF NOT EXISTS investigation_notes (
+    id SERIAL PRIMARY KEY,
+    room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    scenario_id INTEGER NOT NULL,
+    address_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    address_label TEXT NOT NULL,
+    comment TEXT NOT NULL DEFAULT '',
+    color VARCHAR(20) NOT NULL DEFAULT 'yellow',
+    x DOUBLE PRECISION NOT NULL,
+    y DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(room_id, scenario_id, address_id)
+  )`);
+  await query(`CREATE TABLE IF NOT EXISTS investigation_links (
+    id SERIAL PRIMARY KEY,
+    room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    scenario_id INTEGER NOT NULL,
+    note_a INTEGER NOT NULL REFERENCES investigation_notes(id) ON DELETE CASCADE,
+    note_b INTEGER NOT NULL REFERENCES investigation_notes(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(room_id, scenario_id, note_a, note_b),
+    CHECK(note_a < note_b)
+  )`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_investigation_notes_room ON investigation_notes(room_id, scenario_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_investigation_links_room ON investigation_links(room_id, scenario_id)`);
+
   console.log('All tables created successfully');
 };
 

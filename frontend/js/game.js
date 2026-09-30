@@ -72,6 +72,7 @@ function setupMobileGameLayout() {
 function placeMobileToolbar(pane) {
     const toolbar = document.getElementById('playerMobileToolbar');
     if (!toolbar || !pane || !window.matchMedia('(max-width: 767.98px)').matches) return;
+    if (pane.id === 'board') return;
     if (pane.id === 'game') pane.querySelector('.case-banner')?.after(toolbar);
     else pane.prepend(toolbar);
 }
@@ -604,6 +605,9 @@ function updateTripHistory() {
             }${trip.success && trip.is_internet_cafe && trip.address_id
                 ? `<div><a href="#" class="trip-cafe-link" data-cafe-address-id="${trip.address_id}">Сесть за компьютер</a></div>`
                 : ''
+            }${trip.success && trip.address_id && gameStorage.getItem('roomUser')
+                ? `<div><button type="button" class="trip-board-button" data-trip-id="${escapeHtmlPlayer(trip.id)}"><i class="fas fa-thumbtack" aria-hidden="true"></i> Добавить на доску</button></div>`
+                : ''
             }</div></div>
             <button type="button" class="trip-toggle" data-trip-key="${escapeHtmlPlayer(key)}" aria-expanded="${!collapsed}" aria-label="${collapsed ? 'Развернуть' : 'Свернуть'} поездку: ${escapeHtmlPlayer(formatTripAddressLabel(trip))}"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>
         </article>
@@ -634,6 +638,12 @@ function updateTripHistory() {
             e.preventDefault();
             const id = parseInt(link.dataset.cafeAddressId, 10);
             if (id) openInternetCafe(id);
+        });
+    });
+    container.querySelectorAll('.trip-board-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const trip = tripHistory.find(item => String(item.id) === button.dataset.tripId);
+            if (trip) window.investigationBoard?.openFromTrip(trip);
         });
     });
 }
@@ -849,12 +859,28 @@ function setupTabSwitching() {
     const gameTab = document.getElementById('game-tab');
     const questionsTab = document.getElementById('questions-tab');
     const addressbookTab = document.getElementById('addressbook-tab');
+    const boardTab = document.getElementById('board-tab');
     const gameContent = document.getElementById('game');
     const questionsContent = document.getElementById('questions');
     const addressbookContent = document.getElementById('addressbook');
+    const boardContent = document.getElementById('board');
+    const gameNavbar = document.getElementById('gameNavbar');
+    let boardReturnScrollY = 0;
+
+    function updateBoardNavHeight() {
+        if (gameNavbar) document.body.style.setProperty('--board-nav-height', `${gameNavbar.getBoundingClientRect().bottom}px`);
+    }
+    if (gameNavbar) new ResizeObserver(updateBoardNavHeight).observe(gameNavbar);
+    window.addEventListener('resize', updateBoardNavHeight);
 
     function showPane(pane) {
-        [gameContent, questionsContent, addressbookContent].forEach(el => {
+        const wasBoardOpen = document.body.classList.contains('board-open');
+        if (pane === boardContent && !wasBoardOpen) {
+            boardReturnScrollY = window.scrollY;
+            window.scrollTo(0, 0);
+            updateBoardNavHeight();
+        }
+        [gameContent, questionsContent, addressbookContent, boardContent].forEach(el => {
             if (!el) return;
             if (el === pane) {
                 el.classList.add('show', 'active');
@@ -864,12 +890,14 @@ function setupTabSwitching() {
                 el.classList.add('fade');
             }
         });
-        [gameTab, questionsTab, addressbookTab].forEach((btn, i) => {
+        [gameTab, questionsTab, addressbookTab, boardTab].forEach((btn, i) => {
             if (!btn) return;
-            const panes = [gameContent, questionsContent, addressbookContent];
+            const panes = [gameContent, questionsContent, addressbookContent, boardContent];
             btn.classList.toggle('active', panes[i] === pane);
         });
+        document.body.classList.toggle('board-open', pane === boardContent);
         placeMobileToolbar(pane);
+        if (wasBoardOpen && pane !== boardContent) window.scrollTo(0, boardReturnScrollY);
     }
 
     if (gameTab && questionsTab && gameContent && questionsContent) {
@@ -889,6 +917,13 @@ function setupTabSwitching() {
                 e.preventDefault();
                 showPane(addressbookContent);
                 loadPlayerAddressBookSectionsAndEntries();
+            });
+        }
+        if (boardTab && boardContent) {
+            boardTab.addEventListener('click', (e) => {
+                e.preventDefault();
+                showPane(boardContent);
+                window.investigationBoard?.show();
             });
         }
     }

@@ -8,6 +8,7 @@ const {
 const { getUserAttempts } = require('../controllers/statsController');
 const { getAddressBookSections, getAddressBookEntries } = require('../controllers/addressBookController');
 const { authenticateToken, authenticateTokenQuery } = require('../middleware/auth');
+const investigationBoard = require('./investigationBoard');
 
 const router = express.Router();
 
@@ -15,6 +16,8 @@ const router = express.Router();
 router.get('/room/:roomId/events', authenticateTokenQuery, roomEventsStream);
 
 router.use(authenticateToken);
+
+router.use('/board', investigationBoard);
 
 router.post('/visit', visitLocation);
 router.get('/scenario', getActiveScenario);

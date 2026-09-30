@@ -129,10 +129,12 @@ if (DB_TYPE === 'postgresql') {
 
   delete: async (roomId) => {
     const room = await Room.getById(roomId);
+    const run = (database, sql, params) => new Promise((resolve, reject) => {
+      database.run(sql, params, err => err ? reject(err) : resolve());
+    });
+    await run(db, `DELETE FROM investigation_links WHERE room_id = ?`, [roomId]);
+    await run(db, `DELETE FROM investigation_notes WHERE room_id = ?`, [roomId]);
     if (room?.is_test) {
-      const run = (database, sql, params) => new Promise((resolve, reject) => {
-        database.run(sql, params, err => err ? reject(err) : resolve());
-      });
       const scenarioIds = await new Promise((resolve, reject) => {
         db.all(`SELECT id FROM scenarios`, [], (err, rows) => err ? reject(err) : resolve(rows));
       });
