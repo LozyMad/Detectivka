@@ -52,9 +52,12 @@ function runDeploy(res) {
     console.log('[Deploy] git pull OK', stdout);
     // Устанавливаем зависимости (в т.ч. новые, например xlsx)
     const backendDir = path.join(projectRoot, 'backend');
-    exec(`cd "${backendDir}" && npm install --production`, (errInstall, outInstall, errOutInstall) => {
-      if (errInstall) console.error('[Deploy] npm install warning', errInstall, errOutInstall);
-      else console.log('[Deploy] npm install OK', outInstall);
+    exec(`cd "${backendDir}" && npm install --omit=dev --include=optional`, (errInstall, outInstall, errOutInstall) => {
+      if (errInstall) {
+        console.error('[Deploy] npm install error', errInstall, errOutInstall);
+        return res.status(500).json({ ok: false, error: 'Dependency installation failed; application was not restarted', log: errOutInstall || outInstall });
+      }
+      console.log('[Deploy] npm install OK', outInstall);
       res.json({ ok: true, log: stdout });
       setTimeout(() => {
         exec(`pm2 restart detectivka`, (e, out, errOut) => {

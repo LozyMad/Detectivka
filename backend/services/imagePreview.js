@@ -1,7 +1,19 @@
 const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
-const sharp = require('sharp');
+let sharp;
+let sharpLoadAttempted = false;
+
+function getImageOptimizer() {
+  if (!sharpLoadAttempted) {
+    sharpLoadAttempted = true;
+    try { sharp = require('sharp'); }
+    catch (error) {
+      console.warn('Image optimizer unavailable; serving original images:', error.message);
+    }
+  }
+  return sharp;
+}
 
 const directory = path.join(__dirname, '..', 'uploads', 'image-cache');
 const pending = new Map();
@@ -14,6 +26,8 @@ function previewWidth(value, fallback = 1920) {
 
 async function imagePreview(file, width = 1920) {
   const original = { path: file, type: `image/${path.extname(file).slice(1).replace('jpg', 'jpeg')}` };
+  const optimizer = getImageOptimizer();
+  if (!optimizer) return original;
   try {
     const stat = await fs.stat(file);
     const key = crypto.createHash('sha256')
@@ -26,7 +40,7 @@ async function imagePreview(file, width = 1920) {
     } catch (error) { if (error.code !== 'ENOENT') throw error; }
     if (!pending.has(key)) {
       const build = (async () => {
-        const image = sharp(file, { limitInputPixels: 40_000_000 });
+        const image = optimizer(file, { limitInputPixels: 40_000_000 });
         const metadata = await image.metadata();
         if (metadata.pages > 1) return original;
         const buffer = await image.rotate().resize({ width: previewWidth(width), withoutEnlargement: true })
