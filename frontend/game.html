@@ -381,10 +381,10 @@
             }
         }
     </style>
-    <link href="css/design-system.css?v=4" rel="stylesheet">
+    <link href="css/design-system.css?v=5" rel="stylesheet">
     <link href="css/dark-interface.css?v=2" rel="stylesheet">
     <link href="css/game-dossier.css?v=13" rel="stylesheet">
-    <link href="css/investigation-board.css?v=10" rel="stylesheet">
+    <link href="css/investigation-board.css?v=13" rel="stylesheet">
 </head>
 <body class="game-container">
     <nav class="navbar navbar-dark bg-dark" id="gameNavbar">
@@ -565,13 +565,13 @@
             <div class="tab-pane fade investigation-pane" id="board" role="tabpanel" aria-labelledby="board-tab">
                 <section class="board-shell" aria-labelledby="boardTitle">
                     <header class="board-toolbar">
-                        <button type="button" id="boardExit" class="board-exit" aria-label="Вернуться к игре">← К игре</button>
+                        <button type="button" id="boardExit" class="board-exit" aria-label="Вернуться к игре">←<span> К игре</span></button>
                         <div class="board-title-block">
                             <h1 id="boardTitle">Доска расследования</h1>
-                            <p id="boardHint">Перетащите стикеры. Нажмите на кнопку у стикера, чтобы соединить его ниткой с другим.</p>
+                            <p id="boardHint">Нажмите на один стикер, затем на другой — они соединятся нитью. Перетаскивайте стикеры и приближайте доску.</p>
                         </div>
                         <div class="board-tools">
-                            <button type="button" id="boardCreate" class="board-create">+ Новый стикер</button>
+                            <button type="button" id="boardCreate" class="board-create" aria-label="Новый стикер">+ <span class="board-desktop-label">Новый </span>стикер</button>
                             <div class="board-zoom-controls" role="group" aria-label="Масштаб доски">
                             <button type="button" id="boardZoomOut" aria-label="Отдалить доску">−</button>
                             <output id="boardZoomLabel" aria-live="polite">100%</output>
@@ -615,7 +615,6 @@
     <div id="boardNoteOverlay" class="board-note-overlay" hidden>
         <form id="boardNoteForm" class="board-note-dialog" role="dialog" aria-modal="true" aria-labelledby="boardNoteHeading">
             <button type="button" id="boardNoteClose" class="board-note-close" aria-label="Закрыть">×</button>
-            <span class="board-overline">ДОСЬЕ / МЕСТО</span>
             <h2 id="boardNoteHeading">Новый стикер</h2>
             <strong id="boardNoteTitle" class="board-note-place"></strong>
             <label id="boardNoteTitleInputWrap" for="boardNoteTitleInput" hidden>Название стикера
@@ -719,8 +718,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/no-copy.js?v=1"></script>
-    <script src="js/game.js?v=28&t=20260930&encoding=fixed"></script>
-    <script src="js/investigation-board.js?v=6"></script>
+    <script src="js/game.js?v=31&t=20260930&encoding=fixed"></script>
+    <script src="js/investigation-board.js?v=9"></script>
     <script src="js/persist-inputs.js"></script>
 </body>
 </html>

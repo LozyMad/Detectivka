@@ -34,7 +34,8 @@ function setScenarioBanner(scenarioId) {
     image.hidden = true;
     image.onload = () => { image.hidden = false; };
     image.onerror = () => { image.hidden = true; };
-    image.src = `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/banner`;
+    const bannerWidth = window.matchMedia('(max-width: 767.98px)').matches ? 960 : 1920;
+    image.src = `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/banner?width=${bannerWidth}`;
 }
 
 function setupMobileGameLayout() {
@@ -868,16 +869,21 @@ function setupTabSwitching() {
     let boardReturnScrollY = 0;
 
     function updateBoardNavHeight() {
-        if (gameNavbar) document.body.style.setProperty('--board-nav-height', `${gameNavbar.getBoundingClientRect().bottom}px`);
+        if (gameNavbar) document.body.style.setProperty('--board-nav-height', `${gameNavbar.offsetHeight}px`);
     }
     if (gameNavbar) new ResizeObserver(updateBoardNavHeight).observe(gameNavbar);
     window.addEventListener('resize', updateBoardNavHeight);
 
     function showPane(pane) {
         const wasBoardOpen = document.body.classList.contains('board-open');
+        if (wasBoardOpen && pane !== boardContent) window.investigationBoard?.hide();
         if (pane === boardContent && !wasBoardOpen) {
             boardReturnScrollY = window.scrollY;
-            window.scrollTo(0, 0);
+            const mobileMenu = document.getElementById('navbarCollapse');
+            if (mobileMenu && window.matchMedia('(max-width: 767.98px), (max-width: 950px) and (max-height: 500px)').matches) {
+                window.bootstrap?.Collapse.getOrCreateInstance(mobileMenu, { toggle: false }).hide();
+            }
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             updateBoardNavHeight();
         }
         [gameContent, questionsContent, addressbookContent, boardContent].forEach(el => {
@@ -896,6 +902,7 @@ function setupTabSwitching() {
             btn.classList.toggle('active', panes[i] === pane);
         });
         document.body.classList.toggle('board-open', pane === boardContent);
+        updateBoardNavHeight();
         placeMobileToolbar(pane);
         if (wasBoardOpen && pane !== boardContent) window.scrollTo(0, boardReturnScrollY);
     }
@@ -1060,7 +1067,7 @@ async function openApplicationFile(base, file, index, token) {
     clearApplicationPreview();
     preview.textContent = 'Загрузка файла…';
     try {
-        const response = await fetch(`${base}/files/${encodeURIComponent(file.id)}`, {
+        const response = await fetch(`${base}/files/${encodeURIComponent(file.id)}${file.type.startsWith('image/') ? '?preview=1' : ''}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('Не удалось загрузить файл');
@@ -1072,6 +1079,7 @@ async function openApplicationFile(base, file, index, token) {
         viewer.src = applicationObjectUrl;
         viewer.title = displayName;
         viewer.alt = displayName;
+        if (viewer.tagName === 'IMG') viewer.decoding = 'async';
         preview.append(viewer);
     } catch (error) {
         if (requestId === applicationRequestId) preview.textContent = error.message;

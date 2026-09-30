@@ -5,6 +5,7 @@ const Scenario = require('../models/scenario');
 const Address = require('../models/address');
 const Room = require('../models/room');
 const applications = require('../services/scenarioApplications');
+const { imagePreview, previewWidth } = require('../services/imagePreview');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -132,11 +133,14 @@ router.get('/game/scenarios/:scenarioId/addresses/:addressId/:number/files/:file
   try {
     const file = await applications.getFile(req.params.scenarioId, req.params.addressId, req.params.number, req.params.fileId);
     if (!file) return res.status(404).json({ error: 'Файл не найден' });
-    res.setHeader('Content-Type', file.type);
+    const preview = req.query.preview === '1' && file.type.startsWith('image/')
+      ? await imagePreview(file.path, previewWidth(req.query.width, 2400))
+      : { path: file.path, type: file.type };
+    res.setHeader('Content-Type', preview.type);
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'private, max-age=300');
-    const stream = fs.createReadStream(file.path);
+    const stream = fs.createReadStream(preview.path);
     stream.on('error', next);
     stream.pipe(res);
   } catch (error) { next(error); }

@@ -6,7 +6,8 @@
     ['mint', 'Мятный', '#a8e6df']
   ];
   const state = { notes: [], links: [], zoom: 1, width: 2400, height: 1600,
-    pendingLink: null, editing: null, trip: null, free: false, centred: false, statusTimer: null };
+    pendingLink: null, connecting: false, editing: null, trip: null, free: false, centred: false, statusTimer: null };
+  const defaultHint = 'Нажмите на один стикер, затем на другой — они соединятся нитью. Перетаскивайте стикеры и приближайте доску.';
   const $ = id => document.getElementById(id);
   const noteById = id => state.notes.find(note => Number(note.id) === Number(id));
   const escape = value => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -43,6 +44,7 @@
     $('boardCanvas').style.width = `${state.width}px`;
     $('boardCanvas').style.height = `${state.height}px`;
     $('boardCanvas').style.transform = `scale(${state.zoom})`;
+    $('boardCanvas').style.setProperty('--board-zoom', state.zoom);
     $('boardScaleShell').style.width = `${state.width * state.zoom}px`;
     $('boardScaleShell').style.height = `${state.height * state.zoom}px`;
     $('boardZoomLabel').textContent = `${Math.round(state.zoom * 100)}%`;
@@ -57,9 +59,9 @@
       const tilt = ((Number(note.id) * 7) % 7 - 3) * .45;
       return `<article class="investigation-note ${state.pendingLink === Number(note.id) ? 'is-connecting' : ''}"
         data-id="${Number(note.id)}" data-color="${escape(note.color)}" tabindex="0" role="button"
-        aria-label="Открыть стикер: ${escape(note.title)}"
+        aria-label="Выбрать стикер: ${escape(note.title)}" aria-pressed="${state.pendingLink === Number(note.id)}"
         style="left:${Number(note.x)}px;top:${Number(note.y)}px;--note-tilt:${tilt}deg">
-          <button type="button" class="board-note-link" title="Соединить с другим стикером" aria-label="Протянуть нить от ${escape(note.title)}">Нить</button>
+          <button type="button" class="board-note-edit" title="Редактировать стикер" aria-label="Редактировать стикер: ${escape(note.title)}">⋯</button>
           <span class="board-note-body">
             <strong class="board-note-title">${escape(note.title)}</strong>
             ${note.address_label ? `<small class="board-note-address">${escape(note.address_label)}</small>` : ''}
@@ -111,10 +113,24 @@
 
   function centerOn(note) {
     const viewport = $('boardViewport');
-    const x = note ? Number(note.x) + 150 : state.width / 2;
-    const y = note ? Number(note.y) + 150 : state.height / 2;
+    const x = note ? Number(note.x) + 150 : state.notes.length
+      ? (Math.min(...state.notes.map(n => Number(n.x))) + Math.max(...state.notes.map(n => Number(n.x))) + 300) / 2 : state.width / 2;
+    const y = note ? Number(note.y) + 150 : state.notes.length
+      ? (Math.min(...state.notes.map(n => Number(n.y))) + Math.max(...state.notes.map(n => Number(n.y))) + 300) / 2 : state.height / 2;
     viewport.scrollLeft = x * state.zoom - viewport.clientWidth / 2;
     viewport.scrollTop = y * state.zoom - viewport.clientHeight / 2;
+  }
+
+  function fitNotes() {
+    const viewport = $('boardViewport');
+    let zoom = 1;
+    if (state.notes.length) {
+      const width = Math.max(...state.notes.map(n => Number(n.x))) - Math.min(...state.notes.map(n => Number(n.x))) + 380;
+      const height = Math.max(...state.notes.map(n => Number(n.y))) - Math.min(...state.notes.map(n => Number(n.y))) + 380;
+      zoom = Math.min(1, viewport.clientWidth / width, viewport.clientHeight / height);
+    }
+    changeZoom(zoom);
+    centerOn();
   }
 
   async function show(focusId) {
@@ -122,7 +138,7 @@
       await load();
       requestAnimationFrame(() => {
         if (focusId) centerOn(noteById(focusId));
-        else if (!state.centred) centerOn();
+        else if (!state.centred) fitNotes();
         state.centred = true;
       });
     } catch (error) {
@@ -236,90 +252,40 @@
 
   async function connect(secondId) {
     const firstId = state.pendingLink;
-    if (!firstId) return;
+    if (!firstId || state.connecting) return;
     if (firstId === secondId) {
-      state.pendingLink = null;
-      status('Соединение отменено');
-      renderNotes();
+      clearSelection();
       return;
     }
+    state.connecting = true;
     try {
       const { link } = await request('/links', { method: 'POST',
         body: JSON.stringify({ first_id: firstId, second_id: secondId }) });
-      state.links.push(link);
+      if (!state.links.some(item => Number(item.id) === Number(link.id))) state.links.push(link);
       renderThreads();
       status('Стикеры соединены ниткой');
     } catch (error) { status(error.message); }
     state.pendingLink = null;
-    $('boardHint').textContent = 'Перетащите стикеры. Нажмите на кнопку у стикера, чтобы соединить его ниткой с другим.';
+    state.connecting = false;
+    $('boardHint').textContent = defaultHint;
     renderNotes();
   }
 
-  function onNoteDown(event) {
-    const element = event.target.closest('.investigation-note');
-    if (!element || event.target.closest('.board-note-link') || event.button !== 0) return;
-    const note = noteById(element.dataset.id);
-    if (!note) return;
-    const start = { x: event.clientX, y: event.clientY, noteX: Number(note.x), noteY: Number(note.y), moved: false };
-    element.setPointerCapture(event.pointerId);
-    const move = e => {
-      const dx = (e.clientX - start.x) / state.zoom;
-      const dy = (e.clientY - start.y) / state.zoom;
-      if (!start.moved && Math.hypot(dx, dy) < 5) return;
-      start.moved = true;
-      element.classList.add('is-dragging');
-      note.x = Math.max(0, Math.round(start.noteX + dx));
-      note.y = Math.max(0, Math.round(start.noteY + dy));
-      element.style.left = `${note.x}px`;
-      element.style.top = `${note.y}px`;
-      updateDimensions();
-      renderThreads();
-      renderPins();
-    };
-    const up = async () => {
-      element.removeEventListener('pointermove', move);
-      element.removeEventListener('pointerup', up);
-      element.removeEventListener('pointercancel', cancel);
-      element.classList.remove('is-dragging');
-      if (!start.moved) {
-        if (state.pendingLink) await connect(Number(note.id));
-        else openDialog({ note });
-        return;
-      }
-      try {
-        await request(`/notes/${note.id}/position`, { method: 'PATCH',
-          body: JSON.stringify({ x: note.x, y: note.y }) });
-      } catch (error) {
-        note.x = start.noteX; note.y = start.noteY;
-        render();
-        status(`Положение не сохранено: ${error.message}`);
-      }
-    };
-    const cancel = () => {
-      element.removeEventListener('pointermove', move);
-      element.removeEventListener('pointerup', up);
-      element.removeEventListener('pointercancel', cancel);
-      note.x = start.noteX; note.y = start.noteY;
-      render();
-    };
-    element.addEventListener('pointermove', move);
-    element.addEventListener('pointerup', up);
-    element.addEventListener('pointercancel', cancel);
+  function clearSelection() {
+    if (state.connecting) return;
+    state.pendingLink = null;
+    $('boardHint').textContent = defaultHint;
+    status('');
+    renderNotes();
   }
 
-  function onNoteClick(event) {
-    const handle = event.target.closest('.board-note-link');
-    if (!handle) return;
-    event.preventDefault();
-    const note = handle.closest('.investigation-note');
-    const id = Number(note?.dataset.id);
-    if (!id) return;
-    if (state.pendingLink && state.pendingLink !== id) { connect(id); return; }
-    state.pendingLink = state.pendingLink === id ? null : id;
-    $('boardHint').textContent = state.pendingLink
-      ? 'Теперь нажмите на второй стикер. Esc отменяет соединение.'
-      : 'Перетащите стикеры. Нажмите на кнопку у стикера, чтобы соединить его ниткой с другим.';
-    status(state.pendingLink ? 'Выберите второй стикер для красной нити' : 'Соединение отменено', !!state.pendingLink);
+  function selectNote(id) {
+    if (state.connecting) return;
+    if (state.pendingLink === id) { clearSelection(); return; }
+    if (state.pendingLink) { connect(id); return; }
+    state.pendingLink = id;
+    $('boardHint').textContent = 'Нажмите на второй стикер, чтобы соединить их. Повторное нажатие или Esc снимает выделение.';
+    status('Выберите второй стикер для нити', true);
     renderNotes();
   }
 
@@ -352,32 +318,122 @@
   }
 
   function leaveBoard() {
-    state.pendingLink = null;
-    $('boardHint').textContent = 'Перетащите стикеры. Нажмите на кнопку у стикера, чтобы соединить его ниткой с другим.';
+    clearSelection();
     $('game-tab').click();
   }
 
-  function setupPan() {
+  function setupGestures() {
     const viewport = $('boardViewport');
-    viewport.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || event.target.closest('.investigation-note, .board-thread-segment')) return;
-      const start = { x: event.clientX, y: event.clientY, left: viewport.scrollLeft, top: viewport.scrollTop };
-      viewport.setPointerCapture(event.pointerId);
+    const pointers = new Map();
+    let gesture = null;
+    const point = event => ({ x: event.clientX, y: event.clientY });
+    const local = p => {
+      const bounds = viewport.getBoundingClientRect();
+      return { x: p.x - bounds.left - viewport.clientLeft, y: p.y - bounds.top - viewport.clientTop };
+    };
+    const pair = () => {
+      const [a, b] = [...pointers.values()];
+      return { center: local({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }),
+        distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)) };
+    };
+    function restoreNote() {
+      if (!gesture?.note) return;
+      gesture.note.x = gesture.noteX;
+      gesture.note.y = gesture.noteY;
+      render();
+    }
+    function beginPinch() {
+      // A second finger cancels the tentative sticker drag, including its save.
+      restoreNote();
+      const { center, distance } = pair();
+      gesture = { type: 'pinch', distance, zoom: state.zoom,
+        worldX: (viewport.scrollLeft + center.x) / state.zoom,
+        worldY: (viewport.scrollTop + center.y) / state.zoom };
       viewport.classList.add('is-panning');
-      const move = e => {
-        viewport.scrollLeft = start.left - (e.clientX - start.x);
-        viewport.scrollTop = start.top - (e.clientY - start.y);
-      };
-      const done = () => {
-        viewport.classList.remove('is-panning');
-        viewport.removeEventListener('pointermove', move);
-        viewport.removeEventListener('pointerup', done);
-        viewport.removeEventListener('pointercancel', done);
-      };
-      viewport.addEventListener('pointermove', move);
-      viewport.addEventListener('pointerup', done);
-      viewport.addEventListener('pointercancel', done);
+    }
+    viewport.addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      if (!pointers.size && event.target.closest('.board-note-edit, .board-thread-segment')) return;
+      event.preventDefault();
+      pointers.set(event.pointerId, point(event));
+      viewport.setPointerCapture(event.pointerId);
+      if (pointers.size >= 2) { beginPinch(); return; }
+      const element = event.target.closest('.investigation-note');
+      const note = element && noteById(element.dataset.id);
+      gesture = { type: note ? 'note' : 'pan', start: point(event), moved: false,
+        left: viewport.scrollLeft, top: viewport.scrollTop, element, note,
+        noteX: Number(note?.x), noteY: Number(note?.y), zoom: state.zoom };
     });
+    viewport.addEventListener('pointermove', event => {
+      if (!pointers.has(event.pointerId) || !gesture) return;
+      event.preventDefault();
+      pointers.set(event.pointerId, point(event));
+      if (gesture.type === 'pinch') {
+        const { center, distance } = pair();
+        state.zoom = Math.max(.4, Math.min(2.5, Math.round(gesture.zoom * distance / gesture.distance * 100) / 100));
+        updateDimensions();
+        viewport.scrollLeft = gesture.worldX * state.zoom - center.x;
+        viewport.scrollTop = gesture.worldY * state.zoom - center.y;
+        return;
+      }
+      const dx = event.clientX - gesture.start.x, dy = event.clientY - gesture.start.y;
+      if (!gesture.moved && Math.hypot(dx, dy) < 6) return;
+      gesture.moved = true;
+      if (gesture.note) {
+        const note = gesture.note;
+        gesture.element.classList.add('is-dragging');
+        note.x = Math.max(0, Math.round(gesture.noteX + dx / gesture.zoom));
+        note.y = Math.max(0, Math.round(gesture.noteY + dy / gesture.zoom));
+        gesture.element.style.left = `${note.x}px`;
+        gesture.element.style.top = `${note.y}px`;
+        updateDimensions();
+        renderThreads();
+        renderPins();
+      } else {
+        viewport.classList.add('is-panning');
+        viewport.scrollLeft = gesture.left - dx;
+        viewport.scrollTop = gesture.top - dy;
+      }
+    });
+    async function finish(event) {
+      if (!pointers.has(event.pointerId)) return;
+      const cancelled = event.type !== 'pointerup';
+      pointers.delete(event.pointerId);
+      if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
+      if (gesture?.type === 'pinch') {
+        if (pointers.size >= 2) beginPinch();
+        else if (pointers.size === 1) {
+          // Continue panning with the remaining finger, but never interpret it as a tap.
+          gesture = { type: 'pan', start: [...pointers.values()][0], moved: true,
+            left: viewport.scrollLeft, top: viewport.scrollTop };
+        } else gesture = null;
+      } else {
+        const completed = gesture;
+        if (cancelled) restoreNote();
+        gesture = null;
+        completed?.element?.classList.remove('is-dragging');
+        if (completed && !cancelled) {
+          if (!completed.moved) {
+            if (completed.note) selectNote(Number(completed.note.id));
+            else clearSelection();
+          } else if (completed.note) {
+            const note = completed.note;
+            try {
+              await request(`/notes/${note.id}/position`, { method: 'PATCH', body: JSON.stringify({ x: note.x, y: note.y }) });
+            } catch (error) {
+              note.x = completed.noteX; note.y = completed.noteY;
+              render();
+              status(`Положение не сохранено: ${error.message}`);
+            }
+          }
+        }
+      }
+      if (!pointers.size) viewport.classList.remove('is-panning');
+    }
+    viewport.addEventListener('pointerup', finish);
+    viewport.addEventListener('pointercancel', finish);
+    viewport.addEventListener('lostpointercapture', finish);
+    new ResizeObserver(() => { if (viewport.clientWidth && viewport.clientHeight) updateDimensions(); }).observe(viewport);
   }
 
   function init() {
@@ -401,27 +457,25 @@
       if (event.key !== 'Escape') return;
       if (!$('boardNoteOverlay').hidden) closeDialog();
       else if (state.pendingLink) {
-        state.pendingLink = null;
-        $('boardHint').textContent = 'Перетащите стикеры. Нажмите на кнопку у стикера, чтобы соединить его ниткой с другим.';
-        status('Соединение отменено');
-        renderNotes();
+        clearSelection();
       } else if ($('board').classList.contains('active')) leaveBoard();
     });
-    $('boardNotes').addEventListener('pointerdown', onNoteDown);
-    $('boardNotes').addEventListener('click', onNoteClick);
+    $('boardNotes').addEventListener('click', event => {
+      const button = event.target.closest('.board-note-edit');
+      if (button) { clearSelection(); openDialog({ note: noteById(button.closest('.investigation-note').dataset.id) }); }
+    });
     $('boardNotes').addEventListener('keydown', event => {
       if (event.target.classList.contains('investigation-note') && (event.key === 'Enter' || event.key === ' ')) {
         event.preventDefault();
         const id = Number(event.target.dataset.id);
-        if (state.pendingLink) connect(id);
-        else openDialog({ note: noteById(id) });
+        selectNote(id);
       }
     });
     $('boardThreads').addEventListener('click', onThreadClick);
     $('boardZoomIn').addEventListener('click', () => changeZoom(state.zoom + .15));
     $('boardZoomOut').addEventListener('click', () => changeZoom(state.zoom - .15));
-    $('boardZoomReset').addEventListener('click', () => { changeZoom(1); centerOn(); });
-    $('boardCreate').addEventListener('click', () => openDialog({ free: true }));
+    $('boardZoomReset').addEventListener('click', fitNotes);
+    $('boardCreate').addEventListener('click', () => { clearSelection(); openDialog({ free: true }); });
     $('boardExit').addEventListener('click', leaveBoard);
     $('boardViewport').addEventListener('wheel', event => {
       event.preventDefault();
@@ -429,10 +483,10 @@
       changeZoom(state.zoom * Math.exp(-event.deltaY * unit * .0012), event);
     }, { passive: false });
     window.addEventListener('resize', updateDimensions);
-    setupPan();
+    setupGestures();
     render();
   }
 
-  window.investigationBoard = { show, openFromTrip };
+  window.investigationBoard = { show, openFromTrip, hide: clearSelection };
   document.addEventListener('DOMContentLoaded', init);
 })();

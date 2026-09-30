@@ -129,6 +129,9 @@ app.use((req, res, next) => {
 // Serve static files from frontend directory with proper MIME types
 app.use(express.static(path.join(__dirname, '../frontend'), {
   setHeaders: (res, filePath) => {
+    if (/\.(?:webp|png|jpe?g|svg|gif|ico)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
     if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
     } else if (filePath.endsWith('.js')) {
