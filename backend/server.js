@@ -106,9 +106,10 @@ app.use((req, res, next) => {
 // Redirect old HTML page URLs to their readable routes before static files are served.
 const pageUrls = {
   '/index.html': '/',
-  '/corporate.html': '/korporativ',
-  '/corporate': '/korporativ',
-  '/korporativ/': '/korporativ',
+  '/corporate.html': '/corporate',
+  '/corporate/': '/corporate',
+  '/korporativ': '/corporate',
+  '/korporativ/': '/corporate',
   '/enter.html': '/enter',
   '/game-login.html': '/game-login',
   '/admin-login.html': '/admin-login',
@@ -157,7 +158,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-app.get('/korporativ', (req, res) => {
+app.get('/corporate', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/corporate.html'));
 });
 
