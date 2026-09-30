@@ -103,6 +103,28 @@ app.use((req, res, next) => {
   next();
 });
 
+// Redirect old HTML page URLs to their readable routes before static files are served.
+const pageUrls = {
+  '/index.html': '/',
+  '/corporate.html': '/korporativ',
+  '/corporate': '/korporativ',
+  '/korporativ/': '/korporativ',
+  '/enter.html': '/enter',
+  '/game-login.html': '/game-login',
+  '/admin-login.html': '/admin-login',
+  '/game.html': '/game',
+  '/admin.html': '/admin'
+};
+
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const destination = pageUrls[req.path];
+  if (!destination) return next();
+  const queryIndex = req.originalUrl.indexOf('?');
+  const query = queryIndex === -1 ? '' : req.originalUrl.slice(queryIndex);
+  res.redirect(301, destination + query);
+});
+
 // Serve static files from frontend directory with proper MIME types
 app.use(express.static(path.join(__dirname, '../frontend'), {
   setHeaders: (res, filePath) => {
@@ -135,7 +157,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-app.get('/corporate', (req, res) => {
+app.get('/korporativ', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/corporate.html'));
 });
 
