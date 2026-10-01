@@ -10,7 +10,8 @@
   const noteTilt = id => ((Number(id) * 7) % 7 - 3) * .45;
   const state = { notes: [], links: [], zoom: 1, width: 2400, height: 1600,
     pendingLink: null, connecting: false, editing: null, trip: null, free: false, centred: false, statusTimer: null };
-  const defaultHint = 'Нажмите на один стикер, затем на другой — они соединятся нитью. Перетаскивайте стикеры и приближайте доску.';
+  const defaultHint = 'Нажмите на два стикера, чтобы создать или убрать нить. Перетаскивайте стикеры и приближайте доску.';
+  const threadSegments = new Map();
   const $ = id => document.getElementById(id);
   const noteById = id => state.notes.find(note => Number(note.id) === Number(id));
   const escape = value => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -82,23 +83,50 @@
       style="left:${x1}px;top:${y1 - 12}px;width:${length}px;transform:rotate(${angle}deg)"></button>`;
   }
 
-  function renderThreads() {
+  function threadPoints(a, b) {
     // The pin is part of the new artwork. Attach threads at its base, accounting for paper rotation.
     const anchor = note => {
       const angle = noteTilt(note.id) * Math.PI / 180;
       return { x: Number(note.x) + 150 + 96 * Math.sin(angle),
         y: Number(note.y) + 150 - 96 * Math.cos(angle) };
     };
+    const start = anchor(a), end = anchor(b);
+    const sag = Math.min(22, Math.hypot(end.x - start.x, end.y - start.y) * .028);
+    return [start, { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 + sag }, end];
+  }
+
+  function renderThreads() {
     $('boardThreads').innerHTML = state.links.map(link => {
       const a = noteById(link.note_a);
       const b = noteById(link.note_b);
       if (!a || !b) return '';
-      const { x: ax, y: ay } = anchor(a);
-      const { x: bx, y: by } = anchor(b);
-      const sag = Math.min(22, Math.hypot(bx - ax, by - ay) * .028);
-      const mx = (ax + bx) / 2, my = (ay + by) / 2 + sag;
-      return segment(ax, ay, mx, my, link.id) + segment(mx, my, bx, by, link.id);
+      const [start, middle, end] = threadPoints(a, b);
+      return segment(start.x, start.y, middle.x, middle.y, link.id) +
+        segment(middle.x, middle.y, end.x, end.y, link.id);
     }).join('');
+    threadSegments.clear();
+    for (const element of $('boardThreads').querySelectorAll('.board-thread-segment')) {
+      const id = Number(element.dataset.linkId);
+      if (!threadSegments.has(id)) threadSegments.set(id, []);
+      threadSegments.get(id).push(element);
+    }
+  }
+
+  function moveThreads(noteId) {
+    for (const link of state.links) {
+      if (Number(link.note_a) !== noteId && Number(link.note_b) !== noteId) continue;
+      const elements = threadSegments.get(Number(link.id));
+      const a = noteById(link.note_a), b = noteById(link.note_b);
+      if (!elements || !a || !b) continue;
+      const points = threadPoints(a, b);
+      elements.forEach((element, index) => {
+        const start = points[index], end = points[index + 1];
+        element.style.left = `${start.x}px`;
+        element.style.top = `${start.y - 12}px`;
+        element.style.width = `${Math.hypot(end.x - start.x, end.y - start.y)}px`;
+        element.style.transform = `rotate(${Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI}deg)`;
+      });
+    }
   }
 
   function render() {
@@ -263,11 +291,17 @@
     }
     state.connecting = true;
     try {
-      const { link } = await request('/links', { method: 'POST',
-        body: JSON.stringify({ first_id: firstId, second_id: secondId }) });
-      if (!state.links.some(item => Number(item.id) === Number(link.id))) state.links.push(link);
+      const existing = state.links.find(link =>
+        Number(link.note_a) === firstId && Number(link.note_b) === secondId ||
+        Number(link.note_b) === firstId && Number(link.note_a) === secondId);
+      if (existing) await deleteLink(existing);
+      else {
+        const { link } = await request('/links', { method: 'POST',
+          body: JSON.stringify({ first_id: firstId, second_id: secondId }) });
+        if (!state.links.some(item => Number(item.id) === Number(link.id))) state.links.push(link);
+        status('Стикеры соединены ниткой');
+      }
       renderThreads();
-      status('Стикеры соединены ниткой');
     } catch (error) { status(error.message); }
     state.pendingLink = null;
     state.connecting = false;
@@ -288,22 +322,28 @@
     if (state.pendingLink === id) { clearSelection(); return; }
     if (state.pendingLink) { connect(id); return; }
     state.pendingLink = id;
-    $('boardHint').textContent = 'Нажмите на второй стикер, чтобы соединить их. Повторное нажатие или Esc снимает выделение.';
-    status('Выберите второй стикер для нити', true);
+    $('boardHint').textContent = 'Нажмите на второй стикер: нить появится или удалится. Повторное нажатие или Esc снимает выделение.';
+    status('Выберите второй стикер, чтобы создать или убрать нить', true);
     renderNotes();
+  }
+
+  async function deleteLink(link) {
+    await request(`/links/${link.id}`, { method: 'DELETE' });
+    state.links = state.links.filter(item => Number(item.id) !== Number(link.id));
+    status('Нить удалена');
   }
 
   async function onThreadClick(event) {
     const segment = event.target.closest('.board-thread-segment');
     if (!segment) return;
     const link = state.links.find(item => Number(item.id) === Number(segment.dataset.linkId));
-    if (!link || !confirm('Удалить эту нить? Стикеры останутся на доске.')) return;
+    if (!link || state.connecting) return;
+    state.connecting = true;
     try {
-      await request(`/links/${link.id}`, { method: 'DELETE' });
-      state.links = state.links.filter(item => Number(item.id) !== Number(link.id));
+      await deleteLink(link);
       renderThreads();
-      status('Нить удалена');
     } catch (error) { status(error.message); }
+    finally { state.connecting = false; }
   }
 
   function changeZoom(next, pointer) {
@@ -330,6 +370,20 @@
     const viewport = $('boardViewport');
     const pointers = new Map();
     let gesture = null;
+    let noteFrame = null;
+    function paintNote() {
+      if (!gesture?.note || !gesture.moved) return;
+      const { note, element, noteX, noteY } = gesture;
+      element.style.transform = `translate3d(${note.x - noteX}px, ${note.y - noteY}px, 0) rotate(var(--note-tilt))`;
+      // Grow the cork only when needed, rather than forcing board layout on every move.
+      if (Number(note.x) + 450 > state.width || Number(note.y) + 420 > state.height) updateDimensions();
+      moveThreads(Number(note.id));
+    }
+    function flushNoteFrame(paint = true) {
+      if (noteFrame !== null) cancelAnimationFrame(noteFrame);
+      noteFrame = null;
+      if (paint) paintNote();
+    }
     const point = event => ({ x: event.clientX, y: event.clientY });
     const local = p => {
       const bounds = viewport.getBoundingClientRect();
@@ -342,6 +396,7 @@
     };
     function restoreNote() {
       if (!gesture?.note) return;
+      flushNoteFrame(false);
       gesture.note.x = gesture.noteX;
       gesture.note.y = gesture.noteY;
       render();
@@ -382,16 +437,16 @@
       }
       const dx = event.clientX - gesture.start.x, dy = event.clientY - gesture.start.y;
       if (!gesture.moved && Math.hypot(dx, dy) < 6) return;
+      if (!gesture.moved && gesture.note) gesture.element.classList.add('is-dragging');
       gesture.moved = true;
       if (gesture.note) {
         const note = gesture.note;
-        gesture.element.classList.add('is-dragging');
         note.x = Math.max(0, Math.round(gesture.noteX + dx / gesture.zoom));
         note.y = Math.max(0, Math.round(gesture.noteY + dy / gesture.zoom));
-        gesture.element.style.left = `${note.x}px`;
-        gesture.element.style.top = `${note.y}px`;
-        updateDimensions();
-        renderThreads();
+        if (noteFrame === null) noteFrame = requestAnimationFrame(() => {
+          noteFrame = null;
+          paintNote();
+        });
       } else {
         viewport.classList.add('is-panning');
         viewport.scrollLeft = gesture.left - dx;
@@ -413,6 +468,13 @@
       } else {
         const completed = gesture;
         if (cancelled) restoreNote();
+        else if (completed?.note && completed.moved) {
+          flushNoteFrame();
+          completed.element.style.left = `${completed.note.x}px`;
+          completed.element.style.top = `${completed.note.y}px`;
+          completed.element.style.transform = '';
+          updateDimensions();
+        }
         gesture = null;
         completed?.element?.classList.remove('is-dragging');
         if (completed && !cancelled) {

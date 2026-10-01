@@ -148,8 +148,10 @@ body.board-open #board {
   touch-action: none;
   pointer-events: auto;
   user-select: none;
+  transition: none !important;
 }
 .investigation-note:hover, .investigation-note.is-dragging { filter: drop-shadow(7px 15px 11px #261406a6); z-index: 5; }
+.investigation-note.is-dragging { will-change: transform; }
 .investigation-note.is-connecting { filter: drop-shadow(0 0 5px #fff5bb) drop-shadow(0 0 12px #f2d178) drop-shadow(5px 10px 7px #3a230b80); outline: 3px dashed #fff1a6; outline-offset: -28px; }
 .investigation-note[data-color="yellow"] { --note-image: url('../assets/board/note-yellow-pinned.webp?v=1'); }
 .investigation-note[data-color="pink"] { --note-image: url('../assets/board/note-pink-pinned.webp?v=1'); --note-ink: #321a22; --note-secondary-ink: #45242f; }
@@ -182,6 +184,7 @@ body.board-open #board {
 .board-note-dialog .board-note-address { color: #403424 !important; }
 
 .board-thread-segment {
+  transition: none !important;
   position: absolute;
   height: 24px;
   padding: 0;

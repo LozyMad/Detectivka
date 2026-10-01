@@ -12,6 +12,15 @@ class Element {
     this.classList = { add: c => this.classes.add(c), remove: c => this.classes.delete(c), contains: c => this.classes.has(c) };
   }
   addEventListener(name, callback) { if (!this.events.has(name)) this.events.set(name, []); this.events.get(name).push(callback); }
+  set innerHTML(value) { this.html = value; this.htmlWrites = (this.htmlWrites || 0) + 1; this.segments = null; }
+  get innerHTML() { return this.html || ''; }
+  querySelectorAll(selector) {
+    if (selector !== '.board-thread-segment') return [];
+    if (!this.segments) this.segments = [...this.innerHTML.matchAll(/data-link-id="(\d+)"/g)].map(match => {
+      const segment = new Element('segment'); segment.dataset.linkId = match[1]; return segment;
+    });
+    return this.segments;
+  }
   async emit(name, event) { for (const callback of this.events.get(name) || []) await callback(event); }
   closest(selector) { return selector === '.investigation-note' && this.dataset.id ? this : null; }
   getBoundingClientRect() { return { left: 20, top: 100 }; }
@@ -22,15 +31,23 @@ class Element {
 }
 
 async function test() {
-  const elements = new Map(), requests = [];
+  const elements = new Map(), requests = [], frames = new Map();
+  let frameId = 0, failDelete = false;
+  const paintFrame = () => { const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback()); };
   const element = id => { if (!elements.has(id)) elements.set(id, new Element(id)); return elements.get(id); };
   const sandbox = {
     document: { getElementById: element, addEventListener() {}, querySelector: () => null },
     window: { addEventListener() {} }, gameStorage: { getItem: () => 'test' },
     ResizeObserver: class { observe() {} }, setTimeout: () => 0, clearTimeout() {},
-    requestAnimationFrame: callback => callback(), alert: () => {}, confirm: () => true,
+    requestAnimationFrame: callback => { frames.set(++frameId, callback); return frameId; },
+    cancelAnimationFrame: id => frames.delete(id), alert: () => {},
+    confirm: () => { throw new Error('Deleting a thread must not ask for confirmation'); },
     fetch: async (url, options) => {
       requests.push({ url, ...options, data: options.body && JSON.parse(options.body) });
+      if (failDelete && options.method === 'DELETE') {
+        failDelete = false;
+        return { ok: false, status: 503, json: async () => ({ error: 'Temporary error' }) };
+      }
       return { ok: true, json: async () => ({ link: { id: 1, note_a: 10, note_b: 11 } }) };
     }
   };
@@ -58,14 +75,53 @@ async function test() {
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(requests.filter(r => r.url.endsWith('/links')).length, 1);
   assert.equal(board.state.pendingLink, null);
+  assert.equal(board.state.links.length, 1);
+  // Selecting an existing pair toggles the thread off, in either order.
+  await tap(b); await tap(a);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(requests.filter(r => r.method === 'DELETE').length, 1);
+  assert.equal(requests.filter(r => r.url.endsWith('/links')).length, 1);
+  assert.equal(board.state.links.length, 0);
+  assert.equal(board.state.pendingLink, null);
+  await tap(a); await tap(b);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(board.state.links.length, 1);
+  failDelete = true;
+  await tap(a); await tap(b);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(board.state.links.length, 1, 'failed deletion preserves the existing thread');
+  assert.equal(board.state.pendingLink, null);
+  assert.equal(board.state.connecting, false);
+  assert.equal(element('boardStatus').textContent, 'Temporary error');
+  const threadTarget = { closest: () => ({ dataset: { linkId: '1' } }) };
+  await element('boardThreads').emit('click', { target: threadTarget });
+  assert.equal(board.state.links.length, 0, 'direct thread click still deletes without confirmation');
+  await tap(a); await tap(b);
+  await new Promise(resolve => setImmediate(resolve));
   await tap(a); await tap(a);
   assert.equal(board.state.pendingLink, null);
 
+  const threads = element('boardThreads'), threadWrites = threads.htmlWrites;
+  const segments = threads.querySelectorAll('.board-thread-segment');
   await pointer('pointerdown', 1, 100, 200, a);
+  await pointer('pointermove', 1, 130, 210, a);
   await pointer('pointermove', 1, 160, 230, a);
+  assert.equal(frames.size, 1, 'multiple moves paint once in the next frame');
+  assert.equal(a.style.left, undefined, 'dragging does not change layout position on each move');
+  paintFrame();
+  assert.equal(a.style.transform, 'translate3d(120px, 60px, 0) rotate(var(--note-tilt))');
+  assert.equal(threads.htmlWrites, threadWrites, 'dragging preserves existing thread DOM');
+  assert.equal(threads.querySelectorAll('.board-thread-segment')[0], segments[0]);
+  assert.ok(segments[0].style.transform, 'the existing thread follows the moving note');
+  // Flush the last move even if pointerup arrives before the next animation frame.
+  await pointer('pointermove', 1, 170, 235, a);
   await pointer('pointerup', 1, 160, 230, a);
-  assert.equal(board.state.notes[0].x, 1070);
-  assert.equal(board.state.notes[0].y, 660);
+  assert.equal(board.state.notes[0].x, 1090);
+  assert.equal(board.state.notes[0].y, 670);
+  assert.equal(a.style.left, '1090px');
+  assert.equal(a.style.top, '670px');
+  assert.equal(a.style.transform, '');
+  assert.equal(frames.size, 0);
   assert.equal(requests.filter(r => r.url.endsWith('/position')).length, 1);
   assert.equal(board.state.pendingLink, null);
 
@@ -76,6 +132,7 @@ async function test() {
   assert.notEqual(board.state.notes[0].x, original.x);
   await pointer('pointerdown', 2, 220, 200);
   assert.equal(board.state.notes[0].x, original.x);
+  assert.equal(frames.size, 0, 'a second finger cancels the pending drag frame');
   // Pinch anchor is the board point under the initial midpoint (170, 200).
   const anchorX = (400 + 170 - 20) / .5;
   const anchorY = (300 + 200 - 100) / .5;
@@ -114,6 +171,6 @@ async function test() {
   assert.equal(board.state.notes[0].color, 'orange', 'rendering preserves saved legacy notes');
   assert.equal(board.state.notes[1].color, 'mint');
   assert.ok(!elements.has('boardPins'), 'the artwork already includes pins');
-  console.log('PASS: tap linking, deselection, drag/save, pinch anchor, interrupted drag, limits and cancellation');
+  console.log('PASS: link toggling, deletion without confirmation, failure recovery, coalesced drag frames, thread reuse, drag/save, pinch anchor and cancellation');
 }
 test().catch(error => { console.error(error); process.exitCode = 1; });
