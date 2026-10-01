@@ -2,6 +2,17 @@
 
 Generated with the built-in imagegen tool on 2026-09-30. The assets are used locally by investigation-board.css.
 
+## Pinned notes (updated 2026-09-30)
+
+Five replacement images supplied by the user in `Доска/` include the red pushpin in the artwork.
+The old seven paper textures and separate pushpin sprite have been removed from the frontend.
+`note-{yellow,blue,green,pink,purple}-pinned.webp` preserve transparency at 768 × 768, quality 87.
+Rebuild with `python scripts/optimize-board-notes.py` (requires Pillow and the source folder).
+The sources total 10,739,431 bytes; the five served images total 376,314 bytes.
+Detailed measurements are in `docs/board-note-image-audit.json`.
+Saved orange notes display yellow paper; saved mint notes display green paper. Text, positions,
+and links are retained. The live edit control is separate from the decorative pushpin.
+
 ## detective-desk.png
 
 Full environment artwork behind the live board: dark detective study, walnut desk, warm lamp, papers and magnifying glass. Opaque PNG.

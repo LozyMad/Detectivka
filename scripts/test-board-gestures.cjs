@@ -39,6 +39,7 @@ async function test() {
   vm.runInNewContext(source, sandbox);
   const board = sandbox.window.investigationBoard;
   board.init();
+  assert.equal((element('boardColorOptions').innerHTML.match(/type="radio"/g) || []).length, 5);
   board.state.notes = [{ id: 10, x: 950, y: 600, title: 'A' }, { id: 11, x: 1280, y: 600, title: 'B' }];
   board.state.zoom = .5;
   const viewport = element('boardViewport');
@@ -105,6 +106,14 @@ async function test() {
   assert.equal(board.state.zoom, .4);
   assert.ok(board.state.width * .4 >= viewport.clientWidth);
   assert.ok(board.state.height * .4 >= viewport.clientHeight);
+  board.state.notes[0].color = 'orange';
+  board.state.notes[1].color = 'mint';
+  board.hide();
+  assert.match(element('boardNotes').innerHTML, /data-id="10" data-color="yellow"/);
+  assert.match(element('boardNotes').innerHTML, /data-id="11" data-color="green"/);
+  assert.equal(board.state.notes[0].color, 'orange', 'rendering preserves saved legacy notes');
+  assert.equal(board.state.notes[1].color, 'mint');
+  assert.ok(!elements.has('boardPins'), 'the artwork already includes pins');
   console.log('PASS: tap linking, deselection, drag/save, pinch anchor, interrupted drag, limits and cancellation');
 }
 test().catch(error => { console.error(error); process.exitCode = 1; });

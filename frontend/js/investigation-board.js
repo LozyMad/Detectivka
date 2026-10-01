@@ -2,9 +2,12 @@
   const palette = [
     ['yellow', 'Жёлтый', '#f9e77d'], ['pink', 'Розовый', '#f5a9b6'],
     ['blue', 'Голубой', '#a9d6f6'], ['green', 'Зелёный', '#c7e7a3'],
-    ['orange', 'Оранжевый', '#ffbd79'], ['purple', 'Сиреневый', '#ceb8ea'],
-    ['mint', 'Мятный', '#a8e6df']
+    ['purple', 'Сиреневый', '#ceb8ea']
   ];
+  // Older saved colors use the closest available paper without changing saved notes.
+  const paperColor = color => ({ orange: 'yellow', mint: 'green' }[color] ||
+    (palette.some(([value]) => value === color) ? color : 'yellow'));
+  const noteTilt = id => ((Number(id) * 7) % 7 - 3) * .45;
   const state = { notes: [], links: [], zoom: 1, width: 2400, height: 1600,
     pendingLink: null, connecting: false, editing: null, trip: null, free: false, centred: false, statusTimer: null };
   const defaultHint = 'Нажмите на один стикер, затем на другой — они соединятся нитью. Перетаскивайте стикеры и приближайте доску.';
@@ -56,9 +59,9 @@
       return;
     }
     $('boardNotes').innerHTML = state.notes.map(note => {
-      const tilt = ((Number(note.id) * 7) % 7 - 3) * .45;
+      const tilt = noteTilt(note.id);
       return `<article class="investigation-note ${state.pendingLink === Number(note.id) ? 'is-connecting' : ''}"
-        data-id="${Number(note.id)}" data-color="${escape(note.color)}" tabindex="0" role="button"
+        data-id="${Number(note.id)}" data-color="${paperColor(note.color)}" tabindex="0" role="button"
         aria-label="Выбрать стикер: ${escape(note.title)}" aria-pressed="${state.pendingLink === Number(note.id)}"
         style="left:${Number(note.x)}px;top:${Number(note.y)}px;--note-tilt:${tilt}deg">
           <button type="button" class="board-note-edit" title="Редактировать стикер" aria-label="Редактировать стикер: ${escape(note.title)}">⋯</button>
@@ -80,28 +83,28 @@
   }
 
   function renderThreads() {
+    // The pin is part of the new artwork. Attach threads at its base, accounting for paper rotation.
+    const anchor = note => {
+      const angle = noteTilt(note.id) * Math.PI / 180;
+      return { x: Number(note.x) + 150 + 96 * Math.sin(angle),
+        y: Number(note.y) + 150 - 96 * Math.cos(angle) };
+    };
     $('boardThreads').innerHTML = state.links.map(link => {
       const a = noteById(link.note_a);
       const b = noteById(link.note_b);
       if (!a || !b) return '';
-      const ax = Number(a.x) + 150, ay = Number(a.y) + 34;
-      const bx = Number(b.x) + 150, by = Number(b.y) + 34;
+      const { x: ax, y: ay } = anchor(a);
+      const { x: bx, y: by } = anchor(b);
       const sag = Math.min(22, Math.hypot(bx - ax, by - ay) * .028);
       const mx = (ax + bx) / 2, my = (ay + by) / 2 + sag;
       return segment(ax, ay, mx, my, link.id) + segment(mx, my, bx, by, link.id);
     }).join('');
   }
 
-  function renderPins() {
-    $('boardPins').innerHTML = state.notes.map(note => `<span class="board-pin"
-      style="left:${Number(note.x) + 133}px;top:${Number(note.y) + 12}px"></span>`).join('');
-  }
-
   function render() {
     updateDimensions();
     renderNotes();
     renderThreads();
-    renderPins();
   }
 
   async function load() {
@@ -147,6 +150,7 @@
   }
 
   function setColor(color) {
+    color = paperColor(color);
     $('boardNoteForm').dataset.color = color;
     const option = document.querySelector(`input[name="boardColor"][value="${color}"]`);
     if (option) option.checked = true;
@@ -388,7 +392,6 @@
         gesture.element.style.top = `${note.y}px`;
         updateDimensions();
         renderThreads();
-        renderPins();
       } else {
         viewport.classList.add('is-panning');
         viewport.scrollLeft = gesture.left - dx;

@@ -17,6 +17,7 @@ let currentCafePage = null;
 let cafeViewMode = 'home'; // 'home' | 'page' | 'error'
 let applicationObjectUrl = null;
 let applicationRequestId = 0;
+let arrangePlayerNavigation = () => {};
 
 function setScenarioTitle(text) {
     const el = document.getElementById('scenarioTitle');
@@ -43,6 +44,12 @@ function setupMobileGameLayout() {
     const collapse = document.getElementById('navbarCollapse');
     const tabs = document.getElementById('playerNavTabs');
     const stats = document.getElementById('playerNavStats');
+    const controls = document.getElementById('playerNavControls');
+    const timer = document.getElementById('roomTimer');
+    const boardNav = document.getElementById('boardNavHost');
+    const boardTimer = document.getElementById('boardTimerHost');
+    const boardAccount = document.getElementById('boardAccount');
+    const boardMenu = document.getElementById('boardAccountMenu');
     const sidebar = document.querySelector('.dossier-sidebar');
     if (!toolbar || !collapse || !tabs || !stats || !sidebar) return;
 
@@ -51,9 +58,27 @@ function setupMobileGameLayout() {
     const sidebarHome = sidebar.parentElement;
     const toolbarHome = toolbar.parentElement;
     const toolbarNext = toolbar.nextSibling;
+    const controlsHome = controls?.parentElement;
+    const timerHome = timer?.parentElement;
     const mobile = window.matchMedia('(max-width: 767.98px)');
+    const desktopBoard = window.matchMedia('(min-width: 768px) and (min-height: 501px), (min-width: 951px)');
     const arrange = () => {
-        if (mobile.matches) {
+        // Move the existing controls so timers, active tabs and click handlers stay in sync.
+        if (controls && controlsHome) controlsHome.append(controls);
+        statHome.prepend(stats);
+        if (timer && timerHome) timerHome.prepend(timer);
+        tabHome.insertBefore(tabs, statHome);
+        const combined = document.body.classList.contains('board-open') && desktopBoard.matches &&
+            !!(controls && timer && boardNav && boardTimer && boardMenu);
+        document.body.classList.toggle('board-desktop-header', combined);
+        if (boardAccount) boardAccount.open = false;
+        if (combined) {
+            boardNav.append(tabs);
+            boardTimer.append(timer);
+            boardMenu.append(controls);
+            sidebarHome.append(sidebar);
+            toolbarHome.insertBefore(toolbar, toolbarNext);
+        } else if (mobile.matches) {
             toolbar.append(tabs, stats);
             const activePane = document.querySelector('#gameTabContent .tab-pane.active') || document.getElementById('game');
             placeMobileToolbar(activePane);
@@ -64,10 +89,25 @@ function setupMobileGameLayout() {
             sidebarHome.append(sidebar);
             toolbarHome.insertBefore(toolbar, toolbarNext);
         }
+        const navbar = document.getElementById('gameNavbar');
+        if (navbar) document.body.style.setProperty('--board-nav-height', `${navbar.offsetHeight}px`);
     };
+    arrangePlayerNavigation = arrange;
     arrange();
-    if (mobile.addEventListener) mobile.addEventListener('change', arrange);
-    else mobile.addListener(arrange);
+    for (const media of [mobile, desktopBoard]) {
+        if (media.addEventListener) media.addEventListener('change', arrange);
+        else media.addListener(arrange);
+    }
+    boardAccount?.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.stopPropagation();
+            boardAccount.open = false;
+            boardAccount.querySelector('summary').focus();
+        }
+    });
+    document.addEventListener('pointerdown', event => {
+        if (boardAccount?.open && !boardAccount.contains(event.target)) boardAccount.open = false;
+    });
 }
 
 function placeMobileToolbar(pane) {
@@ -902,6 +942,7 @@ function setupTabSwitching() {
             btn.classList.toggle('active', panes[i] === pane);
         });
         document.body.classList.toggle('board-open', pane === boardContent);
+        arrangePlayerNavigation();
         updateBoardNavHeight();
         placeMobileToolbar(pane);
         if (wasBoardOpen && pane !== boardContent) window.scrollTo(0, boardReturnScrollY);
