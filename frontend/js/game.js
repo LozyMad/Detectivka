@@ -62,19 +62,23 @@ function setupMobileGameLayout() {
     const timerHome = timer?.parentElement;
     const mobile = window.matchMedia('(max-width: 767.98px)');
     const desktopBoard = window.matchMedia('(min-width: 768px) and (min-height: 501px), (min-width: 951px)');
+    const landscapeBoard = window.matchMedia('(orientation: landscape) and (max-height: 500px) and (max-width: 1100px)');
+    const narrowLandscape = window.matchMedia('(max-width: 740px)');
     const arrange = () => {
         // Move the existing controls so timers, active tabs and click handlers stay in sync.
         if (controls && controlsHome) controlsHome.append(controls);
         statHome.prepend(stats);
         if (timer && timerHome) timerHome.prepend(timer);
         tabHome.insertBefore(tabs, statHome);
-        const combined = document.body.classList.contains('board-open') && desktopBoard.matches &&
+        const combined = document.body.classList.contains('board-open') && (desktopBoard.matches || landscapeBoard.matches) &&
             !!(controls && timer && boardNav && boardTimer && boardMenu);
         document.body.classList.toggle('board-desktop-header', combined);
+        document.body.classList.toggle('board-landscape-header', combined && landscapeBoard.matches);
         if (boardAccount) boardAccount.open = false;
         if (combined) {
             boardNav.append(tabs);
-            boardTimer.append(timer);
+            // On smaller landscape phones the live timer remains accessible in the account menu.
+            if (!landscapeBoard.matches || !narrowLandscape.matches) boardTimer.append(timer);
             boardMenu.append(controls);
             sidebarHome.append(sidebar);
             toolbarHome.insertBefore(toolbar, toolbarNext);
@@ -94,7 +98,7 @@ function setupMobileGameLayout() {
     };
     arrangePlayerNavigation = arrange;
     arrange();
-    for (const media of [mobile, desktopBoard]) {
+    for (const media of [mobile, desktopBoard, landscapeBoard, narrowLandscape]) {
         if (media.addEventListener) media.addEventListener('change', arrange);
         else media.addListener(arrange);
     }
