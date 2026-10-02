@@ -90,16 +90,11 @@ const createTables = async () => {
       is_test BOOLEAN NOT NULL DEFAULT FALSE,
       game_start_time TIMESTAMP,
       game_end_time TIMESTAMP,
-      paused_at TIMESTAMP,
-      halfway_paused BOOLEAN NOT NULL DEFAULT FALSE,
       state VARCHAR(50) DEFAULT 'pending',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
   await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_test BOOLEAN NOT NULL DEFAULT FALSE`);
-  await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS paused_at TIMESTAMP`);
-  await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS halfway_paused BOOLEAN NOT NULL DEFAULT FALSE`);
-  await query(`UPDATE rooms SET paused_at = $1 WHERE state = 'paused' AND paused_at IS NULL`, [new Date().toISOString()]);
 
   // Room users table
   await query(`
@@ -221,34 +216,6 @@ const createTables = async () => {
       UNIQUE(category, district, house_number, apartment, name)
     )
   `);
-
-  await query(`CREATE TABLE IF NOT EXISTS investigation_notes (
-    id SERIAL PRIMARY KEY,
-    room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-    scenario_id INTEGER NOT NULL,
-    address_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    address_label TEXT NOT NULL,
-    comment TEXT NOT NULL DEFAULT '',
-    color VARCHAR(20) NOT NULL DEFAULT 'yellow',
-    x DOUBLE PRECISION NOT NULL,
-    y DOUBLE PRECISION NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(room_id, scenario_id, address_id)
-  )`);
-  await query(`CREATE TABLE IF NOT EXISTS investigation_links (
-    id SERIAL PRIMARY KEY,
-    room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-    scenario_id INTEGER NOT NULL,
-    note_a INTEGER NOT NULL REFERENCES investigation_notes(id) ON DELETE CASCADE,
-    note_b INTEGER NOT NULL REFERENCES investigation_notes(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(room_id, scenario_id, note_a, note_b),
-    CHECK(note_a < note_b)
-  )`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_investigation_notes_room ON investigation_notes(room_id, scenario_id)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_investigation_links_room ON investigation_links(room_id, scenario_id)`);
 
   console.log('All tables created successfully');
 };

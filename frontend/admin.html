@@ -489,7 +489,7 @@
             cursor: default !important;
         }
     </style>
-    <link href="css/design-system.css?v=5" rel="stylesheet">
+    <link href="css/design-system.css?v=4" rel="stylesheet">
     <link href="css/dark-interface.css?v=2" rel="stylesheet">
 </head>
 <body class="admin-interface">
@@ -825,7 +825,6 @@
                                             <th>Номер дома</th>
                                             <th>Квартира/Офис</th>
                                             <th>Описание</th>
-                                            <th>Приложения</th>
                                             <th>Выборы</th>
                                             <th>Кафе</th>
                                             <th>Действия</th>
@@ -833,7 +832,7 @@
                                     </thead>
                                     <tbody id="addressesTable">
                                         <tr>
-                                            <td colspan="9" class="text-center">Выберите сценарий для просмотра адресов</td>
+                                            <td colspan="8" class="text-center">Выберите сценарий для просмотра адресов</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -1533,22 +1532,6 @@
                             <label for="editAddressDescription" class="form-label">Текст адреса</label>
                             <textarea class="form-control" id="editAddressDescription" rows="12" required></textarea>
                         </div>
-                        <hr>
-                        <h6>Приложения по этому адресу</h6>
-                        <p class="small text-muted">Напишите в тексте адреса «Приложение 1», «Приложение 2» и т. д. После посещения адреса игрок откроет прикреплённую папку прямо в игре.</p>
-                        <div id="editAddressApplications" class="mb-3">Загрузка…</div>
-                        <div class="row g-2 align-items-end">
-                            <div class="col-sm-3">
-                                <label for="applicationNumber" class="form-label">Номер приложения</label>
-                                <input id="applicationNumber" type="number" min="1" step="1" class="form-control" placeholder="1">
-                            </div>
-                            <div class="col-sm-9">
-                                <label for="applicationFolder" class="form-label">Папка с изображениями и PDF</label>
-                                <input id="applicationFolder" type="file" class="form-control" accept="image/png,image/jpeg,image/webp,application/pdf" webkitdirectory directory multiple>
-                            </div>
-                        </div>
-                        <div class="small text-muted mt-2">Повторная загрузка того же номера заменит его файлы. DOCX нужно предварительно сохранить как PDF.</div>
-                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="uploadApplicationBtn" onclick="uploadAddressApplication()">Прикрепить папку</button>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -1630,8 +1613,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/game-network.js?v=1"></script>
-    <script src="js/admin.js?v=10"></script>
+    <script src="js/admin.js?v=5"></script>
     <script src="js/backup.js?v=2"></script>
     <script src="js/choices.js?v=2"></script>
     <script src="js/internet-cafe-admin.js?v=2"></script>

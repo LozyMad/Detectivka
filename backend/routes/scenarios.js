@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const Scenario = require('../models/scenario');
 const { getBannerFile } = require('../services/scenarioBanner');
-const { imagePreview, previewWidth } = require('../services/imagePreview');
 
 // Публичный endpoint для получения списка сценариев
 router.get('/', async (req, res) => {
@@ -36,9 +35,8 @@ router.get('/:id/banner', async (req, res) => {
     const banner = scenario && getBannerFile(req.params.id);
     if (!banner) return res.status(404).end();
     res.setHeader('Cache-Control', 'private, max-age=300, must-revalidate');
-    const preview = await imagePreview(banner.file, previewWidth(req.query.width));
-    res.type(preview.type);
-    res.sendFile(preview.path);
+    res.type(banner.extension === 'jpg' ? 'jpeg' : banner.extension);
+    res.sendFile(banner.file);
   } catch (error) {
     console.error('Get scenario banner error:', error);
     res.status(500).end();

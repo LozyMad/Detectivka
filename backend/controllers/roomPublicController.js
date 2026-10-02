@@ -1,12 +1,36 @@
-const { remainingSeconds, syncRoomTimer } = require('../services/roomTimer');
+const Room = require('../models/room');
 
 const getRoomState = async (req, res) => {
   try {
     const { room_id } = req.params;
-    const room = await syncRoomTimer(room_id);
+    const room = await Room.getById(room_id);
     if (!room) return res.status(404).json({ error: 'Room not found' });
-    const state = room.is_test ? 'running' : (room.state || 'pending');
-    const remaining = remainingSeconds(room);
+    
+    let state = room.state || 'pending';
+    let remaining = null;
+    
+    if (room.is_test) {
+      state = 'running';
+    } else if (state === 'running' && room.game_start_time && room.game_end_time) {
+      const now = new Date();
+      const endTime = new Date(room.game_end_time);
+      remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+      
+      if (remaining <= 0) {
+        state = 'finished';
+        remaining = 0;
+        // Update room state to finished
+        const { db } = require('../config/database');
+        db.run(`UPDATE rooms SET state = 'finished' WHERE id = ?`, [room_id]);
+      }
+    } else if (state === 'paused' && room.game_start_time && room.game_end_time) {
+      // При паузе показываем оставшееся время до конца игры
+      const now = new Date();
+      const endTime = new Date(room.game_end_time);
+      remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+    } else if (state === 'finished') {
+      remaining = 0;
+    }
     
     const response = {
       room: {
@@ -16,8 +40,6 @@ const getRoomState = async (req, res) => {
         scenario_name: room.scenario_name,
         game_start_time: room.game_start_time,
         game_end_time: room.game_end_time,
-        paused_at: room.paused_at,
-        halfway_paused: !!room.halfway_paused,
         duration_seconds: room.duration_seconds,
         is_test: !!room.is_test
       },
@@ -26,6 +48,7 @@ const getRoomState = async (req, res) => {
       remaining
     };
     
+    console.log('Room state response:', JSON.stringify(response, null, 2));
     res.json(response);
   } catch (error) {
     console.error('Get room state error:', error);

@@ -5,36 +5,14 @@ let roomState = null;
 let roomTimerInterval = null;
 let tripCount = 0;
 let tripHistory = [];
-let receivedApplications = new Map();
-let receivedApplicationAddresses = new Map();
 const collapsedTripKeys = new Set();
 let freshTripTimer = null;
 let cachedScenarioName = null; // Кэш для имени сценария
 let lastScenarioCheck = 0; // Время последней проверки сценария
 let roomEventSource = null;
-let roomReconnectTimer = null;
-let roomEventWatchdog = null;
-let roomReconnectDelay = 5000;
-let roomStateRequest = null;
-let roomStateUpdatedAt = 0;
-let tripHistoryRequest = null;
-let tripHistoryVersion = 0;
-let visitInFlight = false;
-let backgroundReady = false;
-let pageSuspended = false;
-const roomStatePoll = window.gameNetwork.poll(async () => {
-    const success = await refreshRoomState();
-    renderTimer();
-    return success;
-}, 5000);
-const tripHistoryPoll = window.gameNetwork.poll(() => loadTripHistory(), 60000);
 let currentCafeAddressId = null;
 let currentCafePage = null;
 let cafeViewMode = 'home'; // 'home' | 'page' | 'error'
-let applicationObjectUrl = null;
-let applicationRequestId = 0;
-let applicationController = null;
-let arrangePlayerNavigation = () => {};
 
 function setScenarioTitle(text) {
     const el = document.getElementById('scenarioTitle');
@@ -52,8 +30,7 @@ function setScenarioBanner(scenarioId) {
     image.hidden = true;
     image.onload = () => { image.hidden = false; };
     image.onerror = () => { image.hidden = true; };
-    const bannerWidth = window.matchMedia('(max-width: 767.98px)').matches ? 960 : 1920;
-    image.src = `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/banner?width=${bannerWidth}`;
+    image.src = `${API_BASE}/scenarios/${encodeURIComponent(scenarioId)}/banner`;
 }
 
 function setupMobileGameLayout() {
@@ -61,12 +38,6 @@ function setupMobileGameLayout() {
     const collapse = document.getElementById('navbarCollapse');
     const tabs = document.getElementById('playerNavTabs');
     const stats = document.getElementById('playerNavStats');
-    const controls = document.getElementById('playerNavControls');
-    const timer = document.getElementById('roomTimer');
-    const boardNav = document.getElementById('boardNavHost');
-    const boardTimer = document.getElementById('boardTimerHost');
-    const boardAccount = document.getElementById('boardAccount');
-    const boardMenu = document.getElementById('boardAccountMenu');
     const sidebar = document.querySelector('.dossier-sidebar');
     if (!toolbar || !collapse || !tabs || !stats || !sidebar) return;
 
@@ -75,27 +46,9 @@ function setupMobileGameLayout() {
     const sidebarHome = sidebar.parentElement;
     const toolbarHome = toolbar.parentElement;
     const toolbarNext = toolbar.nextSibling;
-    const controlsHome = controls?.parentElement;
-    const timerHome = timer?.parentElement;
     const mobile = window.matchMedia('(max-width: 767.98px)');
-    const desktopBoard = window.matchMedia('(min-width: 768px) and (min-height: 501px), (min-width: 951px)');
     const arrange = () => {
-        // Move the existing controls so timers, active tabs and click handlers stay in sync.
-        if (controls && controlsHome) controlsHome.append(controls);
-        statHome.prepend(stats);
-        if (timer && timerHome) timerHome.prepend(timer);
-        tabHome.insertBefore(tabs, statHome);
-        const combined = document.body.classList.contains('board-open') && desktopBoard.matches &&
-            !!(controls && timer && boardNav && boardTimer && boardMenu);
-        document.body.classList.toggle('board-desktop-header', combined);
-        if (boardAccount) boardAccount.open = false;
-        if (combined) {
-            boardNav.append(tabs);
-            boardTimer.append(timer);
-            boardMenu.append(controls);
-            sidebarHome.append(sidebar);
-            toolbarHome.insertBefore(toolbar, toolbarNext);
-        } else if (mobile.matches) {
+        if (mobile.matches) {
             toolbar.append(tabs, stats);
             const activePane = document.querySelector('#gameTabContent .tab-pane.active') || document.getElementById('game');
             placeMobileToolbar(activePane);
@@ -106,31 +59,15 @@ function setupMobileGameLayout() {
             sidebarHome.append(sidebar);
             toolbarHome.insertBefore(toolbar, toolbarNext);
         }
-        const navbar = document.getElementById('gameNavbar');
-        if (navbar) document.body.style.setProperty('--board-nav-height', `${navbar.offsetHeight}px`);
     };
-    arrangePlayerNavigation = arrange;
     arrange();
-    for (const media of [mobile, desktopBoard]) {
-        if (media.addEventListener) media.addEventListener('change', arrange);
-        else media.addListener(arrange);
-    }
-    boardAccount?.addEventListener('keydown', event => {
-        if (event.key === 'Escape') {
-            event.stopPropagation();
-            boardAccount.open = false;
-            boardAccount.querySelector('summary').focus();
-        }
-    });
-    document.addEventListener('pointerdown', event => {
-        if (boardAccount?.open && !boardAccount.contains(event.target)) boardAccount.open = false;
-    });
+    if (mobile.addEventListener) mobile.addEventListener('change', arrange);
+    else mobile.addListener(arrange);
 }
 
 function placeMobileToolbar(pane) {
     const toolbar = document.getElementById('playerMobileToolbar');
     if (!toolbar || !pane || !window.matchMedia('(max-width: 767.98px)').matches) return;
-    if (pane.id === 'board') return;
     if (pane.id === 'game') pane.querySelector('.case-banner')?.after(toolbar);
     else pane.prepend(toolbar);
 }
@@ -188,90 +125,33 @@ function setupPlayerNotes() {
     });
 }
 
-function stopRoomSSE() {
-    clearTimeout(roomReconnectTimer);
-    clearTimeout(roomEventWatchdog);
-    roomReconnectTimer = roomEventWatchdog = null;
-    const source = roomEventSource;
-    roomEventSource = null;
-    if (source) {
-        source.onopen = source.onmessage = source.onerror = null;
-        source.close();
-    }
-}
-
-function backgroundAllowed() {
-    return backgroundReady && !pageSuspended && !document.hidden && navigator.onLine !== false && !!gameStorage.getItem('token');
-}
-
 function connectRoomSSE(roomId, token) {
-    if (!backgroundAllowed() || roomEventSource || roomReconnectTimer !== null) return;
+    if (roomEventSource) {
+        roomEventSource.close();
+        roomEventSource = null;
+    }
     const url = `${API_BASE}/game/room/${roomId}/events?token=${encodeURIComponent(token)}`;
     const es = new EventSource(url);
     roomEventSource = es;
-    const touch = () => {
-        if (roomEventSource !== es) return;
-        clearTimeout(roomEventWatchdog);
-        roomEventWatchdog = setTimeout(reconnect, 70000);
-    };
-    const reconnect = () => {
-        if (roomEventSource !== es) return;
-        stopRoomSSE();
-        if (!backgroundAllowed()) return;
-        const delay = roomReconnectDelay + Math.floor(Math.random() * 1000);
-        roomReconnectDelay = Math.min(roomReconnectDelay * 2, 60000);
-        roomReconnectTimer = setTimeout(() => {
-            roomReconnectTimer = null;
-            const ru = JSON.parse(gameStorage.getItem('roomUser') || 'null');
-            const currentToken = gameStorage.getItem('token');
-            if (ru?.room_id && currentToken) connectRoomSSE(ru.room_id, currentToken);
-        }, delay);
-    };
-    // Connecting can stall without an error callback on a broken network.
-    roomEventWatchdog = setTimeout(reconnect, 15000);
-    es.onopen = () => {
-        if (roomEventSource !== es) return;
-        roomReconnectDelay = 5000;
-        touch();
-    };
-    es.addEventListener('ping', touch);
     es.onmessage = (e) => {
-        if (roomEventSource !== es) return;
-        touch();
         try {
             const d = JSON.parse(e.data || '{}');
             if (d.type === 'new_trip') {
-                tripHistoryVersion++;
+                loadTripCount();
                 loadTripHistory();
             }
         } catch (_) {}
     };
-    es.onerror = reconnect;
+    es.onerror = () => {
+        es.close();
+        roomEventSource = null;
+        setTimeout(() => {
+            const ru = JSON.parse(gameStorage.getItem('roomUser') || 'null');
+            const t = gameStorage.getItem('token');
+            if (ru && ru.room_id && t) connectRoomSSE(ru.room_id, t);
+        }, 5000);
+    };
 }
-
-function updateBackgroundState() {
-    if (!backgroundAllowed()) {
-        roomStatePoll.stop();
-        tripHistoryPoll.stop();
-        stopRoomSSE();
-        if (roomTimerInterval !== null) clearInterval(roomTimerInterval);
-        roomTimerInterval = null;
-        return;
-    }
-    const roomUser = JSON.parse(gameStorage.getItem('roomUser') || 'null');
-    if (roomUser?.room_id) {
-        initRoomTimer();
-        roomStatePoll.start();
-        connectRoomSSE(roomUser.room_id, gameStorage.getItem('token'));
-    }
-    tripHistoryPoll.start();
-}
-
-document.addEventListener('visibilitychange', updateBackgroundState);
-window.addEventListener('offline', updateBackgroundState);
-window.addEventListener('online', updateBackgroundState);
-window.addEventListener('pagehide', () => { pageSuspended = true; updateBackgroundState(); });
-window.addEventListener('pageshow', () => { pageSuspended = false; updateBackgroundState(); });
 
 // Initialize game
 document.addEventListener('DOMContentLoaded', () => {
@@ -284,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setScenarioBanner(room?.scenario_id);
     } catch (_) {}
     setupDistrictSelect();
+    loadTripCount();
     loadTripHistory();
     loadScenarioInfo();
     setupPlayerNotes();
@@ -295,19 +176,42 @@ document.addEventListener('DOMContentLoaded', () => {
     if (collapseEl && iconEl) {
         collapseEl.addEventListener('show.bs.collapse', () => {
             iconEl.classList.remove('fa-chevron-down'); iconEl.classList.add('fa-chevron-up');
-            menuButton?.setAttribute('aria-label', 'Закрыть приложения и заметки');
+            menuButton?.setAttribute('aria-label', 'Закрыть локацию и заметки');
         });
         collapseEl.addEventListener('hide.bs.collapse', () => {
             iconEl.classList.remove('fa-chevron-up'); iconEl.classList.add('fa-chevron-down');
-            menuButton?.setAttribute('aria-label', 'Открыть приложения и заметки');
+            menuButton?.setAttribute('aria-label', 'Открыть локацию и заметки');
         });
     }
     
     // Setup tab switching
     setupTabSwitching();
     
-    backgroundReady = true;
-    updateBackgroundState();
+    // Update every 30 seconds
+    setInterval(() => {
+        if (gameStorage.getItem('roomUser')) {
+            refreshRoomState();
+        }
+    }, 30000);
+    
+    // SSE: мгновенное обновление истории при поездке с другого устройства
+    const roomUser = JSON.parse(gameStorage.getItem('roomUser') || 'null');
+    const token = gameStorage.getItem('token');
+    if (roomUser && roomUser.room_id && token) {
+        connectRoomSSE(roomUser.room_id, token);
+    }
+    // Резервный опрос раз в 60 сек на случай обрыва SSE
+    setInterval(() => {
+        loadTripCount();
+        loadTripHistory();
+    }, 60000);
+    
+    // Принудительно обновляем имя сценария каждые 10 минут (на случай изменений админом)
+    setInterval(() => {
+        if (gameStorage.getItem('roomUser')) {
+            lastScenarioCheck = 0; // Сбрасываем кэш для принудительного обновления
+        }
+    }, 10 * 60 * 1000); // 10 минут
 });
 
 function checkAuth() {
@@ -319,11 +223,14 @@ function checkAuth() {
     
     if (!token || (!user.id && !roomUser?.id)) {
         console.log('Auth failed, redirecting to home');
-        window.location.href = '/enter';
+        window.location.href = '/';
         return;
     }
     
     document.getElementById('usernameDisplay').textContent = (roomUser ? roomUser.username : user.username);
+    if (roomUser) {
+        initRoomTimer();
+    }
 }
 
 function setupDistrictSelect() {
@@ -335,11 +242,6 @@ function setupDistrictSelect() {
 }
 
 async function visitLocation() {
-    if (visitInFlight) return;
-    if (roomState?.state === 'paused') {
-        showRoomPausedPopup();
-        return;
-    }
     if (roomState && roomState.state !== 'running') {
         alert('Игра еще не началась или уже завершилась');
         return;
@@ -371,14 +273,10 @@ async function visitLocation() {
     
     const resultDiv = document.getElementById('result');
     const resultText = document.getElementById('resultText');
-    visitInFlight = true;
-    const goButton = document.getElementById('goBtn');
-    if (goButton) goButton.disabled = true;
-    tripHistoryVersion++;
     
     try {
         const token = gameStorage.getItem('token');
-        const response = await window.gameNetwork.fetch(`${API_BASE}/game/visit`, {
+        const response = await fetch(`${API_BASE}/game/visit`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -392,23 +290,8 @@ async function visitLocation() {
         });
         
         const data = await response.json();
-
-        if (response.status === 403 && data.error === 'Game is paused') {
-            await refreshRoomState();
-            renderTimer();
-            if (roomState?.state !== 'paused') showRoomPausedPopup();
-            return;
-        }
         
-        if (!response.ok && !data.attempt_id) {
-            tripHistoryVersion++;
-            alert(`${data.error || 'Не удалось выполнить поездку'}. Проверьте историю перед повторной попыткой. Введённый адрес сохранён.`);
-            loadTripHistory();
-            return;
-        }
-
-        // A recorded unsuccessful visit counts; an HTTP error without an attempt does not.
-        tripHistoryVersion++;
+        // Увеличиваем счетчик поездок независимо от результата
         tripCount++;
         updateTripCounter();
         
@@ -429,7 +312,6 @@ async function visitLocation() {
             };
             tripHistory.unshift(trip);
             updateTripHistory();
-            refreshAvailableApplications();
             
             document.getElementById('houseNumber').value = '';
             if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
@@ -460,27 +342,48 @@ async function visitLocation() {
         }
     } catch (error) {
         console.error('Error visiting location:', error);
-        tripHistoryVersion++;
-        alert('Ответ на поездку не получен. Проверьте историю перед повторной попыткой: поездка могла сохраниться. Введённый адрес сохранён.');
-        loadTripHistory();
-    } finally {
-        visitInFlight = false;
-        if (goButton) goButton.disabled = false;
-    }
-}
-
-function showRoomPausedPopup() {
-    const modal = document.getElementById('roomPausedModal');
-    if (modal && window.bootstrap?.Modal) {
-        bootstrap.Modal.getOrCreateInstance(modal).show();
-    } else {
-        alert('Игра на паузе. Новые поездки пока недоступны.');
+        tripCount++;
+        updateTripCounter();
+        const trip = {
+            district: selectedDistrict,
+            houseNumber: houseNumber,
+            apartment: apartmentNumber,
+            success: false,
+            description: 'Ошибка соединения',
+            timestamp: new Date().toISOString(),
+            alreadyVisited: false
+        };
+        tripHistory.unshift(trip);
+        updateTripHistory();
+        document.getElementById('houseNumber').value = '';
+        if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
     }
 }
 
 // Загрузка счетчика поездок
 async function loadTripCount() {
-    return loadTripHistory();
+    try {
+        const token = gameStorage.getItem('token');
+        const response = await fetch(`${API_BASE}/game/attempts`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load attempts');
+        }
+        
+        const data = await response.json();
+        const attempts = data.attempts || [];
+        tripCount = attempts.length;
+        updateTripCounter();
+        
+    } catch (error) {
+        console.error('Error loading trip count:', error);
+        tripCount = 0;
+        updateTripCounter();
+    }
 }
 
 // Обновление счетчика поездок
@@ -492,20 +395,10 @@ function updateTripCounter() {
 }
 
 // Загрузка истории поездок
-function loadTripHistory() {
-    if (tripHistoryRequest) return tripHistoryRequest;
-    const version = tripHistoryVersion;
-    tripHistoryRequest = fetchTripHistory(version).finally(() => {
-        tripHistoryRequest = null;
-        if (version !== tripHistoryVersion && backgroundAllowed()) loadTripHistory();
-    });
-    return tripHistoryRequest;
-}
-
-async function fetchTripHistory(version) {
+async function loadTripHistory() {
     try {
         const token = gameStorage.getItem('token');
-        const response = await window.gameNetwork.fetch(`${API_BASE}/game/attempts`, {
+        const response = await fetch(`${API_BASE}/game/attempts`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -519,19 +412,17 @@ async function fetchTripHistory(version) {
         const attempts = data.attempts || [];
         
         // Преобразуем попытки в формат истории поездок
-        const nextHistory = await mapTripAttempts(attempts, async (attempt) => {
+        tripHistory = await Promise.all(attempts.map(async (attempt) => {
             let description = attempt.found ? (attempt.address_description || 'Локация найдена') : 'По этому адресу нет информации';
-            if (attempt.found && attempt.choice_response) description = attempt.choice_response;
             
             // Если это успешная поездка с address_id, проверяем, есть ли сделанные выборы
-            // Compatibility with an older server; the new server includes all choices in one response.
-            if (!data.choices_included && attempt.found && attempt.has_choices && attempt.address_id && attempt.visited_location_id) {
+            if (attempt.found && attempt.address_id && attempt.visited_location_id) {
                 try {
                     const roomUser = JSON.parse(gameStorage.getItem('roomUser'));
                     const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
                     
                     if (roomUser && roomUser.id && scenarioId) {
-                        const choiceResponse = await window.gameNetwork.fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${attempt.address_id}/choice`, {
+                        const choiceResponse = await fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${attempt.address_id}/choice`, {
                             headers: {
                                 'Authorization': `Bearer ${gameStorage.getItem('token')}`
                             }
@@ -564,34 +455,15 @@ async function fetchTripHistory(version) {
                 is_internet_cafe: !!attempt.is_internet_cafe,
                 locationNames: Array.isArray(attempt.location_names) ? attempt.location_names : []
             };
-        });
-        if (version !== tripHistoryVersion) return true;
-        tripHistory = nextHistory;
-        tripCount = attempts.length;
-        updateTripCounter();
+        }));
         
         updateTripHistory();
-        await refreshAvailableApplications();
-        return true;
         
     } catch (error) {
         console.error('Error loading trip history:', error);
-        // Keep the last confirmed history and counter on transient network errors.
-        return false;
+        tripHistory = [];
+        updateTripHistory();
     }
-}
-
-async function mapTripAttempts(attempts, mapper) {
-    const results = new Array(attempts.length);
-    let next = 0;
-    // Older servers need per-address lookups. Do not enqueue the whole history at once.
-    await Promise.all(Array.from({ length: Math.min(2, attempts.length) }, async () => {
-        while (next < attempts.length) {
-            const index = next++;
-            results[index] = await mapper(attempts[index]);
-        }
-    }));
-    return results;
 }
 
 function formatTripAddressLabel(trip) {
@@ -612,50 +484,23 @@ function tripTimestampMs(timestamp) {
     return new Date(normalized).getTime();
 }
 
-async function refreshAvailableApplications() {
-    const token = gameStorage.getItem('token');
-    if (!token) return;
-    try {
-        const response = await window.gameNetwork.fetch(`${API_BASE}/applications/game/available`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error('Не удалось загрузить приложения');
-        const data = await response.json();
-        receivedApplications = new Map((data.addresses || []).map(item => [Number(item.address_id), item.applications || []]));
-        receivedApplicationAddresses = new Map((data.addresses || []).map(item => [Number(item.address_id), item]));
-        updateTripHistory();
-    } catch (error) {
-        console.error('Error loading available applications:', error);
-    }
-}
-
-function updateReceivedApplications() {
-    const target = document.getElementById('receivedApplicationsList');
+function updateLatestLocation() {
+    const target = document.getElementById('latestLocationContent');
     if (!target) return;
-    const items = [];
-    for (const [addressId, applications] of receivedApplications) {
-        const address = receivedApplicationAddresses.get(addressId) || {};
-        const label = `${address.district || ''} · Дом ${address.house_number || ''}${address.apartment ? ', кв. ' + address.apartment : ''}`;
-        for (const app of applications) {
-            items.push({ ...app, addressId, address: label });
-        }
-    }
-    items.sort((a, b) => a.number - b.number);
-    if (!items.length) {
-        target.textContent = 'Пока нет приложений';
+    const latest = tripHistory.find(trip => trip.success);
+    if (!latest) {
+        target.textContent = 'Пока не найдена ни одна локация';
         return;
     }
-    target.innerHTML = items.map(app => `<button type="button" class="received-application scenario-application-link" data-address-id="${app.addressId}" data-number="${app.number}">
-        <i class="far fa-folder-open" aria-hidden="true"></i> Приложение ${app.number}
-        <small>${escapeHtmlPlayer(app.address)} · ${app.file_count} файл(ов)</small>
-    </button>`).join('');
+    const names = Array.isArray(latest.locationNames) ? latest.locationNames.filter(Boolean) : [];
+    target.innerHTML = `<div class="latest-location-address"><i class="far fa-building" aria-hidden="true"></i><div><strong>${escapeHtmlPlayer(`Дом ${latest.houseNumber}`)}</strong>${names.length ? `<div>${escapeHtmlPlayer(names.join(' / '))}</div>` : ''}<small>${escapeHtmlPlayer(latest.district)} · ${escapeHtmlPlayer(formatTripTime(latest.timestamp))}</small></div></div>`;
 }
 
 // Обновление отображения истории поездок
 function updateTripHistory() {
     const container = document.getElementById('tripHistory');
     if (!container) return;
-    updateReceivedApplications();
+    updateLatestLocation();
     const query = (document.getElementById('tripSearch')?.value || '').trim().toLocaleLowerCase('ru-RU');
     const matchingTrips = query ? tripHistory.filter(trip =>
         [trip.district, formatTripAddressLabel(trip), trip.description, trip.success ? 'найдено' : 'не найдено']
@@ -673,7 +518,6 @@ function updateTripHistory() {
     let nextFreshExpiry = Infinity;
     const items = matchingTrips.map(trip => {
         const key = tripKey(trip);
-        const apps = trip.success && trip.address_id ? (receivedApplications.get(Number(trip.address_id)) || []) : [];
         const collapsed = collapsedTripKeys.has(key);
         const elapsed = Date.now() - tripTimestampMs(trip.timestamp);
         const isFresh = trip.success && elapsed >= 0 && elapsed < 9000;
@@ -685,7 +529,6 @@ function updateTripHistory() {
                 <span class="trip-address">${escapeHtmlPlayer(trip.district)} · ${escapeHtmlPlayer(formatTripAddressLabel(trip))}</span>
                 <span class="trip-time">${escapeHtmlPlayer(formatTripTime(trip.timestamp))}</span>
                 <span class="trip-status">${trip.success ? 'Найдено' : 'Не найдено'}</span>
-                ${apps.map(app => `<button type="button" class="trip-app-badge scenario-application-link" data-address-id="${Number(trip.address_id)}" data-number="${app.number}" title="Открыть приложение ${app.number}"><i class="far fa-folder-open" aria-hidden="true"></i> №${app.number}</button>`).join('')}
                 ${trip.success && trip.address_id && trip.hasChoices ? 
                     `<button type="button" class="btn btn-sm btn-outline-warning ms-2 trip-choice-btn" title="Развилка по выборам"
                         data-address-id="${trip.address_id}"
@@ -696,18 +539,10 @@ function updateTripHistory() {
                 }
             </div>
             <div class="trip-description">${trip.success
-                ? `<div class="trip-description-text">${renderScenarioText(trip.description || '', trip.address_id)}</div>`
+                ? `<div class="trip-description-text">${renderScenarioText(trip.description || '')}</div>`
                 : `<strong>По этому адресу нет информации</strong>`
-            }${apps.length
-                ? `<div class="trip-application-links">${apps.map(app =>
-                    `<button type="button" class="trip-application-button scenario-application-link" data-address-id="${Number(trip.address_id)}" data-number="${app.number}"><i class="far fa-folder-open" aria-hidden="true"></i> Приложение ${app.number}</button>`
-                ).join('')}</div>`
-                : ''
             }${trip.success && trip.is_internet_cafe && trip.address_id
                 ? `<div><a href="#" class="trip-cafe-link" data-cafe-address-id="${trip.address_id}">Сесть за компьютер</a></div>`
-                : ''
-            }${trip.success && trip.address_id && gameStorage.getItem('roomUser')
-                ? `<div><button type="button" class="trip-board-button" data-trip-id="${escapeHtmlPlayer(trip.id)}"><i class="fas fa-thumbtack" aria-hidden="true"></i> Добавить на доску</button></div>`
                 : ''
             }</div></div>
             <button type="button" class="trip-toggle" data-trip-key="${escapeHtmlPlayer(key)}" aria-expanded="${!collapsed}" aria-label="${collapsed ? 'Развернуть' : 'Свернуть'} поездку: ${escapeHtmlPlayer(formatTripAddressLabel(trip))}"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>
@@ -741,12 +576,6 @@ function updateTripHistory() {
             if (id) openInternetCafe(id);
         });
     });
-    container.querySelectorAll('.trip-board-button').forEach(button => {
-        button.addEventListener('click', () => {
-            const trip = tripHistory.find(item => String(item.id) === button.dataset.tripId);
-            if (trip) window.investigationBoard?.openFromTrip(trip);
-        });
-    });
 }
 
 // Время поездки — всегда дата и время совершения (без «X мин. назад»)
@@ -774,7 +603,7 @@ async function loadScenarioInfo() {
         if (roomUser && roomUser.room_id) {
             // Для игроков комнаты получаем информацию о сценарии из комнаты
             const token = gameStorage.getItem('token');
-            const response = await window.gameNetwork.fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
+            const response = await fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -819,7 +648,7 @@ async function loadScenarioInfo() {
             }
         } else {
             // Для обычных пользователей получаем активный сценарий
-            const response = await window.gameNetwork.fetch(`${API_BASE}/scenarios/active`);
+            const response = await fetch(`${API_BASE}/scenarios/active`);
             
             if (response.ok) {
                 const data = await response.json();
@@ -838,36 +667,28 @@ async function loadScenarioInfo() {
 }
 
 // ===== Room timer =====
-function initRoomTimer() {
-    if (roomTimerInterval !== null) return;
+async function initRoomTimer() {
+    await refreshRoomState();
     renderTimer();
-    // The clock ticks locally; only the poller synchronizes with the server.
-    roomTimerInterval = setInterval(renderTimer, 1000);
+    if (roomTimerInterval) clearInterval(roomTimerInterval);
+    roomTimerInterval = setInterval(async () => {
+        await refreshRoomState();
+        renderTimer();
+    }, 1000);
 }
 
-function refreshRoomState() {
-    if (roomStateRequest) return roomStateRequest;
-    roomStateRequest = fetchRoomState().finally(() => { roomStateRequest = null; });
-    return roomStateRequest;
-}
-
-async function fetchRoomState() {
+async function refreshRoomState() {
     try {
         const room = JSON.parse(gameStorage.getItem('room') || 'null');
         if (!room) return;
         const token = gameStorage.getItem('token');
-        const res = await window.gameNetwork.fetch(`${API_BASE}/room/${room.id}/state`, {
+        const res = await fetch(`${API_BASE}/room/${room.id}/state`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-        if (!res.ok) return false;
-        const previousState = roomState?.state;
+        if (!res.ok) return;
         roomState = await res.json();
-        roomStateUpdatedAt = performance.now();
-        if (roomState.state === 'paused' && previousState !== 'paused') {
-            showRoomPausedPopup();
-        }
         if (roomState?.room?.is_test && String(roomState.room.scenario_id) !== String(room.scenario_id)) {
             gameStorage.setItem('room', JSON.stringify({ ...room, scenario_id: roomState.room.scenario_id }));
             window.location.reload();
@@ -900,9 +721,8 @@ async function fetchRoomState() {
                 console.log('Scenario name initially loaded:', scenarioName);
             }
         }
-        return true;
     } catch (e) {
-        return false;
+        // ignore
     }
 }
 
@@ -914,8 +734,7 @@ function renderTimer() {
     if (!roomState) return;
     
     const state = roomState.state;
-    const elapsed = state === 'running' ? Math.max(0, Math.floor((performance.now() - roomStateUpdatedAt) / 1000)) : 0;
-    const remaining = Math.max(0, (roomState.remaining || 0) - elapsed);
+    const remaining = roomState.remaining;
 
     if (roomState.room?.is_test) {
         timerDisplay.textContent = '∞ Без ограничений';
@@ -949,9 +768,6 @@ function renderTimer() {
 
 
 function logout() {
-    backgroundReady = false;
-    updateBackgroundState();
-    window.gameNetwork.cancelReads();
     gameStorage.removeItem('token');
     gameStorage.removeItem('user');
     gameStorage.removeItem('roomUser');
@@ -960,7 +776,7 @@ function logout() {
         gameStorage.removeItem('testRoomSession');
         window.location.href = '/admin';
     } else {
-        window.location.href = '/enter';
+        window.location.href = '/';
     }
 }
 
@@ -969,33 +785,12 @@ function setupTabSwitching() {
     const gameTab = document.getElementById('game-tab');
     const questionsTab = document.getElementById('questions-tab');
     const addressbookTab = document.getElementById('addressbook-tab');
-    const boardTab = document.getElementById('board-tab');
     const gameContent = document.getElementById('game');
     const questionsContent = document.getElementById('questions');
     const addressbookContent = document.getElementById('addressbook');
-    const boardContent = document.getElementById('board');
-    const gameNavbar = document.getElementById('gameNavbar');
-    let boardReturnScrollY = 0;
-
-    function updateBoardNavHeight() {
-        if (gameNavbar) document.body.style.setProperty('--board-nav-height', `${gameNavbar.offsetHeight}px`);
-    }
-    if (gameNavbar) new ResizeObserver(updateBoardNavHeight).observe(gameNavbar);
-    window.addEventListener('resize', updateBoardNavHeight);
 
     function showPane(pane) {
-        const wasBoardOpen = document.body.classList.contains('board-open');
-        if (wasBoardOpen && pane !== boardContent) window.investigationBoard?.hide();
-        if (pane === boardContent && !wasBoardOpen) {
-            boardReturnScrollY = window.scrollY;
-            const mobileMenu = document.getElementById('navbarCollapse');
-            if (mobileMenu && window.matchMedia('(max-width: 767.98px), (max-width: 950px) and (max-height: 500px)').matches) {
-                window.bootstrap?.Collapse.getOrCreateInstance(mobileMenu, { toggle: false }).hide();
-            }
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-            updateBoardNavHeight();
-        }
-        [gameContent, questionsContent, addressbookContent, boardContent].forEach(el => {
+        [gameContent, questionsContent, addressbookContent].forEach(el => {
             if (!el) return;
             if (el === pane) {
                 el.classList.add('show', 'active');
@@ -1005,16 +800,12 @@ function setupTabSwitching() {
                 el.classList.add('fade');
             }
         });
-        [gameTab, questionsTab, addressbookTab, boardTab].forEach((btn, i) => {
+        [gameTab, questionsTab, addressbookTab].forEach((btn, i) => {
             if (!btn) return;
-            const panes = [gameContent, questionsContent, addressbookContent, boardContent];
+            const panes = [gameContent, questionsContent, addressbookContent];
             btn.classList.toggle('active', panes[i] === pane);
         });
-        document.body.classList.toggle('board-open', pane === boardContent);
-        arrangePlayerNavigation();
-        updateBoardNavHeight();
         placeMobileToolbar(pane);
-        if (wasBoardOpen && pane !== boardContent) window.scrollTo(0, boardReturnScrollY);
     }
 
     if (gameTab && questionsTab && gameContent && questionsContent) {
@@ -1036,13 +827,6 @@ function setupTabSwitching() {
                 loadPlayerAddressBookSectionsAndEntries();
             });
         }
-        if (boardTab && boardContent) {
-            boardTab.addEventListener('click', (e) => {
-                e.preventDefault();
-                showPane(boardContent);
-                window.investigationBoard?.show();
-            });
-        }
     }
 }
 
@@ -1057,34 +841,14 @@ function escapeHtmlPlayer(s) {
     return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function displayApplicationFileName(file, index) {
-    const base = String(file?.name || '').replace(/\.(?:png|jpe?g|webp|pdf)$/i, '').trim();
-    return !base || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(base)
-        ? `Материал ${index + 1}` : base;
-}
-
-function applicationLink(number, addressId, fallbackUrl = '') {
-    return `<a href="#" class="scenario-application-link" data-address-id="${Number(addressId)}" data-number="${Number(number)}"${fallbackUrl ? ` data-fallback-url="${escapeHtmlPlayer(fallbackUrl)}"` : ''}>Приложение ${Number(number)}</a>`;
-}
-
-function renderScenarioText(text, addressId = null) {
+function renderScenarioText(text) {
     const source = String(text || '');
     const anchorPattern = /<a\b[^>]*>[\s\S]*?<\/a\s*>/gi;
     let result = '';
     let offset = 0;
 
-    const renderPlainText = value => {
-        if (!addressId) return escapeHtmlPlayer(value);
-        return value.replace(/Приложение\s*№?\s*(\d+)/gi, (match, number, index) => {
-            const before = value.slice(0, index).slice(-1);
-            if (before && /[\p{L}\p{N}]/u.test(before)) return match;
-            return `\u0000${number}\u0000`;
-        }).split(/(\u0000\d+\u0000)/).map(part => /^\u0000\d+\u0000$/.test(part)
-            ? applicationLink(part.slice(1, -1), addressId) : escapeHtmlPlayer(part)).join('');
-    };
-
     for (const match of source.matchAll(anchorPattern)) {
-        result += renderPlainText(source.slice(offset, match.index));
+        result += escapeHtmlPlayer(source.slice(offset, match.index));
         const anchor = match[0];
         const openingTag = anchor.match(/^<a\b[^>]*>/i)?.[0] || '';
         const href = openingTag.match(/\bhref\s*=\s*(["'])(.*?)\1/i)?.[2];
@@ -1093,143 +857,20 @@ function renderScenarioText(text, addressId = null) {
         let url;
         try { if (href) url = new URL(href.replace(/&amp;/gi, '&')); } catch (_) {}
 
-        result += number && addressId
-            ? applicationLink(number, addressId, url && /^https?:$/.test(url.protocol) ? url.href : '')
-            : number && url && /^https?:$/.test(url.protocol)
+        result += number && url && /^https?:$/.test(url.protocol)
             ? `<a href="${escapeHtmlPlayer(url.href)}" target="_blank" rel="noopener noreferrer">Приложение ${number}</a>`
             : escapeHtmlPlayer(anchor);
         offset = match.index + anchor.length;
     }
 
-    return result + renderPlainText(source.slice(offset));
+    return result + escapeHtmlPlayer(source.slice(offset));
 }
-
-function clearApplicationPreview() {
-    document.getElementById('applicationPreview').replaceChildren();
-    if (applicationObjectUrl) URL.revokeObjectURL(applicationObjectUrl);
-    applicationObjectUrl = null;
-}
-
-function cancelApplicationRequest() {
-    applicationController?.abort();
-    applicationController = null;
-}
-
-function closeApplicationFolder() {
-    applicationRequestId++;
-    cancelApplicationRequest();
-    clearApplicationPreview();
-    const overlay = document.getElementById('applicationOverlay');
-    overlay.classList.remove('is-open');
-    overlay.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = overlay.dataset.previousOverflow || '';
-}
-
-function showApplicationFiles() {
-    cancelApplicationRequest();
-    clearApplicationPreview();
-    document.getElementById('applicationPreview').style.display = 'none';
-    document.getElementById('applicationFiles').style.display = 'block';
-    document.getElementById('applicationBackBtn').disabled = true;
-    document.getElementById('applicationTitle').textContent = document.getElementById('applicationOverlay').dataset.title || 'Приложение';
-}
-
-async function openApplicationFolder(addressId, number, fallbackUrl = '') {
-    const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
-    const token = gameStorage.getItem('token');
-    if (!scenarioId || !token) return;
-    const requestId = ++applicationRequestId;
-    const overlay = document.getElementById('applicationOverlay');
-    overlay.dataset.title = `Приложение ${number}`;
-    if (!overlay.classList.contains('is-open')) overlay.dataset.previousOverflow = document.body.style.overflow;
-    overlay.classList.add('is-open');
-    overlay.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-    showApplicationFiles();
-    const controller = applicationController = new AbortController();
-    const list = document.getElementById('applicationFiles');
-    list.textContent = 'Загрузка файлов…';
-    const base = `${API_BASE}/applications/game/scenarios/${encodeURIComponent(scenarioId)}/addresses/${encodeURIComponent(addressId)}/${encodeURIComponent(number)}`;
-    try {
-        const response = await window.gameNetwork.fetch(base, { signal: controller.signal, headers: { Authorization: `Bearer ${token}` } });
-        if (response.status === 404 && fallbackUrl) {
-            if (requestId === applicationRequestId) {
-                list.innerHTML = `<p>Эта папка ещё не загружена в сценарий.</p><a href="${escapeHtmlPlayer(fallbackUrl)}" target="_blank" rel="noopener noreferrer">Открыть прежнюю ссылку</a>`;
-            }
-            return;
-        }
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Не удалось открыть приложение');
-        if (requestId !== applicationRequestId) return;
-        const files = data.application.files || [];
-        list.innerHTML = files.length ? files.map((file, index) => `
-            <button type="button" class="application-file" data-file-index="${index}">
-                <i class="fas ${file.type === 'application/pdf' ? 'fa-file-pdf' : 'fa-file-image'}" aria-hidden="true"></i>
-                <span>${escapeHtmlPlayer(displayApplicationFileName(file, index))}</span>
-            </button>`).join('') : 'В этой папке пока нет файлов';
-        list.querySelectorAll('.application-file').forEach(button => button.addEventListener('click', () =>
-            openApplicationFile(base, files[Number(button.dataset.fileIndex)], Number(button.dataset.fileIndex), token)));
-    } catch (error) {
-        if (requestId === applicationRequestId) list.textContent = error.message;
-    }
-}
-
-async function openApplicationFile(base, file, index, token) {
-    const requestId = ++applicationRequestId;
-    cancelApplicationRequest();
-    const controller = applicationController = new AbortController();
-    const preview = document.getElementById('applicationPreview');
-    preview.style.display = 'block';
-    document.getElementById('applicationFiles').style.display = 'none';
-    document.getElementById('applicationBackBtn').disabled = false;
-    const displayName = displayApplicationFileName(file, index);
-    document.getElementById('applicationTitle').textContent = displayName;
-    clearApplicationPreview();
-    preview.textContent = 'Загрузка файла…';
-    try {
-        const response = await window.gameNetwork.fetch(`${base}/files/${encodeURIComponent(file.id)}${file.type.startsWith('image/') ? '?preview=1' : ''}`, {
-            timeoutMs: 60000,
-            signal: controller.signal,
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error('Не удалось загрузить файл');
-        const blob = await response.blob();
-        if (requestId !== applicationRequestId) return;
-        clearApplicationPreview();
-        applicationObjectUrl = URL.createObjectURL(blob);
-        const viewer = document.createElement(file.type === 'application/pdf' ? 'iframe' : 'img');
-        viewer.src = applicationObjectUrl;
-        viewer.title = displayName;
-        viewer.alt = displayName;
-        if (viewer.tagName === 'IMG') viewer.decoding = 'async';
-        preview.append(viewer);
-    } catch (error) {
-        if (requestId === applicationRequestId) preview.textContent = error.message;
-    }
-}
-
-document.addEventListener('click', event => {
-    const link = event.target.closest('.scenario-application-link');
-    if (!link) return;
-    event.preventDefault();
-    openApplicationFolder(link.dataset.addressId, link.dataset.number, link.dataset.fallbackUrl || '');
-});
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('applicationCloseBtn')?.addEventListener('click', closeApplicationFolder);
-    document.getElementById('applicationBackBtn')?.addEventListener('click', () => { applicationRequestId++; showApplicationFiles(); });
-    document.getElementById('applicationOverlay')?.addEventListener('click', event => {
-        if (event.target.id === 'applicationOverlay') closeApplicationFolder();
-    });
-});
-document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && document.getElementById('applicationOverlay')?.classList.contains('is-open')) closeApplicationFolder();
-});
 
 async function loadPlayerAddressBookSectionsAndEntries() {
     const token = gameStorage.getItem('token');
     if (!token) return;
     try {
-        const response = await window.gameNetwork.fetch(`${API_BASE}/game/address-book/sections`, {
+        const response = await fetch(`${API_BASE}/game/address-book/sections`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json().catch(() => ({}));
@@ -1318,7 +959,7 @@ async function loadPlayerAddressBookEntries() {
     if (playerAddressBookFilter.q) qs.set('q', playerAddressBookFilter.q);
 
     try {
-        const response = await window.gameNetwork.fetch(`${API_BASE}/game/address-book/entries?${qs}`, {
+        const response = await fetch(`${API_BASE}/game/address-book/entries?${qs}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json().catch(() => ({}));
@@ -1363,7 +1004,7 @@ async function loadQuestions() {
         if (roomUser && roomUser.room_id) {
             // Для игроков комнаты получаем scenario_id из комнаты
             const token = gameStorage.getItem('token');
-            const response = await window.gameNetwork.fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
+            const response = await fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -1375,7 +1016,7 @@ async function loadQuestions() {
             }
         } else {
             // Для обычных пользователей получаем активный сценарий
-            const response = await window.gameNetwork.fetch(`${API_BASE}/scenarios/active`);
+            const response = await fetch(`${API_BASE}/scenarios/active`);
             if (response.ok) {
                 const data = await response.json();
                 scenarioId = data.scenario.id;
@@ -1388,7 +1029,7 @@ async function loadQuestions() {
         }
         
         // Загружаем вопросы для сценария
-        const questionsResponse = await window.gameNetwork.fetch(`${API_BASE}/questions/scenario/${scenarioId}`);
+        const questionsResponse = await fetch(`${API_BASE}/questions/scenario/${scenarioId}`);
         if (questionsResponse.ok) {
             const questionsData = await questionsResponse.json();
             displayQuestions(questionsData.questions, scenarioId, roomUser);
@@ -1510,7 +1151,7 @@ async function submitAllAnswers() {
         const answerText = textarea.value; // пустые ответы разрешены
         
         try {
-            const response = await window.gameNetwork.fetch(`${API_BASE}/questions/answer`, {
+            const response = await fetch(`${API_BASE}/questions/answer`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1578,7 +1219,7 @@ async function checkForInteractiveChoices(addressId, description, visitedLocatio
         console.log('Checking for choices:', { scenarioId: currentScenarioId, addressId });
         const token = gameStorage.getItem('token');
         console.log('Making request to:', `${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`);
-        const response = await window.gameNetwork.fetch(`${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`, {
+        const response = await fetch(`${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -1612,7 +1253,7 @@ function showInteractiveChoiceModal(choices, description) {
     // Обновляем описание адреса
     const addressDescElement = document.getElementById('addressDescription');
     if (addressDescElement) {
-        addressDescElement.innerHTML = renderScenarioText(description || 'Вы нашли интересное место...', currentAddressId);
+        addressDescElement.innerHTML = renderScenarioText(description || 'Вы нашли интересное место...');
     }
     
     // Создаем кнопки выборов
@@ -1681,7 +1322,7 @@ async function makePlayerChoice(choiceId) {
             throw new Error('Room user not found');
         }
         
-        const response = await window.gameNetwork.fetch(`${API_BASE}/choices/game/make-choice`, {
+        const response = await fetch(`${API_BASE}/choices/game/make-choice`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1704,7 +1345,6 @@ async function makePlayerChoice(choiceId) {
         const data = await response.json();
         
         // Показываем результат выбора
-        tripHistoryVersion++;
         showChoiceResponse(data.response);
         
     } catch (error) {
@@ -1724,13 +1364,12 @@ function showChoiceResponse(responseText) {
     
     // Показываем результат
     document.getElementById('choiceResponse').style.display = 'block';
-    document.getElementById('responseText').innerHTML = renderScenarioText(responseText, currentAddressId);
+    document.getElementById('responseText').innerHTML = renderScenarioText(responseText);
 }
 
 // Открыть выборы из истории поездок
 async function openChoiceHistory(addressId, description, visitedLocationId) {
     try {
-        currentAddressId = addressId;
         const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
         if (!scenarioId) {
             console.log('No scenario ID available');
@@ -1745,7 +1384,7 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
         
         // Проверяем, есть ли уже сделанные выборы
         const token = gameStorage.getItem('token');
-        const choiceResponse = await window.gameNetwork.fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${addressId}/choice`, {
+        const choiceResponse = await fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${addressId}/choice`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -1762,7 +1401,7 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
         }
         
         // Если выбор не был сделан, показываем доступные варианты
-        const response = await window.gameNetwork.fetch(`${API_BASE}/choices/game/scenarios/${scenarioId}/addresses/${addressId}/choices`, {
+        const response = await fetch(`${API_BASE}/choices/game/scenarios/${scenarioId}/addresses/${addressId}/choices`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -1792,7 +1431,7 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
 // Показать уже сделанные выборы
 function showExistingChoice(choice, description) {
     // Обновляем описание адреса
-    document.getElementById('addressDescription').innerHTML = renderScenarioText(description || 'Локация найдена', currentAddressId);
+    document.getElementById('addressDescription').innerHTML = renderScenarioText(description || 'Локация найдена');
     
     // Скрываем варианты выбора
     document.getElementById('choiceOptions').style.display = 'none';
@@ -1800,7 +1439,7 @@ function showExistingChoice(choice, description) {
     // Показываем результат
     document.getElementById('choiceResponse').style.display = 'block';
     document.getElementById('responseText').innerHTML =
-        `<strong>Ваш выбор:</strong> ${renderScenarioText(choice.choice_text, currentAddressId)}\n\n<strong>Результат:</strong> ${renderScenarioText(choice.response_text, currentAddressId)}`;
+        `<strong>Ваш выбор:</strong> ${renderScenarioText(choice.choice_text)}\n\n<strong>Результат:</strong> ${renderScenarioText(choice.response_text)}`;
     
     // Показываем модальное окно
     const modal = new bootstrap.Modal(document.getElementById('choiceModal'));
@@ -1844,7 +1483,7 @@ async function openInternetCafe(cafeAddressId) {
 
     try {
         const token = gameStorage.getItem('token');
-        const response = await window.gameNetwork.fetch(`${API_BASE}/internet-cafe/game/${cafeAddressId}/pages`, {
+        const response = await fetch(`${API_BASE}/internet-cafe/game/${cafeAddressId}/pages`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1913,7 +1552,7 @@ async function openCafePage(pageId) {
 
     try {
         const token = gameStorage.getItem('token');
-        const response = await window.gameNetwork.fetch(`${API_BASE}/internet-cafe/game/pages/${pageId}`, {
+        const response = await fetch(`${API_BASE}/internet-cafe/game/pages/${pageId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1955,7 +1594,6 @@ function renderCafePage(page) {
         const pageDocument = iframe.contentDocument;
         if (!pageDocument) return;
         applyCafeBlogMobileLayout(pageDocument);
-        window.protectPageFromCopy?.(pageDocument);
         pageDocument.addEventListener('click', (event) => {
             const link = event.target?.closest?.('a[href], area[href]');
             if (!link) return;

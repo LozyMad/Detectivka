@@ -68,54 +68,32 @@ if (DB_TYPE === 'postgresql') {
         const endTime = new Date(now.getTime() + durationSeconds * 1000);
 
         db.run(`UPDATE rooms 
-                SET game_start_time = ?, game_end_time = ?, paused_at = NULL,
-                    halfway_paused = 0, state = 'running'
-                WHERE id = ? AND state IN ('pending', 'finished')`, [now.toISOString(), endTime.toISOString(), roomId], function(updateErr) {
+                SET game_start_time = ?, game_end_time = ?, state = 'running'
+                WHERE id = ?`, [now.toISOString(), endTime.toISOString(), roomId], function(updateErr) {
           if (updateErr) return reject(updateErr);
-          if (!this.changes) return reject(new Error('Room cannot be started in its current state'));
           resolve({ id: roomId, game_start_time: now.toISOString(), game_end_time: endTime.toISOString(), duration_seconds: durationSeconds });
         });
       });
     });
   },
 
-  pauseGame: (roomId, pausedAt = new Date().toISOString(), automatic = false) => {
+  pauseGame: (roomId) => {
     return new Promise((resolve, reject) => {
-      db.run(`UPDATE rooms SET state = 'paused', paused_at = ?,
-              halfway_paused = CASE WHEN ? THEN 1 ELSE halfway_paused END
-              WHERE id = ? AND state = 'running' AND (? = 0 OR halfway_paused = 0)`,
-        [pausedAt, automatic ? 1 : 0, roomId, automatic ? 1 : 0], function(err) {
+      db.run(`UPDATE rooms SET state = 'paused' WHERE id = ?`, [roomId], function(err) {
         if (err) return reject(err);
-        resolve(this.changes ? { id: roomId, state: 'paused', paused_at: pausedAt } : null);
+        resolve({ id: roomId, state: 'paused' });
       });
     });
   },
 
   resumeGame: (roomId) => {
     return new Promise((resolve, reject) => {
-      db.get(`SELECT game_end_time, paused_at FROM rooms WHERE id = ? AND state = 'paused'`, [roomId], (err, room) => {
+      db.run(`UPDATE rooms SET state = 'running' WHERE id = ?`, [roomId], function(err) {
         if (err) return reject(err);
-        if (!room) return resolve(null);
-        const now = new Date();
-        const pausedAt = new Date(room.paused_at || now);
-        const remainingMs = Math.max(0, new Date(room.game_end_time) - pausedAt);
-        const endTime = new Date(now.getTime() + remainingMs);
-        db.run(`UPDATE rooms SET state = 'running', game_end_time = ?, paused_at = NULL
-                WHERE id = ? AND state = 'paused'`, [endTime.toISOString(), roomId], function(updateErr) {
-          if (updateErr) return reject(updateErr);
-          resolve(this.changes ? { id: roomId, state: 'running', game_end_time: endTime.toISOString() } : null);
-        });
+        resolve({ id: roomId, state: 'running' });
       });
     });
   },
-
-  finishIfRunning: (roomId, now = new Date().toISOString()) => new Promise((resolve, reject) => {
-    db.run(`UPDATE rooms SET state = 'finished'
-            WHERE id = ? AND state = 'running' AND game_end_time <= ?`, [roomId, now], function(err) {
-      if (err) return reject(err);
-      resolve(this.changes > 0);
-    });
-  }),
 
   stopGame: (roomId) => {
     return new Promise((resolve, reject) => {
@@ -129,12 +107,10 @@ if (DB_TYPE === 'postgresql') {
 
   delete: async (roomId) => {
     const room = await Room.getById(roomId);
-    const run = (database, sql, params) => new Promise((resolve, reject) => {
-      database.run(sql, params, err => err ? reject(err) : resolve());
-    });
-    await run(db, `DELETE FROM investigation_links WHERE room_id = ?`, [roomId]);
-    await run(db, `DELETE FROM investigation_notes WHERE room_id = ?`, [roomId]);
     if (room?.is_test) {
+      const run = (database, sql, params) => new Promise((resolve, reject) => {
+        database.run(sql, params, err => err ? reject(err) : resolve());
+      });
       const scenarioIds = await new Promise((resolve, reject) => {
         db.all(`SELECT id FROM scenarios`, [], (err, rows) => err ? reject(err) : resolve(rows));
       });

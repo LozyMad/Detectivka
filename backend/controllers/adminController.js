@@ -193,7 +193,6 @@ const deleteScenario = async (req, res) => {
   try {
     const { id } = req.params;
     await Scenario.delete(id);
-    await require('../services/scenarioApplications').removeScenario(id);
     // Delete per-scenario database file/schema
     if (DB_TYPE === 'postgresql') {
       // For PostgreSQL, we could drop the schema, but it's safer to leave it
@@ -351,12 +350,7 @@ const getAddresses = async (req, res) => {
   try {
     const { scenario_id } = req.params;
     const addresses = await Address.findByScenario(scenario_id);
-    const applicationStore = require('../services/scenarioApplications');
-    const withApplications = await Promise.all(addresses.map(async address => ({
-      ...address,
-      application_numbers: (await applicationStore.list(scenario_id, address.id)).map(app => app.number)
-    })));
-    res.json({ addresses: withApplications });
+    res.json({ addresses });
   } catch (error) {
     console.error('Get addresses error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -367,7 +361,6 @@ const deleteAddress = async (req, res) => {
   try {
     const { scenario_id, id } = req.params;
     await Address.delete(scenario_id, id);
-    await require('../services/scenarioApplications').removeAddress(scenario_id, id);
     res.json({ message: 'Address deleted successfully' });
   } catch (error) {
     console.error('Delete address error:', error);

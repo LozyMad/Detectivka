@@ -123,8 +123,6 @@ html.theme-dark body.game-container #game #districtSelect option {
 #game .trip-time { color: #b8ae9f; font-size: .8rem; white-space: nowrap; }
 #game .trip-status { color: #afd1b4; font-size: .78rem; }
 #game .trip-item.failure .trip-status { color: #ecb2b0; }
-#game .trip-app-badge { border: 1px solid #b99c58; border-radius: .3rem; padding: .12rem .4rem; background: rgba(197, 161, 58, .14); color: #efd596; font-size: .75rem; font-weight: 700; line-height: 1.3; }
-#game .trip-app-badge:hover, #game .trip-app-badge:focus-visible { background: #b99c58; color: #171b1a; }
 #game .trip-description { margin: .35rem 0 0; color: #e9e3d8 !important; font-size: .92rem; line-height: 1.45; font-weight: 400; }
 #game .trip-description-text { margin-top: .12rem; }
 #game .trip-actions { display: flex; gap: .35rem; align-items: flex-start; }
@@ -138,13 +136,6 @@ body.game-container .dossier-sidebar { padding: 1.2rem 1.25rem 1.3rem; border: 1
 body.game-container .dossier-sidebar h2 { margin: 0 0 .9rem; color: #d8bf84 !important; font: 600 1.12rem var(--font-display); }
 body.game-container .latest-location { padding-bottom: 1.2rem; border-bottom: 1px solid #54554d; }
 body.game-container .latest-location-content { color: #d7cfc0; font-size: .9rem; }
-body.game-container .received-applications-list { display: grid; gap: .55rem; color: #aaa394; font-size: .9rem; }
-body.game-container .received-application { width: 100%; padding: .65rem .75rem; text-align: left; border: 1px solid #686653; border-radius: .4rem; background: #282d2a; color: #ecd7a7; }
-body.game-container .received-application:hover, body.game-container .received-application:focus-visible { background: #394039; border-color: #c5a13a; }
-body.game-container .received-application small { display: block; margin-top: .2rem; color: #aaa394; font-size: .76rem; }
-#game .trip-application-links { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .8rem; }
-#game .trip-application-button { border: 1px solid #b99c58; border-radius: .4rem; padding: .4rem .7rem; background: rgba(197, 161, 58, .15); color: #efd596; font-weight: 600; }
-#game .trip-application-button:hover, #game .trip-application-button:focus-visible { background: #b99c58; color: #171b1a; }
 body.game-container .latest-location-address { display: flex; gap: .8rem; align-items: flex-start; }
 body.game-container .latest-location-address i { font-size: 1.7rem; color: #c5a13a; padding-top: .2rem; }
 body.game-container .latest-location-address strong { display: block; font: 600 1.18rem var(--font-display); color: #f0e4c8; }
@@ -338,12 +329,6 @@ html:not(.theme-dark) body.game-container .dossier-sidebar {
 }
 html:not(.theme-dark) body.game-container .dossier-sidebar h2 { color: #59451d !important; }
 html:not(.theme-dark) body.game-container .latest-location { border-bottom-color: #b4a990; }
-html:not(.theme-dark) body.game-container .received-application { background: #f6f0e3; color: #5c471f; border-color: #b4a990; }
-html:not(.theme-dark) body.game-container .received-applications-list { color: #6f6658; }
-html:not(.theme-dark) body.game-container .received-application:hover { background: #eadbb9; }
-html:not(.theme-dark) body.game-container .received-application small { color: #6f6658; }
-html:not(.theme-dark) #game .trip-application-button { color: #624714; }
-html:not(.theme-dark) #game .trip-app-badge { color: #624714; }
 html:not(.theme-dark) body.game-container .latest-location-content,
 html:not(.theme-dark) body.game-container .latest-location-address strong { color: var(--light-text); }
 html:not(.theme-dark) body.game-container .latest-location-address small,

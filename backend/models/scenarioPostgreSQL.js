@@ -260,7 +260,6 @@ const Scenario = {
                 }
             }
 
-            await require('../services/scenarioApplications').copyScenario(sourceId, newScenario.id, addressIdMap);
             return newScenario;
         } catch (error) {
             throw error;

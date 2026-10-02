@@ -245,7 +245,6 @@ if (DB_TYPE === 'postgresql') {
                     }
                 }
 
-                await require('../services/scenarioApplications').copyScenario(sourceId, newScenario.id, addressIdMap);
                 resolve(newScenario);
             } catch (error) {
                 reject(error);

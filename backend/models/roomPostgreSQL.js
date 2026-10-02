@@ -189,50 +189,30 @@ const Room = {
 
         const result = await query(
             `UPDATE rooms 
-             SET game_start_time = $1, game_end_time = $2, paused_at = NULL,
-                 halfway_paused = FALSE, state = 'running'
-             WHERE id = $3 AND state IN ('pending', 'finished') RETURNING *`,
+             SET game_start_time = $1, game_end_time = $2, state = 'running'
+             WHERE id = $3 RETURNING *`,
             [now.toISOString(), endTime.toISOString(), roomId]
         );
 
-        if (!result.rows[0]) throw new Error('Room cannot be started in its current state');
-        return result.rows[0];
+        return result.rows[0] || { id: roomId, game_start_time: now.toISOString(), game_end_time: endTime.toISOString(), duration_seconds: durationSeconds };
     },
 
-    pauseGame: async (roomId, pausedAt = new Date().toISOString(), automatic = false) => {
+    pauseGame: async (roomId) => {
         const result = await query(
-            `UPDATE rooms SET state = 'paused', paused_at = $2,
-             halfway_paused = CASE WHEN $3 THEN TRUE ELSE halfway_paused END
-             WHERE id = $1 AND state = 'running' AND (NOT $3 OR halfway_paused = FALSE) RETURNING *`,
-            [roomId, pausedAt, automatic]
+            `UPDATE rooms SET state = 'paused' WHERE id = $1 RETURNING *`,
+            [roomId]
         );
-
-        return result.rows[0] || null;
+        
+        return result.rows[0] || { id: roomId, state: 'paused' };
     },
 
     resumeGame: async (roomId) => {
-        const room = await Room.getById(roomId);
-        if (!room || room.state !== 'paused') return null;
-        const now = new Date();
-        const pausedAt = new Date(room.paused_at || now);
-        const remainingMs = Math.max(0, new Date(room.game_end_time) - pausedAt);
-        const endTime = new Date(now.getTime() + remainingMs);
         const result = await query(
-            `UPDATE rooms SET state = 'running', game_end_time = $2, paused_at = NULL
-             WHERE id = $1 AND state = 'paused' RETURNING *`,
-            [roomId, endTime.toISOString()]
+            `UPDATE rooms SET state = 'running' WHERE id = $1 RETURNING *`,
+            [roomId]
         );
-
-        return result.rows[0] || null;
-    },
-
-    finishIfRunning: async (roomId, now = new Date().toISOString()) => {
-        const result = await query(
-            `UPDATE rooms SET state = 'finished'
-             WHERE id = $1 AND state = 'running' AND game_end_time <= $2 RETURNING id`,
-            [roomId, now]
-        );
-        return result.rows.length > 0;
+        
+        return result.rows[0] || { id: roomId, state: 'running' };
     },
 
     stopGame: async (roomId) => {

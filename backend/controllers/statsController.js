@@ -2,7 +2,6 @@ const VisitAttempt = require('../models/visitAttempt');
 const Scenario = require('../models/scenario');
 const Address = require('../models/address');
 const AddressBook = require('../models/addressBook');
-const { query } = require('../config/database');
 
 const getUserAttempts = async (req, res) => {
     try {
@@ -13,7 +12,7 @@ const getUserAttempts = async (req, res) => {
         }
         
         // Получаем текущий сценарий: для игрока комнаты — сценарий комнаты
-        let activeScenario;
+        let activeScenario = await Scenario.getActive();
         
         if (req.roomUser) {
             const Room = require('../models/room');
@@ -22,7 +21,7 @@ const getUserAttempts = async (req, res) => {
                 return res.json({ attempts: [] });
             }
             activeScenario = { id: room.scenario_id };
-        } else activeScenario = await Scenario.getActive();
+        }
         
         if (!activeScenario) {
             return res.json({ attempts: [] });
@@ -34,25 +33,6 @@ const getUserAttempts = async (req, res) => {
             req.roomUser ? req.roomUser.room_id : null
         );
 
-        // Fetch the player's choices once, instead of one HTTP request per visited address.
-        const choiceResponses = new Map();
-        let choicesIncluded = !req.roomUser;
-        if (req.roomUser && process.env.DB_TYPE === 'postgresql') {
-            try {
-                const result = await query(`SELECT address_id, response_text FROM game_choices
-                    WHERE room_user_id = $1 AND scenario_id = $2 ORDER BY created_at DESC`,
-                    [req.roomUser.id, activeScenario.id]);
-                for (const choice of result.rows) {
-                    if (!choiceResponses.has(Number(choice.address_id))) {
-                        choiceResponses.set(Number(choice.address_id), choice.response_text);
-                    }
-                }
-                choicesIncluded = true;
-            } catch (error) {
-                console.error('Get attempts choices:', error.message);
-            }
-        }
-
         try {
             await AddressBook.ensureSeeded();
         } catch (e) {
@@ -62,7 +42,6 @@ const getUserAttempts = async (req, res) => {
         const namesCache = new Map();
 
         for (const a of attempts) {
-            if (choicesIncluded) a.choice_response = a.found ? choiceResponses.get(Number(a.address_id)) || null : null;
             a.has_choices = false;
             a.is_internet_cafe = false;
             a.location_names = [];
@@ -101,7 +80,7 @@ const getUserAttempts = async (req, res) => {
             }
         }
 
-        res.json({ attempts, choices_included: choicesIncluded });
+        res.json({ attempts });
     } catch (error) {
         console.error('Get user attempts error:', error);
         res.status(500).json({ error: 'Internal server error' });

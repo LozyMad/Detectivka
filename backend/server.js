@@ -32,7 +32,6 @@ const backupRoutes = require('./routes/backup');
 const choiceRoutes = require('./routes/choices');
 const nuclearRoutes = require('./routes/nuclear');
 const internetCafeRoutes = require('./routes/internetCafe');
-const applicationRoutes = require('./routes/applications');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,12 +51,9 @@ function runDeploy(res) {
     console.log('[Deploy] git pull OK', stdout);
     // Устанавливаем зависимости (в т.ч. новые, например xlsx)
     const backendDir = path.join(projectRoot, 'backend');
-    exec(`cd "${backendDir}" && npm install --omit=dev --include=optional`, (errInstall, outInstall, errOutInstall) => {
-      if (errInstall) {
-        console.error('[Deploy] npm install error', errInstall, errOutInstall);
-        return res.status(500).json({ ok: false, error: 'Dependency installation failed; application was not restarted', log: errOutInstall || outInstall });
-      }
-      console.log('[Deploy] npm install OK', outInstall);
+    exec(`cd "${backendDir}" && npm install --production`, (errInstall, outInstall, errOutInstall) => {
+      if (errInstall) console.error('[Deploy] npm install warning', errInstall, errOutInstall);
+      else console.log('[Deploy] npm install OK', outInstall);
       res.json({ ok: true, log: stdout });
       setTimeout(() => {
         exec(`pm2 restart detectivka`, (e, out, errOut) => {
@@ -106,41 +102,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Redirect old HTML page URLs to their readable routes before static files are served.
-const pageUrls = {
-  '/index.html': '/',
-  '/corporate.html': '/corporate',
-  '/corporate/': '/corporate',
-  '/korporativ': '/corporate',
-  '/korporativ/': '/corporate',
-  '/enter.html': '/enter',
-  '/game-login.html': '/game-login',
-  '/admin-login.html': '/admin-login',
-  '/game.html': '/game',
-  '/admin.html': '/admin'
-};
-
-app.use((req, res, next) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-  const destination = pageUrls[req.path];
-  if (!destination) return next();
-  const queryIndex = req.originalUrl.indexOf('?');
-  const query = queryIndex === -1 ? '' : req.originalUrl.slice(queryIndex);
-  res.redirect(301, destination + query);
-});
-
-// Handle the home page before express.static can serve the landing index.html.
-app.get('/', (req, res) => {
-  res.setHeader('Cache-Control', 'no-store');
-  res.sendFile(path.join(__dirname, '../frontend/enter.html'));
-});
-
 // Serve static files from frontend directory with proper MIME types
 app.use(express.static(path.join(__dirname, '../frontend'), {
   setHeaders: (res, filePath) => {
-    if (/\.(?:webp|png|jpe?g|svg|gif|ico)$/i.test(filePath)) {
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-    }
     if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
     } else if (filePath.endsWith('.js')) {
@@ -162,16 +126,11 @@ app.use('/api/questions', questionRoutes); // Публичные вопросы
 app.use('/api/backup', backupRoutes);
 app.use('/api/choices', choiceRoutes);
 app.use('/api/internet-cafe', internetCafeRoutes);
-app.use('/api/applications', applicationRoutes);
 app.use('/api/nuclear', nuclearRoutes);
 
 // Serve frontend
-app.get('/corporate', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/corporate.html'));
-});
-
-app.get('/enter', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/enter.html'));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
 app.get('/admin-login', (req, res) => {
