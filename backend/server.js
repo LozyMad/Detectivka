@@ -129,6 +129,12 @@ app.use((req, res, next) => {
   res.redirect(301, destination + query);
 });
 
+// Handle the home page before express.static can serve the landing index.html.
+app.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, '../frontend/enter.html'));
+});
+
 // Serve static files from frontend directory with proper MIME types
 app.use(express.static(path.join(__dirname, '../frontend'), {
   setHeaders: (res, filePath) => {
@@ -160,10 +166,6 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/nuclear', nuclearRoutes);
 
 // Serve frontend
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
-});
-
 app.get('/corporate', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/corporate.html'));
 });
