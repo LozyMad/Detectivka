@@ -3,6 +3,10 @@ let currentUser = null;
 let scenarios = [];
 let roomsCache = null;
 let roomsCacheTime = 0;
+let roomsRequest = null;
+let adminPageReady = false;
+let adminPageSuspended = false;
+const roomsPoll = window.gameNetwork.poll(() => loadRooms(true), 5000);
 const CACHE_DURATION = 5000; // 5 секунд кэш
 let isSuperAdmin = false;
 let currentScenarioAddresses = [];
@@ -21,13 +25,16 @@ let addressBookEditModalInstance = null;
 /** Запрос с токеном; при 401/403 — выход и редирект на страницу входа */
 async function authFetch(url, options = {}) {
     const token = localStorage.getItem('token');
-    const res = await fetch(url, {
+    const res = await window.gameNetwork.fetch(url, {
         ...options,
         headers: { ...(options.headers || {}), 'Authorization': `Bearer ${token}` }
     });
     if (res.status === 401 || res.status === 403) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        adminPageReady = false;
+        updateAdminPolling();
+        window.gameNetwork.cancelReads();
         window.location.href = '/admin-login?session=expired';
         throw new Error('Session expired');
     }
@@ -36,15 +43,26 @@ async function authFetch(url, options = {}) {
 
 // Initialize admin panel
 document.addEventListener('DOMContentLoaded', () => {
-    checkAdminAuth();
+    if (!checkAdminAuth()) return;
     setupEventListeners();
-    loadInitialData();
-    setInterval(() => {
-        if (document.visibilityState === 'visible' && document.getElementById('rooms-tab')?.style.display === 'block') {
-            loadRooms(true);
-        }
-    }, 5000);
+    loadInitialData().catch(error => console.error('Initial admin data:', error));
+    adminPageReady = true;
+    updateAdminPolling();
 });
+
+function updateAdminPolling() {
+    const active = adminPageReady && !adminPageSuspended && !document.hidden &&
+        navigator.onLine !== false && !!localStorage.getItem('token') &&
+        document.getElementById('rooms-tab')?.style.display === 'block';
+    if (active) roomsPoll.start();
+    else roomsPoll.stop();
+}
+
+document.addEventListener('visibilitychange', updateAdminPolling);
+window.addEventListener('offline', updateAdminPolling);
+window.addEventListener('online', updateAdminPolling);
+window.addEventListener('pagehide', () => { adminPageSuspended = true; updateAdminPolling(); });
+window.addEventListener('pageshow', () => { adminPageSuspended = false; updateAdminPolling(); });
 
 function checkAdminAuth() {
     const token = localStorage.getItem('token');
@@ -52,7 +70,7 @@ function checkAdminAuth() {
     
     if (!token || !user.id || !user.is_admin) {
         window.location.href = '/enter';
-        return;
+        return false;
     }
     
     currentUser = user;
@@ -65,6 +83,7 @@ function checkAdminAuth() {
     
     // Определяем доступные вкладки в зависимости от уровня админа
     setupAdminInterface(user.admin_level);
+    return true;
 }
 
 function setupAdminInterface(adminLevel) {
@@ -660,6 +679,7 @@ function switchTab(tabName) {
     } else if (tabName === 'addressBook') {
         loadAddressBookSectionsAndEntries();
     }
+    updateAdminPolling();
 }
 
 // Функция ядерного сброса
@@ -2275,7 +2295,13 @@ async function nuclearReset() {
     }
 }
 
-async function loadRooms(forceRefresh = false) {
+function loadRooms(forceRefresh = false) {
+    if (roomsRequest) return roomsRequest;
+    roomsRequest = fetchRooms(forceRefresh).finally(() => { roomsRequest = null; });
+    return roomsRequest;
+}
+
+async function fetchRooms(forceRefresh) {
     try {
         const now = Date.now();
         
@@ -2283,7 +2309,7 @@ async function loadRooms(forceRefresh = false) {
         if (!forceRefresh && roomsCache && (now - roomsCacheTime) < CACHE_DURATION) {
             displayRooms(roomsCache);
             populateRoomsForUsers(roomsCache);
-            return;
+            return true;
         }
         
         const res = await authFetch(`${API_BASE}/rooms`);
@@ -2291,18 +2317,22 @@ async function loadRooms(forceRefresh = false) {
         const data = await res.json();
 
         // Обновляем кэш
-        roomsCache = data.rooms || [];
-        roomsCacheTime = now;
+        if (!Array.isArray(data.rooms)) throw new Error('Invalid rooms response');
+        roomsCache = data.rooms;
+        roomsCacheTime = Date.now();
 
         displayRooms(roomsCache);
         populateRoomsForUsers(roomsCache);
+        return true;
     } catch (err) {
-        if (err.message === 'Session expired') return;
+        if (err.message === 'Session expired') return false;
+        if (err.name === 'AbortError') return false;
         console.error(err);
-        // Показываем пустой список вместо ошибки для лучшего UX
-        displayRooms([]);
-        populateRoomsForUsers([]);
+        // Retain the last confirmed rooms during a transient network failure.
+        displayRooms(roomsCache || []);
+        populateRoomsForUsers(roomsCache || []);
         showMessage('Ошибка загрузки комнат', 'danger');
+        return false;
     }
 }
 
@@ -3371,7 +3401,7 @@ async function uploadAddressApplication() {
     button.textContent = 'Загрузка…';
     try {
         const response = await authFetch(`${API_BASE}/applications/admin/scenarios/${scenarioId}/addresses/${addressId}/${number}`, {
-            method: 'POST', body: form
+            method: 'POST', body: form, timeoutMs: 120000
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Не удалось загрузить папку');
@@ -3688,6 +3718,9 @@ function createToastContainer() {
 }
 
 function logout() {
+    adminPageReady = false;
+    updateAdminPolling();
+    window.gameNetwork.cancelReads();
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/enter';
