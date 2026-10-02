@@ -9,7 +9,10 @@
     (palette.some(([value]) => value === color) ? color : 'yellow'));
   const noteTilt = id => ((Number(id) * 7) % 7 - 3) * .45;
   const state = { notes: [], links: [], zoom: 1, width: 2400, height: 1600,
-    pendingLink: null, connecting: false, editing: null, trip: null, free: false, centred: false, statusTimer: null };
+    pendingLink: null, connecting: false, editing: null, trip: null, free: false, centred: false, statusTimer: null, revision: 0 };
+  let loadPromise = null;
+  let positionDrain = null;
+  const pendingPositions = new Map();
   const defaultHint = 'Нажмите на два стикера, чтобы создать или убрать нить. Перетаскивайте стикеры и приближайте доску.';
   const threadSegments = new Map();
   const $ = id => document.getElementById(id);
@@ -18,12 +21,21 @@
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
   async function request(path, options = {}) {
-    const response = await fetch(`/api/game/board${path}`, {
+    let response;
+    try {
+      response = await window.gameNetwork.fetch(`/api/game/board${path}`, {
       ...options,
       headers: { Authorization: `Bearer ${gameStorage.getItem('token')}`,
         ...(options.body ? { 'Content-Type': 'application/json' } : {}) }
-    });
-    const data = await response.json().catch(() => ({}));
+      });
+    } catch (error) {
+      if (options.method && options.method !== 'GET' && error.name !== 'AbortError') {
+        error.message += ' Проверьте доску перед повторной попыткой: изменение могло сохраниться.';
+      }
+      throw error;
+    }
+    // Invalid JSON must not silently erase the board or report a save as successful.
+    const data = response.ok ? await response.json() : await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(data.error || 'Не удалось сохранить доску');
       error.status = response.status;
@@ -135,11 +147,47 @@
     renderThreads();
   }
 
-  async function load() {
-    const data = await request('');
-    state.notes = data.notes || [];
-    state.links = data.links || [];
-    render();
+  function load() {
+    if (loadPromise) return loadPromise;
+    loadPromise = (async () => {
+      if (positionDrain) await positionDrain;
+      const revision = state.revision;
+      const data = await request('');
+      if (!Array.isArray(data.notes) || !Array.isArray(data.links)) throw new Error('Не удалось прочитать доску. Попробуйте открыть её снова.');
+      if (revision !== state.revision) return;
+      state.notes = data.notes;
+      state.links = data.links;
+      render();
+    })().finally(() => { loadPromise = null; });
+    return loadPromise;
+  }
+
+  // One save at a time; repeated drags replace the queued position for that note.
+  function savePosition(note) {
+    pendingPositions.set(Number(note.id), { note, x: note.x, y: note.y });
+    return drainPositions();
+  }
+
+  function drainPositions() {
+    if (positionDrain) return positionDrain;
+    positionDrain = (async () => {
+      while (pendingPositions.size) {
+        const [id, target] = pendingPositions.entries().next().value;
+        try {
+          await request(`/notes/${id}/position`, { method: 'PATCH', body: JSON.stringify({ x: target.x, y: target.y }) });
+        } catch (error) {
+          if (pendingPositions.get(id) === target && noteById(id)) {
+            // A timed-out save may have reached the server. Do not roll back newer drags.
+            status(`Положение не подтверждено: ${error.message}`, true);
+          }
+        }
+        if (pendingPositions.get(id) === target) pendingPositions.delete(id);
+      }
+    })().finally(() => {
+      positionDrain = null;
+      if (pendingPositions.size) return drainPositions();
+    });
+    return positionDrain;
   }
 
   function centerOn(note) {
@@ -234,22 +282,27 @@
   async function saveDialog(event) {
     event.preventDefault();
     const button = $('boardNoteSave');
+    if (button.disabled) return;
     const color = document.querySelector('input[name="boardColor"]:checked')?.value || 'yellow';
     const fields = { comment: $('boardNoteComment').value, color,
       ...(state.free ? { title: $('boardNoteTitleInput').value } : {}) };
     button.disabled = true;
+    state.revision++;
     try {
       let note;
       if (state.editing) {
         ({ note } = await request(`/notes/${state.editing.id}`, { method: 'PATCH', body: JSON.stringify(fields) }));
-        state.notes = state.notes.map(item => Number(item.id) === Number(note.id) ? note : item);
+        state.revision++;
+        state.notes = state.notes.map(item => Number(item.id) === Number(note.id) ? { ...note, x: item.x, y: item.y } : item);
         closeDialog();
         render();
         status('Стикер обновлён');
       } else {
         ({ note } = await request(state.free ? '/notes/free' : '/notes', { method: 'POST',
           body: JSON.stringify({ ...(state.trip ? { address_id: state.trip.address_id } : {}), ...fields }) }));
+        state.revision++;
         state.notes.push(note);
+        render();
         closeDialog();
         $('board-tab').click();
         requestAnimationFrame(() => centerOn(note));
@@ -271,15 +324,22 @@
 
   async function deleteCurrentNote() {
     const note = state.editing;
+    const button = $('boardNoteDelete');
+    if (button.disabled) return;
     if (!note || !confirm(`Удалить стикер «${note.title}» и все его нити?`)) return;
+    button.disabled = true;
+    state.revision++;
     try {
       await request(`/notes/${note.id}`, { method: 'DELETE' });
+      state.revision++;
+      pendingPositions.delete(Number(note.id));
       state.notes = state.notes.filter(item => Number(item.id) !== Number(note.id));
       state.links = state.links.filter(link => Number(link.note_a) !== Number(note.id) && Number(link.note_b) !== Number(note.id));
       closeDialog();
       render();
       status('Стикер удалён');
     } catch (error) { alert(error.message); }
+    finally { button.disabled = false; }
   }
 
   async function connect(secondId) {
@@ -290,6 +350,7 @@
       return;
     }
     state.connecting = true;
+    state.revision++;
     try {
       const existing = state.links.find(link =>
         Number(link.note_a) === firstId && Number(link.note_b) === secondId ||
@@ -298,6 +359,7 @@
       else {
         const { link } = await request('/links', { method: 'POST',
           body: JSON.stringify({ first_id: firstId, second_id: secondId }) });
+        state.revision++;
         if (!state.links.some(item => Number(item.id) === Number(link.id))) state.links.push(link);
         status('Стикеры соединены ниткой');
       }
@@ -328,7 +390,9 @@
   }
 
   async function deleteLink(link) {
+    state.revision++;
     await request(`/links/${link.id}`, { method: 'DELETE' });
+    state.revision++;
     state.links = state.links.filter(item => Number(item.id) !== Number(link.id));
     status('Нить удалена');
   }
@@ -437,12 +501,15 @@
       }
       const dx = event.clientX - gesture.start.x, dy = event.clientY - gesture.start.y;
       if (!gesture.moved && Math.hypot(dx, dy) < 6) return;
-      if (!gesture.moved && gesture.note) gesture.element.classList.add('is-dragging');
+      if (!gesture.moved && gesture.note) {
+        state.revision++;
+        gesture.element.classList.add('is-dragging');
+      }
       gesture.moved = true;
       if (gesture.note) {
         const note = gesture.note;
-        note.x = Math.max(0, Math.round(gesture.noteX + dx / gesture.zoom));
-        note.y = Math.max(0, Math.round(gesture.noteY + dy / gesture.zoom));
+        note.x = Math.min(20000, Math.max(0, Math.round(gesture.noteX + dx / gesture.zoom)));
+        note.y = Math.min(20000, Math.max(0, Math.round(gesture.noteY + dy / gesture.zoom)));
         if (noteFrame === null) noteFrame = requestAnimationFrame(() => {
           noteFrame = null;
           paintNote();
@@ -483,13 +550,7 @@
             else clearSelection();
           } else if (completed.note) {
             const note = completed.note;
-            try {
-              await request(`/notes/${note.id}/position`, { method: 'PATCH', body: JSON.stringify({ x: note.x, y: note.y }) });
-            } catch (error) {
-              note.x = completed.noteX; note.y = completed.noteY;
-              render();
-              status(`Положение не сохранено: ${error.message}`);
-            }
+            await savePosition(note);
           }
         }
       }

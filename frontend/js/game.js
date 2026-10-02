@@ -12,11 +12,28 @@ let freshTripTimer = null;
 let cachedScenarioName = null; // Кэш для имени сценария
 let lastScenarioCheck = 0; // Время последней проверки сценария
 let roomEventSource = null;
+let roomReconnectTimer = null;
+let roomEventWatchdog = null;
+let roomReconnectDelay = 5000;
+let roomStateRequest = null;
+let roomStateUpdatedAt = 0;
+let tripHistoryRequest = null;
+let tripHistoryVersion = 0;
+let visitInFlight = false;
+let backgroundReady = false;
+let pageSuspended = false;
+const roomStatePoll = window.gameNetwork.poll(async () => {
+    const success = await refreshRoomState();
+    renderTimer();
+    return success;
+}, 5000);
+const tripHistoryPoll = window.gameNetwork.poll(() => loadTripHistory(), 60000);
 let currentCafeAddressId = null;
 let currentCafePage = null;
 let cafeViewMode = 'home'; // 'home' | 'page' | 'error'
 let applicationObjectUrl = null;
 let applicationRequestId = 0;
+let applicationController = null;
 let arrangePlayerNavigation = () => {};
 
 function setScenarioTitle(text) {
@@ -171,33 +188,90 @@ function setupPlayerNotes() {
     });
 }
 
-function connectRoomSSE(roomId, token) {
-    if (roomEventSource) {
-        roomEventSource.close();
-        roomEventSource = null;
+function stopRoomSSE() {
+    clearTimeout(roomReconnectTimer);
+    clearTimeout(roomEventWatchdog);
+    roomReconnectTimer = roomEventWatchdog = null;
+    const source = roomEventSource;
+    roomEventSource = null;
+    if (source) {
+        source.onopen = source.onmessage = source.onerror = null;
+        source.close();
     }
+}
+
+function backgroundAllowed() {
+    return backgroundReady && !pageSuspended && !document.hidden && navigator.onLine !== false && !!gameStorage.getItem('token');
+}
+
+function connectRoomSSE(roomId, token) {
+    if (!backgroundAllowed() || roomEventSource || roomReconnectTimer !== null) return;
     const url = `${API_BASE}/game/room/${roomId}/events?token=${encodeURIComponent(token)}`;
     const es = new EventSource(url);
     roomEventSource = es;
+    const touch = () => {
+        if (roomEventSource !== es) return;
+        clearTimeout(roomEventWatchdog);
+        roomEventWatchdog = setTimeout(reconnect, 70000);
+    };
+    const reconnect = () => {
+        if (roomEventSource !== es) return;
+        stopRoomSSE();
+        if (!backgroundAllowed()) return;
+        const delay = roomReconnectDelay + Math.floor(Math.random() * 1000);
+        roomReconnectDelay = Math.min(roomReconnectDelay * 2, 60000);
+        roomReconnectTimer = setTimeout(() => {
+            roomReconnectTimer = null;
+            const ru = JSON.parse(gameStorage.getItem('roomUser') || 'null');
+            const currentToken = gameStorage.getItem('token');
+            if (ru?.room_id && currentToken) connectRoomSSE(ru.room_id, currentToken);
+        }, delay);
+    };
+    // Connecting can stall without an error callback on a broken network.
+    roomEventWatchdog = setTimeout(reconnect, 15000);
+    es.onopen = () => {
+        if (roomEventSource !== es) return;
+        roomReconnectDelay = 5000;
+        touch();
+    };
+    es.addEventListener('ping', touch);
     es.onmessage = (e) => {
+        if (roomEventSource !== es) return;
+        touch();
         try {
             const d = JSON.parse(e.data || '{}');
             if (d.type === 'new_trip') {
-                loadTripCount();
+                tripHistoryVersion++;
                 loadTripHistory();
             }
         } catch (_) {}
     };
-    es.onerror = () => {
-        es.close();
-        roomEventSource = null;
-        setTimeout(() => {
-            const ru = JSON.parse(gameStorage.getItem('roomUser') || 'null');
-            const t = gameStorage.getItem('token');
-            if (ru && ru.room_id && t) connectRoomSSE(ru.room_id, t);
-        }, 5000);
-    };
+    es.onerror = reconnect;
 }
+
+function updateBackgroundState() {
+    if (!backgroundAllowed()) {
+        roomStatePoll.stop();
+        tripHistoryPoll.stop();
+        stopRoomSSE();
+        if (roomTimerInterval !== null) clearInterval(roomTimerInterval);
+        roomTimerInterval = null;
+        return;
+    }
+    const roomUser = JSON.parse(gameStorage.getItem('roomUser') || 'null');
+    if (roomUser?.room_id) {
+        initRoomTimer();
+        roomStatePoll.start();
+        connectRoomSSE(roomUser.room_id, gameStorage.getItem('token'));
+    }
+    tripHistoryPoll.start();
+}
+
+document.addEventListener('visibilitychange', updateBackgroundState);
+window.addEventListener('offline', updateBackgroundState);
+window.addEventListener('online', updateBackgroundState);
+window.addEventListener('pagehide', () => { pageSuspended = true; updateBackgroundState(); });
+window.addEventListener('pageshow', () => { pageSuspended = false; updateBackgroundState(); });
 
 // Initialize game
 document.addEventListener('DOMContentLoaded', () => {
@@ -210,7 +284,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setScenarioBanner(room?.scenario_id);
     } catch (_) {}
     setupDistrictSelect();
-    loadTripCount();
     loadTripHistory();
     loadScenarioInfo();
     setupPlayerNotes();
@@ -233,31 +306,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup tab switching
     setupTabSwitching();
     
-    // Update every 30 seconds
-    setInterval(() => {
-        if (gameStorage.getItem('roomUser')) {
-            refreshRoomState();
-        }
-    }, 30000);
-    
-    // SSE: мгновенное обновление истории при поездке с другого устройства
-    const roomUser = JSON.parse(gameStorage.getItem('roomUser') || 'null');
-    const token = gameStorage.getItem('token');
-    if (roomUser && roomUser.room_id && token) {
-        connectRoomSSE(roomUser.room_id, token);
-    }
-    // Резервный опрос раз в 60 сек на случай обрыва SSE
-    setInterval(() => {
-        loadTripCount();
-        loadTripHistory();
-    }, 60000);
-    
-    // Принудительно обновляем имя сценария каждые 10 минут (на случай изменений админом)
-    setInterval(() => {
-        if (gameStorage.getItem('roomUser')) {
-            lastScenarioCheck = 0; // Сбрасываем кэш для принудительного обновления
-        }
-    }, 10 * 60 * 1000); // 10 минут
+    backgroundReady = true;
+    updateBackgroundState();
 });
 
 function checkAuth() {
@@ -274,9 +324,6 @@ function checkAuth() {
     }
     
     document.getElementById('usernameDisplay').textContent = (roomUser ? roomUser.username : user.username);
-    if (roomUser) {
-        initRoomTimer();
-    }
 }
 
 function setupDistrictSelect() {
@@ -288,6 +335,7 @@ function setupDistrictSelect() {
 }
 
 async function visitLocation() {
+    if (visitInFlight) return;
     if (roomState?.state === 'paused') {
         showRoomPausedPopup();
         return;
@@ -323,10 +371,14 @@ async function visitLocation() {
     
     const resultDiv = document.getElementById('result');
     const resultText = document.getElementById('resultText');
+    visitInFlight = true;
+    const goButton = document.getElementById('goBtn');
+    if (goButton) goButton.disabled = true;
+    tripHistoryVersion++;
     
     try {
         const token = gameStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/game/visit`, {
+        const response = await window.gameNetwork.fetch(`${API_BASE}/game/visit`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -348,7 +400,15 @@ async function visitLocation() {
             return;
         }
         
-        // Увеличиваем счетчик поездок независимо от результата
+        if (!response.ok && !data.attempt_id) {
+            tripHistoryVersion++;
+            alert(`${data.error || 'Не удалось выполнить поездку'}. Проверьте историю перед повторной попыткой. Введённый адрес сохранён.`);
+            loadTripHistory();
+            return;
+        }
+
+        // A recorded unsuccessful visit counts; an HTTP error without an attempt does not.
+        tripHistoryVersion++;
         tripCount++;
         updateTripCounter();
         
@@ -400,21 +460,12 @@ async function visitLocation() {
         }
     } catch (error) {
         console.error('Error visiting location:', error);
-        tripCount++;
-        updateTripCounter();
-        const trip = {
-            district: selectedDistrict,
-            houseNumber: houseNumber,
-            apartment: apartmentNumber,
-            success: false,
-            description: 'Ошибка соединения',
-            timestamp: new Date().toISOString(),
-            alreadyVisited: false
-        };
-        tripHistory.unshift(trip);
-        updateTripHistory();
-        document.getElementById('houseNumber').value = '';
-        if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
+        tripHistoryVersion++;
+        alert('Ответ на поездку не получен. Проверьте историю перед повторной попыткой: поездка могла сохраниться. Введённый адрес сохранён.');
+        loadTripHistory();
+    } finally {
+        visitInFlight = false;
+        if (goButton) goButton.disabled = false;
     }
 }
 
@@ -429,28 +480,7 @@ function showRoomPausedPopup() {
 
 // Загрузка счетчика поездок
 async function loadTripCount() {
-    try {
-        const token = gameStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/game/attempts`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to load attempts');
-        }
-        
-        const data = await response.json();
-        const attempts = data.attempts || [];
-        tripCount = attempts.length;
-        updateTripCounter();
-        
-    } catch (error) {
-        console.error('Error loading trip count:', error);
-        tripCount = 0;
-        updateTripCounter();
-    }
+    return loadTripHistory();
 }
 
 // Обновление счетчика поездок
@@ -462,10 +492,20 @@ function updateTripCounter() {
 }
 
 // Загрузка истории поездок
-async function loadTripHistory() {
+function loadTripHistory() {
+    if (tripHistoryRequest) return tripHistoryRequest;
+    const version = tripHistoryVersion;
+    tripHistoryRequest = fetchTripHistory(version).finally(() => {
+        tripHistoryRequest = null;
+        if (version !== tripHistoryVersion && backgroundAllowed()) loadTripHistory();
+    });
+    return tripHistoryRequest;
+}
+
+async function fetchTripHistory(version) {
     try {
         const token = gameStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/game/attempts`, {
+        const response = await window.gameNetwork.fetch(`${API_BASE}/game/attempts`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -479,17 +519,19 @@ async function loadTripHistory() {
         const attempts = data.attempts || [];
         
         // Преобразуем попытки в формат истории поездок
-        tripHistory = await Promise.all(attempts.map(async (attempt) => {
+        const nextHistory = await mapTripAttempts(attempts, async (attempt) => {
             let description = attempt.found ? (attempt.address_description || 'Локация найдена') : 'По этому адресу нет информации';
+            if (attempt.found && attempt.choice_response) description = attempt.choice_response;
             
             // Если это успешная поездка с address_id, проверяем, есть ли сделанные выборы
-            if (attempt.found && attempt.address_id && attempt.visited_location_id) {
+            // Compatibility with an older server; the new server includes all choices in one response.
+            if (!data.choices_included && attempt.found && attempt.has_choices && attempt.address_id && attempt.visited_location_id) {
                 try {
                     const roomUser = JSON.parse(gameStorage.getItem('roomUser'));
                     const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
                     
                     if (roomUser && roomUser.id && scenarioId) {
-                        const choiceResponse = await fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${attempt.address_id}/choice`, {
+                        const choiceResponse = await window.gameNetwork.fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${attempt.address_id}/choice`, {
                             headers: {
                                 'Authorization': `Bearer ${gameStorage.getItem('token')}`
                             }
@@ -522,16 +564,34 @@ async function loadTripHistory() {
                 is_internet_cafe: !!attempt.is_internet_cafe,
                 locationNames: Array.isArray(attempt.location_names) ? attempt.location_names : []
             };
-        }));
+        });
+        if (version !== tripHistoryVersion) return true;
+        tripHistory = nextHistory;
+        tripCount = attempts.length;
+        updateTripCounter();
         
         updateTripHistory();
         await refreshAvailableApplications();
+        return true;
         
     } catch (error) {
         console.error('Error loading trip history:', error);
-        tripHistory = [];
-        updateTripHistory();
+        // Keep the last confirmed history and counter on transient network errors.
+        return false;
     }
+}
+
+async function mapTripAttempts(attempts, mapper) {
+    const results = new Array(attempts.length);
+    let next = 0;
+    // Older servers need per-address lookups. Do not enqueue the whole history at once.
+    await Promise.all(Array.from({ length: Math.min(2, attempts.length) }, async () => {
+        while (next < attempts.length) {
+            const index = next++;
+            results[index] = await mapper(attempts[index]);
+        }
+    }));
+    return results;
 }
 
 function formatTripAddressLabel(trip) {
@@ -556,7 +616,7 @@ async function refreshAvailableApplications() {
     const token = gameStorage.getItem('token');
     if (!token) return;
     try {
-        const response = await fetch(`${API_BASE}/applications/game/available`, {
+        const response = await window.gameNetwork.fetch(`${API_BASE}/applications/game/available`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('Не удалось загрузить приложения');
@@ -714,7 +774,7 @@ async function loadScenarioInfo() {
         if (roomUser && roomUser.room_id) {
             // Для игроков комнаты получаем информацию о сценарии из комнаты
             const token = gameStorage.getItem('token');
-            const response = await fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
+            const response = await window.gameNetwork.fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -759,7 +819,7 @@ async function loadScenarioInfo() {
             }
         } else {
             // Для обычных пользователей получаем активный сценарий
-            const response = await fetch(`${API_BASE}/scenarios/active`);
+            const response = await window.gameNetwork.fetch(`${API_BASE}/scenarios/active`);
             
             if (response.ok) {
                 const data = await response.json();
@@ -778,29 +838,33 @@ async function loadScenarioInfo() {
 }
 
 // ===== Room timer =====
-async function initRoomTimer() {
-    await refreshRoomState();
+function initRoomTimer() {
+    if (roomTimerInterval !== null) return;
     renderTimer();
-    if (roomTimerInterval) clearInterval(roomTimerInterval);
-    roomTimerInterval = setInterval(async () => {
-        await refreshRoomState();
-        renderTimer();
-    }, 1000);
+    // The clock ticks locally; only the poller synchronizes with the server.
+    roomTimerInterval = setInterval(renderTimer, 1000);
 }
 
-async function refreshRoomState() {
+function refreshRoomState() {
+    if (roomStateRequest) return roomStateRequest;
+    roomStateRequest = fetchRoomState().finally(() => { roomStateRequest = null; });
+    return roomStateRequest;
+}
+
+async function fetchRoomState() {
     try {
         const room = JSON.parse(gameStorage.getItem('room') || 'null');
         if (!room) return;
         const token = gameStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/room/${room.id}/state`, {
+        const res = await window.gameNetwork.fetch(`${API_BASE}/room/${room.id}/state`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-        if (!res.ok) return;
+        if (!res.ok) return false;
         const previousState = roomState?.state;
         roomState = await res.json();
+        roomStateUpdatedAt = performance.now();
         if (roomState.state === 'paused' && previousState !== 'paused') {
             showRoomPausedPopup();
         }
@@ -836,8 +900,9 @@ async function refreshRoomState() {
                 console.log('Scenario name initially loaded:', scenarioName);
             }
         }
+        return true;
     } catch (e) {
-        // ignore
+        return false;
     }
 }
 
@@ -849,7 +914,8 @@ function renderTimer() {
     if (!roomState) return;
     
     const state = roomState.state;
-    const remaining = roomState.remaining;
+    const elapsed = state === 'running' ? Math.max(0, Math.floor((performance.now() - roomStateUpdatedAt) / 1000)) : 0;
+    const remaining = Math.max(0, (roomState.remaining || 0) - elapsed);
 
     if (roomState.room?.is_test) {
         timerDisplay.textContent = '∞ Без ограничений';
@@ -883,6 +949,9 @@ function renderTimer() {
 
 
 function logout() {
+    backgroundReady = false;
+    updateBackgroundState();
+    window.gameNetwork.cancelReads();
     gameStorage.removeItem('token');
     gameStorage.removeItem('user');
     gameStorage.removeItem('roomUser');
@@ -1041,8 +1110,14 @@ function clearApplicationPreview() {
     applicationObjectUrl = null;
 }
 
+function cancelApplicationRequest() {
+    applicationController?.abort();
+    applicationController = null;
+}
+
 function closeApplicationFolder() {
     applicationRequestId++;
+    cancelApplicationRequest();
     clearApplicationPreview();
     const overlay = document.getElementById('applicationOverlay');
     overlay.classList.remove('is-open');
@@ -1051,6 +1126,7 @@ function closeApplicationFolder() {
 }
 
 function showApplicationFiles() {
+    cancelApplicationRequest();
     clearApplicationPreview();
     document.getElementById('applicationPreview').style.display = 'none';
     document.getElementById('applicationFiles').style.display = 'block';
@@ -1070,11 +1146,12 @@ async function openApplicationFolder(addressId, number, fallbackUrl = '') {
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     showApplicationFiles();
+    const controller = applicationController = new AbortController();
     const list = document.getElementById('applicationFiles');
     list.textContent = 'Загрузка файлов…';
     const base = `${API_BASE}/applications/game/scenarios/${encodeURIComponent(scenarioId)}/addresses/${encodeURIComponent(addressId)}/${encodeURIComponent(number)}`;
     try {
-        const response = await fetch(base, { headers: { Authorization: `Bearer ${token}` } });
+        const response = await window.gameNetwork.fetch(base, { signal: controller.signal, headers: { Authorization: `Bearer ${token}` } });
         if (response.status === 404 && fallbackUrl) {
             if (requestId === applicationRequestId) {
                 list.innerHTML = `<p>Эта папка ещё не загружена в сценарий.</p><a href="${escapeHtmlPlayer(fallbackUrl)}" target="_blank" rel="noopener noreferrer">Открыть прежнюю ссылку</a>`;
@@ -1099,6 +1176,8 @@ async function openApplicationFolder(addressId, number, fallbackUrl = '') {
 
 async function openApplicationFile(base, file, index, token) {
     const requestId = ++applicationRequestId;
+    cancelApplicationRequest();
+    const controller = applicationController = new AbortController();
     const preview = document.getElementById('applicationPreview');
     preview.style.display = 'block';
     document.getElementById('applicationFiles').style.display = 'none';
@@ -1108,7 +1187,9 @@ async function openApplicationFile(base, file, index, token) {
     clearApplicationPreview();
     preview.textContent = 'Загрузка файла…';
     try {
-        const response = await fetch(`${base}/files/${encodeURIComponent(file.id)}${file.type.startsWith('image/') ? '?preview=1' : ''}`, {
+        const response = await window.gameNetwork.fetch(`${base}/files/${encodeURIComponent(file.id)}${file.type.startsWith('image/') ? '?preview=1' : ''}`, {
+            timeoutMs: 60000,
+            signal: controller.signal,
             headers: { Authorization: `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('Не удалось загрузить файл');
@@ -1148,7 +1229,7 @@ async function loadPlayerAddressBookSectionsAndEntries() {
     const token = gameStorage.getItem('token');
     if (!token) return;
     try {
-        const response = await fetch(`${API_BASE}/game/address-book/sections`, {
+        const response = await window.gameNetwork.fetch(`${API_BASE}/game/address-book/sections`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json().catch(() => ({}));
@@ -1237,7 +1318,7 @@ async function loadPlayerAddressBookEntries() {
     if (playerAddressBookFilter.q) qs.set('q', playerAddressBookFilter.q);
 
     try {
-        const response = await fetch(`${API_BASE}/game/address-book/entries?${qs}`, {
+        const response = await window.gameNetwork.fetch(`${API_BASE}/game/address-book/entries?${qs}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json().catch(() => ({}));
@@ -1282,7 +1363,7 @@ async function loadQuestions() {
         if (roomUser && roomUser.room_id) {
             // Для игроков комнаты получаем scenario_id из комнаты
             const token = gameStorage.getItem('token');
-            const response = await fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
+            const response = await window.gameNetwork.fetch(`${API_BASE}/room/${roomUser.room_id}/state`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -1294,7 +1375,7 @@ async function loadQuestions() {
             }
         } else {
             // Для обычных пользователей получаем активный сценарий
-            const response = await fetch(`${API_BASE}/scenarios/active`);
+            const response = await window.gameNetwork.fetch(`${API_BASE}/scenarios/active`);
             if (response.ok) {
                 const data = await response.json();
                 scenarioId = data.scenario.id;
@@ -1307,7 +1388,7 @@ async function loadQuestions() {
         }
         
         // Загружаем вопросы для сценария
-        const questionsResponse = await fetch(`${API_BASE}/questions/scenario/${scenarioId}`);
+        const questionsResponse = await window.gameNetwork.fetch(`${API_BASE}/questions/scenario/${scenarioId}`);
         if (questionsResponse.ok) {
             const questionsData = await questionsResponse.json();
             displayQuestions(questionsData.questions, scenarioId, roomUser);
@@ -1429,7 +1510,7 @@ async function submitAllAnswers() {
         const answerText = textarea.value; // пустые ответы разрешены
         
         try {
-            const response = await fetch(`${API_BASE}/questions/answer`, {
+            const response = await window.gameNetwork.fetch(`${API_BASE}/questions/answer`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1497,7 +1578,7 @@ async function checkForInteractiveChoices(addressId, description, visitedLocatio
         console.log('Checking for choices:', { scenarioId: currentScenarioId, addressId });
         const token = gameStorage.getItem('token');
         console.log('Making request to:', `${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`);
-        const response = await fetch(`${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`, {
+        const response = await window.gameNetwork.fetch(`${API_BASE}/choices/game/scenarios/${currentScenarioId}/addresses/${addressId}/choices`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -1600,7 +1681,7 @@ async function makePlayerChoice(choiceId) {
             throw new Error('Room user not found');
         }
         
-        const response = await fetch(`${API_BASE}/choices/game/make-choice`, {
+        const response = await window.gameNetwork.fetch(`${API_BASE}/choices/game/make-choice`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1623,6 +1704,7 @@ async function makePlayerChoice(choiceId) {
         const data = await response.json();
         
         // Показываем результат выбора
+        tripHistoryVersion++;
         showChoiceResponse(data.response);
         
     } catch (error) {
@@ -1663,7 +1745,7 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
         
         // Проверяем, есть ли уже сделанные выборы
         const token = gameStorage.getItem('token');
-        const choiceResponse = await fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${addressId}/choice`, {
+        const choiceResponse = await window.gameNetwork.fetch(`${API_BASE}/choices/game/players/${roomUser.id}/scenarios/${scenarioId}/addresses/${addressId}/choice`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -1680,7 +1762,7 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
         }
         
         // Если выбор не был сделан, показываем доступные варианты
-        const response = await fetch(`${API_BASE}/choices/game/scenarios/${scenarioId}/addresses/${addressId}/choices`, {
+        const response = await window.gameNetwork.fetch(`${API_BASE}/choices/game/scenarios/${scenarioId}/addresses/${addressId}/choices`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -1762,7 +1844,7 @@ async function openInternetCafe(cafeAddressId) {
 
     try {
         const token = gameStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/internet-cafe/game/${cafeAddressId}/pages`, {
+        const response = await window.gameNetwork.fetch(`${API_BASE}/internet-cafe/game/${cafeAddressId}/pages`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1831,7 +1913,7 @@ async function openCafePage(pageId) {
 
     try {
         const token = gameStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/internet-cafe/game/pages/${pageId}`, {
+        const response = await window.gameNetwork.fetch(`${API_BASE}/internet-cafe/game/pages/${pageId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();

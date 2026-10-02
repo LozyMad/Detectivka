@@ -188,8 +188,7 @@ const roomEventsStream = (req, res) => {
   res.flushHeaders();
 
   const { subscribe } = require('../sse/roomEvents');
-  subscribe(roomId, res);
-  res.write(': connected\n\n');
+  subscribe(roomId, res, req.tokenExpiresAt);
 };
 
 module.exports = {

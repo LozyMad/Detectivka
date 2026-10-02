@@ -51,6 +51,7 @@ async function test() {
       return { ok: true, json: async () => ({ link: { id: 1, note_a: 10, note_b: 11 } }) };
     }
   };
+  sandbox.window.gameNetwork = { fetch: sandbox.fetch };
   const source = fs.readFileSync('frontend/js/investigation-board.js', 'utf8')
     .replace('window.investigationBoard = { show, openFromTrip, hide: clearSelection };', 'window.investigationBoard = { show, openFromTrip, hide: clearSelection, init, state };');
   vm.runInNewContext(source, sandbox);

@@ -49,6 +49,7 @@ const authenticateTokenQuery = (req, res, next) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid token' });
     }
+    req.tokenExpiresAt = Number.isFinite(payload.exp) ? payload.exp * 1000 : null;
     if (payload.id) {
       const userData = await User.findById(payload.id);
       if (!userData) return res.status(403).json({ error: 'User not found' });
