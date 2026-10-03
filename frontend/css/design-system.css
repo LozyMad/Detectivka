@@ -748,7 +748,7 @@ body.admin-login-body::after, body.game-login-body::after {
         content: '' !important;
         position: fixed;
         inset: -32px;
-        background: url('../assets/case-desk-background.png') center center / cover no-repeat;
+        background: url('../assets/case-desk-background.opt.webp') center center / cover no-repeat;
         filter: blur(3px);
         pointer-events: none;
         z-index: 0;

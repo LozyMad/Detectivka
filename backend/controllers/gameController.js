@@ -4,6 +4,7 @@ const AddressBook = require('../models/addressBook');
 const VisitedLocation = require('../models/visitedLocation');
 const VisitAttempt = require('../models/visitAttempt');
 const { broadcastNewTrip } = require('../sse/roomEvents');
+const { syncRoomTimer } = require('../services/roomTimer');
 
 async function lookupLocationNames(district, house_number, apartment) {
   try {
@@ -35,8 +36,7 @@ const visitLocation = async (req, res) => {
     let activeScenario = await Scenario.getActive();
     // For room users, enforce room scenario and start time
     if (roomContext) {
-      const Room = require('../models/room');
-      const room = await Room.getById(roomContext.room_id);
+      const room = await syncRoomTimer(roomContext.room_id);
       if (!room) return res.status(403).json({ error: 'Room not found' });
       
       // Check game state
@@ -188,8 +188,7 @@ const roomEventsStream = (req, res) => {
   res.flushHeaders();
 
   const { subscribe } = require('../sse/roomEvents');
-  subscribe(roomId, res);
-  res.write(': connected\n\n');
+  subscribe(roomId, res, req.tokenExpiresAt);
 };
 
 module.exports = {

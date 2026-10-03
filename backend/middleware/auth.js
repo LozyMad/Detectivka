@@ -17,23 +17,29 @@ const authenticateToken = (req, res, next) => {
       return res.status(403).json({ error: 'Invalid token' });
     }
 
-    // Admin/staff token
-    if (payload.id) {
-      const userData = await User.findById(payload.id);
-      if (!userData) {
-        return res.status(403).json({ error: 'User not found' });
+    try {
+      // Admin/staff token
+      if (payload.id) {
+        const userData = await User.findById(payload.id);
+        if (!userData) {
+          return res.status(403).json({ error: 'User not found' });
+        }
+        req.user = userData;
+        return next();
       }
-      req.user = userData;
-      return next();
-    }
 
-    // Room user token
-    if (payload.room_user_id && payload.room_id) {
-      req.roomUser = { id: payload.room_user_id, room_id: payload.room_id, username: payload.username, scenario_id: payload.scenario_id };
-      return next();
-    }
+      // Room user token
+      if (payload.room_user_id && payload.room_id) {
+        req.roomUser = { id: payload.room_user_id, room_id: payload.room_id, username: payload.username, scenario_id: payload.scenario_id };
+        return next();
+      }
 
-    return res.status(403).json({ error: 'Invalid token payload' });
+      return res.status(403).json({ error: 'Invalid token payload' });
+    } catch (error) {
+      // jwt.verify does not consume a promise returned by its callback.
+      // Forward database failures to Express instead of an unhandled rejection.
+      return next(error);
+    }
   });
 };
 
@@ -49,17 +55,22 @@ const authenticateTokenQuery = (req, res, next) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid token' });
     }
-    if (payload.id) {
-      const userData = await User.findById(payload.id);
-      if (!userData) return res.status(403).json({ error: 'User not found' });
-      req.user = userData;
-      return next();
+    try {
+      req.tokenExpiresAt = Number.isFinite(payload.exp) ? payload.exp * 1000 : null;
+      if (payload.id) {
+        const userData = await User.findById(payload.id);
+        if (!userData) return res.status(403).json({ error: 'User not found' });
+        req.user = userData;
+        return next();
+      }
+      if (payload.room_user_id && payload.room_id) {
+        req.roomUser = { id: payload.room_user_id, room_id: payload.room_id, username: payload.username, scenario_id: payload.scenario_id };
+        return next();
+      }
+      return res.status(403).json({ error: 'Invalid token payload' });
+    } catch (error) {
+      return next(error);
     }
-    if (payload.room_user_id && payload.room_id) {
-      req.roomUser = { id: payload.room_user_id, room_id: payload.room_id, username: payload.username, scenario_id: payload.scenario_id };
-      return next();
-    }
-    return res.status(403).json({ error: 'Invalid token payload' });
   });
 };
 

@@ -3,6 +3,7 @@ const RoomUser = require('../models/roomUser');
 const Scenario = require('../models/scenario');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { syncRoomTimer } = require('../services/roomTimer');
 
 async function canUseScenario(user, scenarioId) {
   if (user.admin_level === 'super_admin') return true;
@@ -90,7 +91,10 @@ const enterTestRoom = async (req, res) => {
 const listRooms = async (req, res) => {
   try {
     const rooms = await Room.listByAdmin(req.user.id);
-    res.json({ rooms });
+    const currentRooms = await Promise.all(rooms.map(room =>
+      room.state === 'running' && !room.is_test ? syncRoomTimer(room.id, room) : room
+    ));
+    res.json({ rooms: currentRooms });
   } catch (error) {
     console.error('List rooms error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -141,10 +145,11 @@ const removeRoomUser = async (req, res) => {
 const startRoomTimer = async (req, res) => {
   try {
     const { room_id } = req.params;
-    const room = await Room.getById(room_id);
+    const room = await syncRoomTimer(room_id);
     if (!room) return res.status(404).json({ error: 'Room not found' });
     if (room.is_test) return res.status(400).json({ error: 'Test rooms have no timer' });
     if (room.state === 'running') return res.status(400).json({ error: 'Game already running' });
+    if (room.state === 'paused') return res.status(400).json({ error: 'Resume the paused game instead of starting it again' });
     
     const result = await Room.startGame(room_id);
     res.json({ room: result });
@@ -157,12 +162,13 @@ const startRoomTimer = async (req, res) => {
 const pauseRoomTimer = async (req, res) => {
   try {
     const { room_id } = req.params;
-    const room = await Room.getById(room_id);
+    const room = await syncRoomTimer(room_id);
     if (!room) return res.status(404).json({ error: 'Room not found' });
     if (room.is_test) return res.status(400).json({ error: 'Test rooms have no timer' });
     if (room.state !== 'running') return res.status(400).json({ error: 'Game not running' });
     
     const result = await Room.pauseGame(room_id);
+    if (!result) return res.status(409).json({ error: 'Room state changed; refresh and try again' });
     res.json({ room: result });
   } catch (error) {
     console.error('Pause room timer error:', error);
@@ -179,6 +185,7 @@ const resumeRoomTimer = async (req, res) => {
     if (room.state !== 'paused') return res.status(400).json({ error: 'Game not paused' });
     
     const result = await Room.resumeGame(room_id);
+    if (!result) return res.status(409).json({ error: 'Room state changed; refresh and try again' });
     res.json({ room: result });
   } catch (error) {
     console.error('Resume room timer error:', error);
