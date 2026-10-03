@@ -14,9 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
+      - name: Allow concurrent deployment to finish restarting the app
+        run: sleep 30
       - name: Check DNS and public HTTP responses
         shell: bash
         run: |
+          FAILURES=0
           for HOST in detektum.ru www.detektum.ru; do
             IP=$(getent ahostsv4 "$HOST" | awk 'NR==1 {print $1}')
             echo "::notice::DNS $HOST = $IP"
@@ -25,10 +28,21 @@ jobs:
             RESULT=$(curl -4 -sS -I -o /dev/null --connect-timeout 8 --max-time 15 \
               -w 'http=%{http_code} remote=%{remote_ip} connect=%{time_connect} tls=%{time_appconnect} total=%{time_total}' "$URL") && EXIT_CODE=0 || EXIT_CODE=$?
             echo "::notice::$URL curl_exit=$EXIT_CODE $RESULT"
+            if [[ "$URL" == https:* ]]; then EXPECTED=200; else EXPECTED=301; fi
+            if [[ "$EXIT_CODE" != 0 || "$RESULT" != "http=$EXPECTED "* ]]; then
+              FAILURES=$((FAILURES + 1))
+            fi
           done
           for HOST in detektum.ru www.detektum.ru; do
             RESULT=$(curl -4 -sS -I -o /dev/null --resolve "$HOST:443:159.194.245.92" \
               --connect-timeout 8 --max-time 15 \
               -w 'http=%{http_code} remote=%{remote_ip} connect=%{time_connect} tls=%{time_appconnect} total=%{time_total}' "https://$HOST/") && EXIT_CODE=0 || EXIT_CODE=$?
             echo "::notice::Direct-IP https://$HOST/ curl_exit=$EXIT_CODE $RESULT"
+            if [[ "$EXIT_CODE" != 0 || "$RESULT" != "http=200 "* ]]; then
+              FAILURES=$((FAILURES + 1))
+            fi
           done
+          if [[ "$FAILURES" != 0 ]]; then
+            echo "::error::$FAILURES connectivity checks failed"
+            exit 1
+          fi
