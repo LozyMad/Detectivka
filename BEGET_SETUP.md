@@ -15,8 +15,8 @@
 - Пароль admin изменён пользователем; PM2 online, автозапуск сохранён.
 - На 3 октября 2026 года приложение на Beget отвечает HTTP 200 на порту 3000.
 - В REG.RU пользователь сохранил A-записи `@` и `www` → `159.194.245.92`;
-  это подтверждено скриншотом. Google DNS уже возвращает новый IP для обоих имён;
-  часть других DNS-проверок пока возвращает старый IP.
+  это подтверждено скриншотом. Google DNS, Cloudflare DNS и локальный резолвер
+  возвращают новый IP для обоих имён.
 - Nginx настроен для домена; проверка конфигурации успешна, локальный запрос
   с Host detektum.ru отвечает HTTP 200. Внешний запрос по IP тоже отвечает,
   внешний https://www.detektum.ru отвечает HTTP 200, HTTP перенаправляется на HTTPS.
@@ -27,45 +27,20 @@
   Из сети агента TLS для основного имени ещё даёт таймаут после подключения TCP,
   при этом www работает. Причина этой особенности сети не установлена.
 - `certbot renew --dry-run` завершился успешно для обоих имён; продление проверено.
-- Локальный workflow направлен на https://www.detektum.ru/api/deploy.
-  Пользователь обновил GitHub DEPLOY_SECRET. Публикация workflow и проверка
-  первого автодеплоя пока не выполнены.
+- Workflow опубликован в main и направлен на https://www.detektum.ru/api/deploy.
+  Первый запуск GitHub Actions остановился на проверке секрета:
+  `DEPLOY_SECRET is not set`. Пользователь сохранил секрет под именем `DETEKTUM`;
+  workflow теперь читает secrets.DETEKTUM в переменную окружения DEPLOY_SECRET.
+  Проверка нового запуска пока не завершена.
+- После сохранения скопированной папки deploy вне репозитория прямой запрос
+  к webhook успешно обновил Beget с 550fbad до 4f9f382. Затем главная страница
+  и /admin-login снаружи отвечают HTTP 200. Ответ webhook не подтверждает
+  выполнение отложенного перезапуска PM2; при необходимости проверьте pm2 status.
 
-Следующий текущий шаг — установить Certbot в SSH-консоли Beget:
-
-```bash
-apt update
-apt install -y certbot python3-certbot-nginx
-certbot --version
-```
-
-Выпуск сертификата выполняется после подтверждения новых DNS-записей:
-
-```bash
-certbot --nginx -d detektum.ru -d www.detektum.ru --redirect
-```
-
-Следующий шаг в SSH-консоли Beget:
-
-```bash
-cd /root/apps/Detectivka
-sed 's/example\.com/detektum.ru/g' deploy/beget/nginx.conf > /etc/nginx/sites-available/detectivka
-ln -sfn /etc/nginx/sites-available/detectivka /etc/nginx/sites-enabled/detectivka
-nginx -t
-```
-
-После успешной проверки Nginx:
-
-```bash
-systemctl enable --now nginx
-systemctl reload nginx
-curl -I -H 'Host: detektum.ru' http://127.0.0.1/
-```
-
-После HTTP 200 и проверки внешнего доступа на порт 80 в REG.RU замените A-записи
-`@` и `www` на `159.194.245.92`. Затем дождитесь обновления DNS и выпустите
-сертификат для `detektum.ru` и `www.detektum.ru`. Автодеплой GitHub переключается
-на Beget после обновления DEPLOY_SECRET и публикации нового workflow в main.
+Текущий следующий шаг — проверить workflow с Repository secret `DETEKTUM` в GitHub.
+Его значение должно совпадать с DEPLOY_SECRET из backend/.env на Beget. Установка Nginx,
+DNS и HTTPS уже завершена; команды ниже приведены для повторения переноса
+на новом сервере.
 
 ## 1. Создать сервер
 
@@ -81,7 +56,7 @@ curl -I -H 'Host: detektum.ru' http://127.0.0.1/
 ### Если создан сервер с чистой Ubuntu 26.04
 
 Новый сервер Beget: `159.194.245.92`. На нём подтверждены Ubuntu 26.04 и
-доступ пользователя root через консоль Beget. Node.js пока не установлен.
+доступ пользователя root через консоль Beget. Изначально Node.js не был установлен.
 Для этой ОС [репозиторий Ubuntu](https://packages.ubuntu.com/resolute/nodejs)
 содержит Node.js 22. Выполните в консоли сервера от root:
 
@@ -315,7 +290,7 @@ sudo certbot renew --dry-run
 ## 7. Переключить автодеплой
 
 В GitHub → Settings → Secrets and variables → Actions → Secrets обновите
-Repository secret `DEPLOY_SECRET`: он должен совпадать со значением на Beget.
+Repository secret `DETEKTUM`: он должен совпадать со значением DEPLOY_SECRET на Beget.
 Изменённый workflow `Deploy to Beget` использует
 `https://www.detektum.ru/api/deploy`, проверенный снаружи по HTTPS.
 Repository variable DEPLOY_URL для этого workflow не требуется.

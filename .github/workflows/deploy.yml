@@ -14,16 +14,16 @@ jobs:
       - name: Check deploy secret
         run: |
           if [ -z "$DEPLOY_SECRET" ]; then
-            echo "::error::DEPLOY_SECRET is not set. Add it in repo Settings → Secrets and variables → Actions."
+            echo "::error::DETEKTUM is not set. Add it in repo Settings → Secrets and variables → Actions → Secrets."
             exit 1
           fi
           echo "DEPLOY_SECRET is set (length: ${#DEPLOY_SECRET} chars)"
         env:
-          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
+          DEPLOY_SECRET: ${{ secrets.DETEKTUM }}
 
       - name: Call deploy webhook on server
         env:
-          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
+          DEPLOY_SECRET: ${{ secrets.DETEKTUM }}
           DEPLOY_URL: https://www.detektum.ru/api/deploy
         run: |
           echo "Calling deploy endpoint..."
@@ -40,7 +40,7 @@ jobs:
             if [ "$CODE" = "000" ]; then
               echo "::error::Connection failed (000). Check pm2 status, Nginx, HTTPS and DNS for www.detektum.ru."
             else
-              echo "::error::Deploy failed (code $CODE). Check DEPLOY_SECRET and server .env."
+              echo "::error::Deploy failed (code $CODE). Check GitHub secret DETEKTUM matches DEPLOY_SECRET in server .env."
             fi
             exit 1
           fi
