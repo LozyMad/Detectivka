@@ -3,7 +3,7 @@ body.game-container > .container.mt-3 { margin-top: 0 !important; }
 .player-mobile-toolbar { display: none; }
 .player-bottom-nav { display: none; }
 .player-nav-icon { width: 17px; height: 17px; margin-right: 6px; vertical-align: -3px; }
-/* The same four controls become a fixed bottom bar on phones and touch tablets. */
+/* Existing controls share one fixed bottom bar on phones and touch tablets. */
 body.game-container.has-bottom-nav { padding-bottom: var(--player-bottom-nav-height, 64px); }
 body.has-bottom-nav #playerBottomNav {
     --bottom-nav-surface: #f4eddf;
@@ -52,11 +52,23 @@ body.game-container #playerBottomNav .btn {
     touch-action: manipulation;
 }
 #playerBottomNav .player-nav-icon { display: block; width: 24px; height: 24px; margin: 0; }
+#playerBottomNav .btn[hidden] { display: none !important; }
+.player-nav-compact-label { display: none; }
 #playerBottomNav .board-nav-full-label { display: none; }
 #playerBottomNav .board-nav-short-label { display: block; }
 body.game-container #playerBottomNav .btn.active { color: var(--bottom-nav-active) !important; font-weight: 700 !important; }
 #playerBottomNav .btn.active::before { content: ''; position: absolute; top: 0; width: 26px; height: 2px; border-radius: 0 0 2px 2px; background: currentColor; }
 body.game-container #playerBottomNav .btn:focus-visible { outline: 2px solid var(--bottom-nav-active); outline-offset: -5px; }
+@media (max-width: 380px) {
+    #playerBottomNav #applications-tab .player-nav-label { display: none; }
+    #playerBottomNav #applications-tab .player-nav-compact-label { display: block; }
+}
+.player-applications-pane { padding: 1rem 0 2rem; }
+.player-applications-heading { margin: 1rem 0; }
+.player-applications-heading h1 { margin: 0 0 .5rem; color: var(--color-text) !important; font: 700 1.8rem/1.15 var(--font-display); }
+.player-applications-heading p { margin: 0; color: var(--color-muted); font-size: .9rem; line-height: 1.5; }
+#mobileDossierHost .dossier-sidebar { width: 100%; }
+#mobileDossierHost .received-application { min-height: 60px; }
 body.game-container #questions, body.game-container #addressbook { padding-top: 1rem; }
 #game {
     --board-ink: #242927;

@@ -69,6 +69,9 @@ function setupMobileGameLayout() {
     const boardAccount = document.getElementById('boardAccount');
     const boardMenu = document.getElementById('boardAccountMenu');
     const sidebar = document.querySelector('.dossier-sidebar');
+    const applicationsTab = document.getElementById('applications-tab');
+    const applicationsPane = document.getElementById('applications');
+    const mobileDossier = document.getElementById('mobileDossierHost');
     if (!toolbar || !bottomNav || !collapse || !tabs || !stats || !sidebar) return;
 
     const tabHome = tabs.parentElement;
@@ -79,11 +82,18 @@ function setupMobileGameLayout() {
     const controlsHome = controls?.parentElement;
     const timerHome = timer?.parentElement;
     const mobile = window.matchMedia('(max-width: 767.98px)');
+    const phone = window.matchMedia('(max-width: 767.98px), (max-width: 950px) and (max-height: 500px)');
     const bottomNavigation = window.matchMedia('(max-width: 1279.98px), (hover: none) and (pointer: coarse)');
     const desktopBoard = window.matchMedia('(min-width: 768px) and (min-height: 501px), (min-width: 951px)');
     const landscapeBoard = window.matchMedia('(orientation: landscape) and (max-height: 900px) and (max-width: 1279.98px)');
     const narrowLandscape = window.matchMedia('(max-width: 740px)');
     const arrange = () => {
+        if (applicationsTab) applicationsTab.hidden = !phone.matches;
+        // Return to the game when a phone becomes a tablet/desktop layout.
+        if (!phone.matches && applicationsPane?.classList.contains('active')) {
+            document.getElementById('game-tab').click();
+            return;
+        }
         // Move the existing controls so timers, active tabs and click handlers stay in sync.
         if (controls && controlsHome) controlsHome.append(controls);
         statHome.prepend(stats);
@@ -101,19 +111,19 @@ function setupMobileGameLayout() {
             // On smaller landscape phones the live timer remains accessible in the account menu.
             if (!landscapeBoard.matches || !narrowLandscape.matches) boardTimer.append(timer);
             boardMenu.append(controls);
-            sidebarHome.append(sidebar);
             toolbarHome.insertBefore(toolbar, toolbarNext);
         } else if (mobile.matches) {
             toolbar.append(stats);
             const activePane = document.querySelector('#gameTabContent .tab-pane.active') || document.getElementById('game');
             placeMobileToolbar(activePane);
-            collapse.append(sidebar);
         } else {
             tabHome.insertBefore(tabs, statHome);
             statHome.prepend(stats);
-            sidebarHome.append(sidebar);
             toolbarHome.insertBefore(toolbar, toolbarNext);
         }
+        const sidebarTarget = phone.matches && mobileDossier ? mobileDossier : sidebarHome;
+        // Preserve the notes input and its focus when only viewport height changes.
+        if (sidebar.parentElement !== sidebarTarget) sidebarTarget.append(sidebar);
         // Keep the original buttons, their listeners and unique IDs across all four views.
         if (bottomNavigation.matches) bottomNav.append(tabs);
         updateBottomNavHeight();
@@ -125,7 +135,7 @@ function setupMobileGameLayout() {
     }
     arrangePlayerNavigation = arrange;
     arrange();
-    for (const media of [mobile, bottomNavigation, desktopBoard, landscapeBoard, narrowLandscape]) {
+    for (const media of [mobile, phone, bottomNavigation, desktopBoard, landscapeBoard, narrowLandscape]) {
         if (media.addEventListener) media.addEventListener('change', arrange);
         else media.addListener(arrange);
     }
@@ -310,11 +320,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (collapseEl && iconEl) {
         collapseEl.addEventListener('show.bs.collapse', () => {
             iconEl.classList.remove('fa-chevron-down'); iconEl.classList.add('fa-chevron-up');
-            menuButton?.setAttribute('aria-label', 'Закрыть приложения и заметки');
+            menuButton?.setAttribute('aria-label', 'Закрыть параметры игры');
         });
         collapseEl.addEventListener('hide.bs.collapse', () => {
             iconEl.classList.remove('fa-chevron-up'); iconEl.classList.add('fa-chevron-down');
-            menuButton?.setAttribute('aria-label', 'Открыть приложения и заметки');
+            menuButton?.setAttribute('aria-label', 'Открыть параметры игры');
         });
     }
     
@@ -985,10 +995,12 @@ function setupTabSwitching() {
     const questionsTab = document.getElementById('questions-tab');
     const addressbookTab = document.getElementById('addressbook-tab');
     const boardTab = document.getElementById('board-tab');
+    const applicationsTab = document.getElementById('applications-tab');
     const gameContent = document.getElementById('game');
     const questionsContent = document.getElementById('questions');
     const addressbookContent = document.getElementById('addressbook');
     const boardContent = document.getElementById('board');
+    const applicationsContent = document.getElementById('applications');
     const gameNavbar = document.getElementById('gameNavbar');
     let boardReturnScrollY = 0;
 
@@ -1000,7 +1012,12 @@ function setupTabSwitching() {
 
     function showPane(pane) {
         const wasBoardOpen = document.body.classList.contains('board-open');
+        const wasApplicationsOpen = applicationsContent?.classList.contains('active');
         if (wasBoardOpen && pane !== boardContent) window.investigationBoard?.hide();
+        if (pane === applicationsContent) {
+            const mobileMenu = document.getElementById('navbarCollapse');
+            if (mobileMenu) window.bootstrap?.Collapse.getOrCreateInstance(mobileMenu, { toggle: false }).hide();
+        }
         if (pane === boardContent && !wasBoardOpen) {
             boardReturnScrollY = window.scrollY;
             const mobileMenu = document.getElementById('navbarCollapse');
@@ -1010,7 +1027,7 @@ function setupTabSwitching() {
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             updateBoardNavHeight();
         }
-        [gameContent, questionsContent, addressbookContent, boardContent].forEach(el => {
+        [gameContent, questionsContent, addressbookContent, boardContent, applicationsContent].forEach(el => {
             if (!el) return;
             if (el === pane) {
                 el.classList.add('show', 'active');
@@ -1020,9 +1037,9 @@ function setupTabSwitching() {
                 el.classList.add('fade');
             }
         });
-        [gameTab, questionsTab, addressbookTab, boardTab].forEach((btn, i) => {
+        [gameTab, questionsTab, addressbookTab, boardTab, applicationsTab].forEach((btn, i) => {
             if (!btn) return;
-            const panes = [gameContent, questionsContent, addressbookContent, boardContent];
+            const panes = [gameContent, questionsContent, addressbookContent, boardContent, applicationsContent];
             btn.classList.toggle('active', panes[i] === pane);
             if (panes[i] === pane) btn.setAttribute('aria-current', 'page');
             else btn.removeAttribute('aria-current');
@@ -1032,6 +1049,7 @@ function setupTabSwitching() {
         updateBoardNavHeight();
         placeMobileToolbar(pane);
         if (wasBoardOpen && pane !== boardContent) window.scrollTo(0, boardReturnScrollY);
+        if (pane === applicationsContent || (wasApplicationsOpen && pane !== boardContent)) window.scrollTo(0, 0);
     }
 
     if (gameTab && questionsTab && gameContent && questionsContent) {
@@ -1058,6 +1076,12 @@ function setupTabSwitching() {
                 e.preventDefault();
                 showPane(boardContent);
                 window.investigationBoard?.show();
+            });
+        }
+        if (applicationsTab && applicationsContent) {
+            applicationsTab.addEventListener('click', (e) => {
+                e.preventDefault();
+                showPane(applicationsContent);
             });
         }
     }
