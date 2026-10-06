@@ -1,0 +1,40 @@
+{
+  "assets": [
+    {
+      "file": "frontend/assets/board/dark-cork-surface-v5.webp",
+      "width": 1536,
+      "height": 1024,
+      "hasAlpha": false,
+      "bytes": 701472
+    },
+    {
+      "file": "frontend/assets/board/walnut-frame-v5.webp",
+      "width": 1254,
+      "height": 1254,
+      "hasAlpha": true,
+      "bytes": 214726
+    }
+  ],
+  "reusedNotes": [
+    {
+      "file": "frontend/assets/board/note-yellow-pinned.webp",
+      "sha256": "fb41219996a7fbf3bc044824da90b06119f4617dfe038664efb9780729559a43"
+    },
+    {
+      "file": "frontend/assets/board/note-pink-pinned.webp",
+      "sha256": "c36a49a27a138cad923fbe704c160bac574fc618fbd49c4f8c9575694a2522bd"
+    },
+    {
+      "file": "frontend/assets/board/note-blue-pinned.webp",
+      "sha256": "769d27095ebeaebb669328fff1968c54de36d1dce5fa12c988ed813f1767b4db"
+    },
+    {
+      "file": "frontend/assets/board/note-green-pinned.webp",
+      "sha256": "3ef19dd974c5eff7403754baaef6755624b1e7bfe8f1bf817d546f99f33b6c0a"
+    },
+    {
+      "file": "frontend/assets/board/note-purple-pinned.webp",
+      "sha256": "3d18a585582f0e54ae3c5f2c54b492bbc629dd0cee84d42a2ae1fe85e31bae15"
+    }
+  ]
+}

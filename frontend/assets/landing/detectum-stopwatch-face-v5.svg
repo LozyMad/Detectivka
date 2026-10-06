@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1122 1402" width="1122" height="1402">
+  <title>Точная шкала секундомера: 60 секунд и 30 минут</title>
+  <!-- Transparent face overlay aligned to the unwarped blank enamel dial. -->
+  <defs>
+    <linearGradient id="hand-metal" x1="0" y1="0" x2="1" y2=".4">
+      <stop stop-color="#44332b"/><stop offset=".45" stop-color="#241b17"/><stop offset=".7" stop-color="#59402b"/><stop offset="1" stop-color="#211912"/>
+    </linearGradient>
+    <radialGradient id="hand-hub"><stop stop-color="#c5a16a"/><stop offset=".45" stop-color="#715135"/><stop offset="1" stop-color="#281f17"/></radialGradient>
+    <filter id="hand-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="2.5" dy="3.5" stdDeviation="2" flood-color="#4b3520" flood-opacity=".3"/>
+    </filter>
+  </defs>
+  <circle cx="559" cy="866" r="382" fill="none" stroke="#514331" stroke-width="1.8" opacity=".5"/>
+  <g class="seconds-ticks" fill="none" stroke="#44362b" stroke-linecap="round">
+    <path d="M559.00 522.00L559.00 489.00" stroke-width="5"/>
+    <path d="M596.42 509.96L598.41 491.07" stroke-width="2.8"/>
+    <path d="M633.43 515.82L637.38 497.24" stroke-width="2.8"/>
+    <path d="M669.63 525.52L675.50 507.45" stroke-width="2.8"/>
+    <path d="M704.61 538.95L712.34 521.59" stroke-width="2.8"/>
+    <path d="M731.00 568.09L747.50 539.51" stroke-width="5"/>
+    <path d="M769.43 576.37L780.60 561.00" stroke-width="2.8"/>
+    <path d="M798.55 599.95L811.26 585.83" stroke-width="2.8"/>
+    <path d="M825.05 626.45L839.17 613.74" stroke-width="2.8"/>
+    <path d="M848.63 655.57L864.00 644.40" stroke-width="2.8"/>
+    <path d="M856.91 694.00L885.49 677.50" stroke-width="5"/>
+    <path d="M886.05 720.39L903.41 712.66" stroke-width="2.8"/>
+    <path d="M899.48 755.37L917.55 749.50" stroke-width="2.8"/>
+    <path d="M909.18 791.57L927.76 787.62" stroke-width="2.8"/>
+    <path d="M915.04 828.58L933.93 826.59" stroke-width="2.8"/>
+    <path d="M903.00 866.00L936.00 866.00" stroke-width="5"/>
+    <path d="M915.04 903.42L933.93 905.41" stroke-width="2.8"/>
+    <path d="M909.18 940.43L927.76 944.38" stroke-width="2.8"/>
+    <path d="M899.48 976.63L917.55 982.50" stroke-width="2.8"/>
+    <path d="M886.05 1011.61L903.41 1019.34" stroke-width="2.8"/>
+    <path d="M856.91 1038.00L885.49 1054.50" stroke-width="5"/>
+    <path d="M848.63 1076.43L864.00 1087.60" stroke-width="2.8"/>
+    <path d="M825.05 1105.55L839.17 1118.26" stroke-width="2.8"/>
+    <path d="M798.55 1132.05L811.26 1146.17" stroke-width="2.8"/>
+    <path d="M769.43 1155.63L780.60 1171.00" stroke-width="2.8"/>
+    <path d="M731.00 1163.91L747.50 1192.49" stroke-width="5"/>
+    <path d="M704.61 1193.05L712.34 1210.41" stroke-width="2.8"/>
+    <path d="M669.63 1206.48L675.50 1224.55" stroke-width="2.8"/>
+    <path d="M633.43 1216.18L637.38 1234.76" stroke-width="2.8"/>
+    <path d="M596.42 1222.04L598.41 1240.93" stroke-width="2.8"/>
+    <path d="M559.00 1210.00L559.00 1243.00" stroke-width="5"/>
+    <path d="M521.58 1222.04L519.59 1240.93" stroke-width="2.8"/>
+    <path d="M484.57 1216.18L480.62 1234.76" stroke-width="2.8"/>
+    <path d="M448.37 1206.48L442.50 1224.55" stroke-width="2.8"/>
+    <path d="M413.39 1193.05L405.66 1210.41" stroke-width="2.8"/>
+    <path d="M387.00 1163.91L370.50 1192.49" stroke-width="5"/>
+    <path d="M348.57 1155.63L337.40 1171.00" stroke-width="2.8"/>
+    <path d="M319.45 1132.05L306.74 1146.17" stroke-width="2.8"/>
+    <path d="M292.95 1105.55L278.83 1118.26" stroke-width="2.8"/>
+    <path d="M269.37 1076.43L254.00 1087.60" stroke-width="2.8"/>
+    <path d="M261.09 1038.00L232.51 1054.50" stroke-width="5"/>
+    <path d="M231.95 1011.61L214.59 1019.34" stroke-width="2.8"/>
+    <path d="M218.52 976.63L200.45 982.50" stroke-width="2.8"/>
+    <path d="M208.82 940.43L190.24 944.38" stroke-width="2.8"/>
+    <path d="M202.96 903.42L184.07 905.41" stroke-width="2.8"/>
+    <path d="M215.00 866.00L182.00 866.00" stroke-width="5"/>
+    <path d="M202.96 828.58L184.07 826.59" stroke-width="2.8"/>
+    <path d="M208.82 791.57L190.24 787.62" stroke-width="2.8"/>
+    <path d="M218.52 755.37L200.45 749.50" stroke-width="2.8"/>
+    <path d="M231.95 720.39L214.59 712.66" stroke-width="2.8"/>
+    <path d="M261.09 694.00L232.51 677.50" stroke-width="5"/>
+    <path d="M269.37 655.57L254.00 644.40" stroke-width="2.8"/>
+    <path d="M292.95 626.45L278.83 613.74" stroke-width="2.8"/>
+    <path d="M319.45 599.95L306.74 585.83" stroke-width="2.8"/>
+    <path d="M348.57 576.37L337.40 561.00" stroke-width="2.8"/>
+    <path d="M387.00 568.09L370.50 539.51" stroke-width="5"/>
+    <path d="M413.39 538.95L405.66 521.59" stroke-width="2.8"/>
+    <path d="M448.37 525.52L442.50 507.45" stroke-width="2.8"/>
+    <path d="M484.57 515.82L480.62 497.24" stroke-width="2.8"/>
+    <path d="M521.58 509.96L519.59 491.07" stroke-width="2.8"/>
+  </g>
+  <g class="seconds-labels" fill="#3e3028" font-family="Georgia, 'Times New Roman', serif" font-size="48" text-anchor="middle" dominant-baseline="central">
+    <text x="559.00" y="552.00" data-seconds="0">0</text>
+    <text x="716.00" y="594.07" data-seconds="5">5</text>
+    <text x="830.93" y="709.00" data-seconds="10">10</text>
+    <text x="873.00" y="866.00" data-seconds="15">15</text>
+    <text x="830.93" y="1023.00" data-seconds="20">20</text>
+    <text x="716.00" y="1137.93" data-seconds="25">25</text>
+    <text x="559.00" y="1180.00" data-seconds="30">30</text>
+    <text x="402.00" y="1137.93" data-seconds="35">35</text>
+    <text x="287.07" y="1023.00" data-seconds="40">40</text>
+    <text x="245.00" y="866.00" data-seconds="45">45</text>
+    <text x="287.07" y="709.00" data-seconds="50">50</text>
+    <text x="402.00" y="594.07" data-seconds="55">55</text>
+  </g>
+  <text x="559" y="803" text-anchor="middle" fill="#6c5841" font-family="Georgia, 'Times New Roman', serif" font-size="25" letter-spacing="5">ДЕТЕКТУМ</text>
+  <circle cx="559" cy="1042" r="84" fill="none" stroke="#6b5942" stroke-width="2" opacity=".75"/>
+  <g class="minutes-ticks" fill="none" stroke="#5b4937" stroke-linecap="round">
+    <path d="M559.00 976.00L559.00 963.00" stroke-width="2.8"/>
+    <path d="M573.97 971.57L575.43 964.73" stroke-width="1.5"/>
+    <path d="M588.29 976.22L591.13 969.83" stroke-width="1.5"/>
+    <path d="M601.32 983.75L605.44 978.09" stroke-width="1.5"/>
+    <path d="M612.51 993.82L617.71 989.14" stroke-width="1.5"/>
+    <path d="M616.16 1009.00L627.42 1002.50" stroke-width="2.8"/>
+    <path d="M627.48 1019.75L634.13 1017.59" stroke-width="1.5"/>
+    <path d="M630.61 1034.47L637.57 1033.74" stroke-width="1.5"/>
+    <path d="M630.61 1049.53L637.57 1050.26" stroke-width="1.5"/>
+    <path d="M627.48 1064.25L634.13 1066.41" stroke-width="1.5"/>
+    <path d="M616.16 1075.00L627.42 1081.50" stroke-width="2.8"/>
+    <path d="M612.51 1090.18L617.71 1094.86" stroke-width="1.5"/>
+    <path d="M601.32 1100.25L605.44 1105.91" stroke-width="1.5"/>
+    <path d="M588.29 1107.78L591.13 1114.17" stroke-width="1.5"/>
+    <path d="M573.97 1112.43L575.43 1119.27" stroke-width="1.5"/>
+    <path d="M559.00 1108.00L559.00 1121.00" stroke-width="2.8"/>
+    <path d="M544.03 1112.43L542.57 1119.27" stroke-width="1.5"/>
+    <path d="M529.71 1107.78L526.87 1114.17" stroke-width="1.5"/>
+    <path d="M516.68 1100.25L512.56 1105.91" stroke-width="1.5"/>
+    <path d="M505.49 1090.18L500.29 1094.86" stroke-width="1.5"/>
+    <path d="M501.84 1075.00L490.58 1081.50" stroke-width="2.8"/>
+    <path d="M490.52 1064.25L483.87 1066.41" stroke-width="1.5"/>
+    <path d="M487.39 1049.53L480.43 1050.26" stroke-width="1.5"/>
+    <path d="M487.39 1034.47L480.43 1033.74" stroke-width="1.5"/>
+    <path d="M490.52 1019.75L483.87 1017.59" stroke-width="1.5"/>
+    <path d="M501.84 1009.00L490.58 1002.50" stroke-width="2.8"/>
+    <path d="M505.49 993.82L500.29 989.14" stroke-width="1.5"/>
+    <path d="M516.68 983.75L512.56 978.09" stroke-width="1.5"/>
+    <path d="M529.71 976.22L526.87 969.83" stroke-width="1.5"/>
+    <path d="M544.03 971.57L542.57 964.73" stroke-width="1.5"/>
+  </g>
+  <g class="minutes-labels" fill="#5b4937" font-family="Georgia, 'Times New Roman', serif" font-size="22" text-anchor="middle" dominant-baseline="central">
+    <text x="559.00" y="990.00" data-minutes="0">0</text>
+    <text x="604.03" y="1016.00" data-minutes="5">5</text>
+    <text x="604.03" y="1068.00" data-minutes="10">10</text>
+    <text x="559.00" y="1094.00" data-minutes="15">15</text>
+    <text x="513.97" y="1068.00" data-minutes="20">20</text>
+    <text x="513.97" y="1016.00" data-minutes="25">25</text>
+  </g>
+  <path d="M559 1060V975" fill="none" stroke="#49352a" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="559" cy="1042" r="6" fill="#49352a"/>
+  <g transform="rotate(24 559 866)" filter="url(#hand-shadow)">
+    <path d="M559 557L566 865L563 928Q559 946 555 928L552 865Z" fill="url(#hand-metal)"/>
+    <circle cx="559" cy="919" r="10" fill="none" stroke="#30251d" stroke-width="4"/>
+  </g>
+  <circle cx="559" cy="866" r="17" fill="url(#hand-hub)" stroke="#39291d" stroke-width="2"/>
+  <circle cx="555" cy="862" r="4" fill="#cbb081" opacity=".7"/>
+</svg>

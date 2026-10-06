@@ -1,0 +1,58 @@
+[
+  {
+    "file": "metal-surface-v2",
+    "width": 1536,
+    "height": 1024,
+    "hasAlpha": false,
+    "sourceBytes": 2777040,
+    "servedBytes": 166092
+  },
+  {
+    "file": "metal-frame-v2",
+    "width": 768,
+    "height": 768,
+    "hasAlpha": true,
+    "sourceBytes": 1482687,
+    "servedBytes": 111240
+  },
+  {
+    "file": "note-yellow-magnet-v2",
+    "width": 768,
+    "height": 768,
+    "hasAlpha": true,
+    "sourceBytes": 1979778,
+    "servedBytes": 78938
+  },
+  {
+    "file": "note-pink-magnet-v2",
+    "width": 768,
+    "height": 768,
+    "hasAlpha": true,
+    "sourceBytes": 1737899,
+    "servedBytes": 58810
+  },
+  {
+    "file": "note-blue-magnet-v2",
+    "width": 768,
+    "height": 768,
+    "hasAlpha": true,
+    "sourceBytes": 1696070,
+    "servedBytes": 57308
+  },
+  {
+    "file": "note-green-magnet-v2",
+    "width": 768,
+    "height": 768,
+    "hasAlpha": true,
+    "sourceBytes": 1782525,
+    "servedBytes": 55990
+  },
+  {
+    "file": "note-purple-magnet-v2",
+    "width": 768,
+    "height": 768,
+    "hasAlpha": true,
+    "sourceBytes": 1523674,
+    "servedBytes": 44236
+  }
+]

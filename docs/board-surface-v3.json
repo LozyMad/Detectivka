@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-06",
+  "generator": "built-in image_gen.imagegen",
+  "prompt": "Use case: precise-object-edit. Input image 1 is the edit target: the existing gray steel board surface texture used in an interactive detective board website. Primary request: produce a genuinely high-resolution 3072x2048 pixel version of this SAME worn sheet-metal material, with crisp resolved photographic detail instead of soft fuzzy grain. Preserve its cool neutral midgray color, sparse tiny brown oxidation flecks, slight directional brushing, thin fine scratches, flat straight-on orthographic view, same broad gentle lighting, old-office-board character and uninterrupted composition. Refine the actual physical microtexture and edges of fine scratches so it stays clearly resolved on a large desktop browser screen. Keep the metal smooth and understated like the reference; do not add coarse crystalline mottling, concrete grain, large gouges or dirt. Avoid artificial oversharpening halos. Entire landscape canvas filled edge-to-edge with only this single empty steel sheet surface. Constraints: output size 3072x2048; no paper, no frame, no screws, no magnets, no threads, no text, no UI, no perspective, no vignette, no watermark. This is an opaque production material texture, not a website screenshot. All detail should look optical and tactile, not digitally blurred or painted.",
+  "requestedDimensions": [
+    3072,
+    2048
+  ],
+  "actualRasterDimensions": [
+    1536,
+    1024
+  ],
+  "surfaceImage": "frontend/assets/board/metal-surface-v3.webp",
+  "repeatTile": "frontend/assets/board/metal-surface-repeat-v3.svg",
+  "source": "output/board-textures-v2/source/metal-surface-v3.png",
+  "rendering": "Mirrored seamless repeat at native device-pixel size in the viewport, outside the canvas zoom."
+}

@@ -1,0 +1,11 @@
+# Иллюстрация онлайн-формата, 05.10.2026
+
+Карточка «Онлайн» корпоративной страницы. Вымышленная рекламная иллюстрация, не фотография корпоративного мероприятия. Создана встроенным инструментом imagegen. После генерации выполнены только уменьшение и экспорт в WebP, 1600 × 900 px.
+
+Файл сайта: `corporate-online-v3.webp`.
+
+Исходник: `C:/Users/Lozy/.codex/generated_images/01a106e7-09c9-7133-a864-a0193aba9131/exec-b9a0e7d7-2e47-487a-9c50-d032e2a83ec1.png`.
+
+## Финальный промпт
+
+Use case: photorealistic-natural. Asset type: wide 16:9 image for the ONLINE format card of the Russian detective team game website Detectum. Create a completely NEW editorial photographic illustration, 1600x900 or equivalent landscape. Scene: a modern adult man around 30 in a simple dark sweater at his home desk in the evening, actively discussing a detective case with three colleagues visible in a plausible 2x2 laptop video-call grid. Three-quarter over-the-shoulder view, enough side profile to see his engaged expression, laptop open to an understated video call facing him, a printed city map and a single open notebook on the desk. One hand casually points at a clue on the printed map; the laptop screen visibly depicts the remote colleagues in separate rooms, with natural attentive expressions, correctly oriented toward the man. Style: sophisticated natural candid photography, black-and-white with a subtle warm charcoal/ivory tint, soft low-key window and desk lighting, restrained detective mood; realistic ordinary contemporary people. Visually simple, not a staged advertisement. Composition: man, laptop, and map form a compact central group within the middle 75% of the frame; faces, screen and important objects safely inside the central horizontal band so the image works with shallow landscape crops. Comfortable breathing room, uncluttered soft dark background. Crisp believable laptop perspective, anatomically correct hands and fingers, physically coherent scene. No captions, no typography, no logos, no watermarks, no detective hats, no corkboard, no scattered piles of props, no glowing orange city view, no extra devices. The image is a fictional promotional illustration, not a documentary corporate case.

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1200" preserveAspectRatio="none">
+  <defs>
+    <filter id="torn" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency=".027 .105" numOctaves="3" seed="14" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="11" xChannelSelector="R" yChannelSelector="G"/></filter>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".62" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+    <linearGradient id="paper" x2=".8" y2="1"><stop stop-color="#201913"/><stop offset=".6" stop-color="#17120f"/><stop offset="1" stop-color="#1d1510"/></linearGradient>
+    <path id="sheet" d="M-20 398L14 386L44 380L69 371L86 372L113 365L137 365L155 351L191 344L211 336L236 326L263 322L282 311L311 307L348 297L370 285L404 278L423 280L450 274L489 262L520 264L552 259L583 246L614 246L642 238L678 235L701 221L732 215L757 218L790 207L819 205L846 195L882 198L909 184L943 183L967 172L1000 170L1027 157L1050 158L1086 153L1106 139L1138 139L1167 132L1197 128L1223 116L1254 113L1285 103L1311 102L1341 94L1370 96L1399 89L1460 73L1460 1168L1418 1177L1389 1174L1349 1185L1316 1181L1280 1189L1247 1185L1214 1188L1179 1182L1142 1186L1103 1177L1069 1183L1034 1178L998 1185L960 1180L923 1188L889 1186L854 1193L817 1189L779 1197L740 1190L707 1195L675 1186L641 1191L604 1188L572 1194L539 1187L502 1192L467 1183L429 1187L394 1183L359 1190L322 1185L282 1192L248 1188L209 1195L174 1190L138 1196L103 1188L65 1193L31 1184L-20 1190Z"/>
+    <clipPath id="paper-area"><use href="#sheet"/></clipPath>
+  </defs>
+  <use href="#sheet" fill="#b7a087" filter="url(#torn)"/>
+  <use href="#sheet" transform="translate(0 13)" fill="url(#paper)" filter="url(#torn)"/>
+  <rect width="1440" height="1200" opacity=".105" filter="url(#grain)" clip-path="url(#paper-area)"/>
+</svg>

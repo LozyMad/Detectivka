@@ -53,13 +53,18 @@
 
   function updateDimensions() {
     const viewport = $('boardViewport');
-    state.width = Math.max(2400, Math.ceil(viewport.clientWidth / state.zoom) + 1,
+    // Include scrollbar space so zooming them away cannot expose an untextured strip.
+    const viewportWidth = viewport.offsetWidth || viewport.clientWidth;
+    const viewportHeight = viewport.offsetHeight || viewport.clientHeight;
+    state.width = Math.max(2400, Math.ceil(viewportWidth / state.zoom) + 1,
       ...state.notes.map(note => Number(note.x) + 450));
-    state.height = Math.max(1600, Math.ceil(viewport.clientHeight / state.zoom) + 1,
+    state.height = Math.max(1600, Math.ceil(viewportHeight / state.zoom) + 1,
       ...state.notes.map(note => Number(note.y) + 420));
     $('boardCanvas').style.width = `${state.width}px`;
     $('boardCanvas').style.height = `${state.height}px`;
-    $('boardCanvas').style.transform = `scale(${state.zoom})`;
+    // Layout zoom paints text at the displayed size instead of resampling a scaled layer.
+    $('boardCanvas').style.zoom = String(state.zoom);
+    $('boardCanvas').style.transform = '';
     $('boardCanvas').style.setProperty('--board-zoom', state.zoom);
     $('boardScaleShell').style.width = `${state.width * state.zoom}px`;
     $('boardScaleShell').style.height = `${state.height * state.zoom}px`;
@@ -85,6 +90,13 @@
           </span>
         </article>`;
     }).join('');
+  }
+
+  function renderFasteners() {
+    $('boardFasteners').innerHTML = state.notes.map(note =>
+      `<span id="boardFastener${Number(note.id)}" class="board-note-fastener" data-note-id="${Number(note.id)}"
+        data-color="${paperColor(note.color)}" style="left:${Number(note.x)}px;top:${Number(note.y)}px;--note-tilt:${noteTilt(note.id)}deg"></span>`
+    ).join('');
   }
 
   function segment(x1, y1, x2, y2, linkId) {
@@ -125,6 +137,11 @@
   }
 
   function moveThreads(noteId) {
+    const note = noteById(noteId), fastener = $(`boardFastener${noteId}`);
+    if (note && fastener) {
+      fastener.style.left = `${Number(note.x)}px`;
+      fastener.style.top = `${Number(note.y)}px`;
+    }
     for (const link of state.links) {
       if (Number(link.note_a) !== noteId && Number(link.note_b) !== noteId) continue;
       const elements = threadSegments.get(Number(link.id));
@@ -145,6 +162,7 @@
     updateDimensions();
     renderNotes();
     renderThreads();
+    renderFasteners();
   }
 
   function load() {
@@ -481,7 +499,10 @@
       pointers.set(event.pointerId, point(event));
       viewport.setPointerCapture(event.pointerId);
       if (pointers.size >= 2) { beginPinch(); return; }
-      const element = event.target.closest('.investigation-note');
+      const fastener = event.target.closest('.board-note-fastener');
+      const element = fastener
+        ? document.querySelector(`#boardNotes .investigation-note[data-id="${Number(fastener.dataset.noteId)}"]`)
+        : event.target.closest('.investigation-note');
       const note = element && noteById(element.dataset.id);
       gesture = { type: note ? 'note' : 'pan', start: point(event), moved: false,
         left: viewport.scrollLeft, top: viewport.scrollTop, element, note,

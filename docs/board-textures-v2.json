@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-06",
+  "generator": "built-in image_gen.imagegen",
+  "reference": "User-supplied gray metal investigation board screenshot",
+  "threadTexture": "frontend/assets/board/red-thread.opt.webp (unchanged)",
+  "threadSha256": "1CCE154FF70D5836BB780A69E091C4084302A2D8B87F78F53528AF99B235EBA5",
+  "prompts": [
+    {
+      "key": "metal-surface-v2",
+      "alpha": false,
+      "prompt": "Use case: product-mockup. Asset type: production raster background texture for an interactive detective evidence board website. Primary request: a large empty old galvanized steel notice board surface, matching a vintage realistic detective board: muted cool silver-gray slightly brushed matte sheet metal, fine subtle scratches, shallow scuffs, very sparse tiny warm-brown oxidation specks, gentle diffuse brighter area upper right, naturally aged without looking filthy. Straight-on orthographic frontal closeup, entire landscape 1536x1024 canvas filled edge-to-edge by the same flat sheet metal. Calm neutral light gray midtone, high enough lightness for red strings to remain clearly visible. Microtexture subtle and realistic, not coarse noise. Uniform edges suitable for repeating as a texture. Constraints: ONLY the empty metal surface, NO border, NO frame, NO screws, NO paper, NO magnets, NO pins, NO string, NO text, NO typography, NO objects, NO watermark, NO UI, NO perspective. This is a material asset, not a full website screenshot."
+    },
+    {
+      "key": "metal-frame-v2",
+      "alpha": true,
+      "prompt": "Use case: product-mockup. Asset type: transparent nine-slice image of a thin worn metal frame for an interactive detective evidence board. Primary request: single square silver-gray steel board frame viewed perfectly straight-on orthographically. Entire outer bounds at image edges; each rail exactly 5 percent of image width, leaving a large empty central opening. Vintage aged galvanized steel, bevelled raised lip, subtle fine scratches and sparse rust near seams. Each of four corners has one small slotted dark steel screw centred in the corner rail intersection. Cool satin silver, soft diffuse light from upper left. Continuous straight rails, mildly rounded outside corners, thin darker recessed inner lip. Constraints: actual transparent alpha throughout the entire central opening and outside corners. NO metal surface inside the frame, NO glass, NO wood, NO paper, NO string, NO objects, NO text, NO UI, NO watermark. Clean separable production asset appropriate for CSS border-image; symmetrical rail widths, no perspective distortion."
+    },
+    {
+      "key": "note-yellow-magnet-v2",
+      "alpha": true,
+      "prompt": "Use case: product-mockup. Asset type: single blank paper sticky note with a round magnet, isolated transparent sprite for a live detective investigation board. Square 1024x1024 canvas. Primary request: realistic vintage pale butter-yellow paper sticky note held at the top by one flat round ivory-white magnet, as on an old gray metal detective board. Composition/framing: perfectly straight-on orthographic front, no rotation. Paper rectangular almost square with crisp very slightly irregular edges occupies x=8% to92%, y=18% to92% of canvas. Magnet is a flat circular short cylinder, NOT a pushpin: centre precisely x=50%, y=18%, diameter14% of canvas, satin ivory enamel face, thin darker metal sidewall slightly visible at bottom, small bevel highlight, gentle contact shadow on paper. Blank paper has understated fibrous grain, scattered tiny age flecks and soft subtle uneven warmth, flat readable middle, no curled or folded corners, no writing or horizontal rules. Subtle small shadow below paper; lighting soft from upper left. Constraints: genuine transparent alpha around the complete note and magnet; include only this single paper and one flat disc magnet; no board, no background, no hand, no red pins, no thread, no string, no letters, no symbols, no labels, no UI, no watermark. Keep blank central area unobstructed. Professional photoreal game asset."
+    },
+    {
+      "key": "note-pink-magnet-v2",
+      "alpha": true,
+      "prompt": "Use case: precise-object-edit. Asset type: blank transparent paper-and-disc-magnet sprite for an interactive detective board. Input image 1 is the edit target. Change ONLY the color of the paper to dusty muted rose-pink, and ONLY the enamel front face of the circular magnet to deep navy-blue. Keep the flat cylindrical circular magnet (not a pushpin), its position, dimensions, highlights, rim, contact shadow; preserve exactly the paper silhouette, canvas framing, blank fibrous texture, proportions, all coordinates and transparent alpha around the object. Paper remains light pastel so dark live text is readable. Keep original straight-on orthographic view and lighting. No board, no background, no threads, no text, no lettering, no symbols, no UI, no watermark. Return the same isolated single paper with one disc magnet, genuine transparent background."
+    },
+    {
+      "key": "note-blue-magnet-v2",
+      "alpha": true,
+      "prompt": "Use case: precise-object-edit. Asset type: blank transparent paper-and-disc-magnet sprite for an interactive detective board. Input image 1 is the edit target. Change ONLY the color of the paper to pale powder blue-gray, and ONLY the enamel front face of the circular magnet to aged muted ochre-gold. Keep the flat cylindrical circular magnet (not a pushpin), its position, dimensions, highlights, rim, contact shadow; preserve exactly the paper silhouette, canvas framing, blank fibrous texture, proportions, all coordinates and transparent alpha around the object. Paper remains light pastel so dark live text is readable. Keep original straight-on orthographic view and lighting. No board, no background, no threads, no text, no lettering, no symbols, no UI, no watermark. Return the same isolated single paper with one disc magnet, genuine transparent background."
+    },
+    {
+      "key": "note-green-magnet-v2",
+      "alpha": true,
+      "prompt": "Use case: precise-object-edit. Asset type: blank transparent paper-and-disc-magnet sprite for an interactive detective board. Input image 1 is the edit target. Change ONLY the color of the paper to pale desaturated sage-green, and ONLY the enamel front face of the circular magnet to dark forest-green. Keep the flat cylindrical circular magnet (not a pushpin), its position, dimensions, highlights, rim, contact shadow; preserve exactly the paper silhouette, canvas framing, blank fibrous texture, proportions, all coordinates and transparent alpha around the object. Paper remains light pastel so dark live text is readable. Keep original straight-on orthographic view and lighting. No board, no background, no threads, no text, no lettering, no symbols, no UI, no watermark. Return the same isolated single paper with one disc magnet, genuine transparent background."
+    },
+    {
+      "key": "note-purple-magnet-v2",
+      "alpha": true,
+      "prompt": "Use case: precise-object-edit. Asset type: blank transparent paper-and-disc-magnet sprite for an interactive detective board. Input image 1 is the edit target. Change ONLY the color of the paper to very pale muted lavender, and ONLY the enamel front face of the circular magnet to muted oxblood-red. Keep the flat cylindrical circular magnet (not a pushpin), its position, dimensions, highlights, rim, contact shadow; preserve exactly the paper silhouette, canvas framing, blank fibrous texture, proportions, all coordinates and transparent alpha around the object. Paper remains light pastel so dark live text is readable. Keep original straight-on orthographic view and lighting. No board, no background, no threads, no text, no lettering, no symbols, no UI, no watermark. Return the same isolated single paper with one disc magnet, genuine transparent background."
+    },
+    {
+      "key": "metal-surface-v2-final",
+      "alpha": false,
+      "prompt": "Use case: precise-object-edit. Input image 1 is the edit target: a sheet-metal texture. Input image 2 is a style reference only: use its empty gray steel board surface. Change only the material finish of image 1 to closely match the soft smooth gray steel in image 2. Remove 95% of the high-contrast mottled galvanized/crystalline pattern and 85% of the bright scratches. The result should be a softly lit old smooth cool-neutral silver-gray metal sheet, a calm broad midgray surface with extremely subtle directional microtexture, a few very faint fine scratches, occasional tiny scattered oxidation flecks. The board in the style reference looks like a mostly smooth empty steel office noticeboard, not coarse galvanized roofing, not mottled concrete. Maintain straight-on flat orthographic image filled completely edge-to-edge by metal, no perspective. Make the four edges visually similar for repeat tiling. Keep it light-medium gray, slightly darker than the target source. No frame, no screws, no paper, no magnets, no strings, no UI, no text, no watermark; only the uninterrupted EMPTY metal texture. Landscape 1536x1024."
+    }
+  ],
+  "assets": [
+    {
+      "name": "metal-surface-v2",
+      "source": "output/board-textures-v2/source/metal-surface-v2.png",
+      "file": "frontend/assets/board/metal-surface-v2.webp"
+    },
+    {
+      "name": "metal-frame-v2",
+      "source": "output/board-textures-v2/source/metal-frame-v2.png",
+      "file": "frontend/assets/board/metal-frame-v2.webp"
+    },
+    {
+      "name": "note-yellow-magnet-v2",
+      "source": "output/board-textures-v2/source/note-yellow-magnet-v2.png",
+      "file": "frontend/assets/board/note-yellow-magnet-v2.webp"
+    },
+    {
+      "name": "note-pink-magnet-v2",
+      "source": "output/board-textures-v2/source/note-pink-magnet-v2.png",
+      "file": "frontend/assets/board/note-pink-magnet-v2.webp"
+    },
+    {
+      "name": "note-blue-magnet-v2",
+      "source": "output/board-textures-v2/source/note-blue-magnet-v2.png",
+      "file": "frontend/assets/board/note-blue-magnet-v2.webp"
+    },
+    {
+      "name": "note-green-magnet-v2",
+      "source": "output/board-textures-v2/source/note-green-magnet-v2.png",
+      "file": "frontend/assets/board/note-green-magnet-v2.webp"
+    },
+    {
+      "name": "note-purple-magnet-v2",
+      "source": "output/board-textures-v2/source/note-purple-magnet-v2.png",
+      "file": "frontend/assets/board/note-purple-magnet-v2.webp"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-06",
+  "generator": "built-in image_gen.imagegen",
+  "mode": "generate",
+  "prompt": "Use case: texture. Create a production seamless tileable photographic gray brushed steel texture for an old magnetic detective investigation board. This is a material bitmap, not a UI or illustration. Flat straight-on orthographic, uninterrupted medium cool gray metal, subtle uniform brushing and finely resolved tiny scratches, low-contrast delicate metal micrograin, very sparse tiny warm brown oxidation specks. Crisp authentic surface at 1:1 pixel display, smooth satin steel not concrete or noisy rock. Extremely even diffuse lighting across whole canvas. MUST seamlessly tile horizontally and vertically: matched edge colors and microtexture, no edge gradient, no large scratches, no prominent local marks, no bilateral or repeated symmetry inside the tile, no dominant pattern, no broad streaks or highlights. Understated material, restrained detail that will not compete with notes. Fill the complete canvas with this one opaque material. No frame, screws, paper, magnets, threads, writing, objects, watermark, perspective, shadow, vignette or blur. Landscape 1536x1024.",
+  "actualRasterDimensions": [
+    1536,
+    1024
+  ],
+  "surfaceImage": "frontend/assets/board/metal-surface-v4.webp",
+  "source": "output/board-textures-v2/source/metal-surface-v4.png",
+  "repeatTile": "frontend/assets/board/metal-surface-repeat-v4.svg",
+  "rendering": "Mirrored edges of the uniform material remove seams; native device-pixel size in the viewport, outside canvas zoom, with a translucent gray tone layer.",
+  "previousVariant": "docs/board-surface-v3.json"
+}

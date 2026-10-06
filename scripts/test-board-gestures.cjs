@@ -158,12 +158,33 @@ async function test() {
   assert.equal(viewport.captures.size, 0);
   assert.equal(viewport.classList.contains('is-panning'), false);
 
-  // The board texture always covers the viewport at the minimum zoom.
+  // Removing scrollbars while zooming out must not expose an untextured viewport strip.
+  viewport.offsetWidth = viewport.clientWidth + 16;
+  viewport.offsetHeight = viewport.clientHeight + 16;
   await element('boardZoomOut').emit('click', {});
   for (let i = 0; i < 20; i++) await element('boardZoomOut').emit('click', {});
   assert.equal(board.state.zoom, .4);
-  assert.ok(board.state.width * .4 >= viewport.clientWidth);
-  assert.ok(board.state.height * .4 >= viewport.clientHeight);
+  assert.ok(board.state.width * .4 >= viewport.offsetWidth);
+  assert.ok(board.state.height * .4 >= viewport.offsetHeight);
+  // The pushpin overlay routes dragging and taps to its paper and follows the coalesced paint.
+  const fastenerTarget = { closest: selector => selector === '.board-note-fastener' ? { dataset: { noteId: '10' } } : null };
+  sandbox.document.querySelector = selector => selector === '#boardNotes .investigation-note[data-id="10"]' ? a : null;
+  const fastenerStartX = board.state.notes[0].x, fastenerStartY = board.state.notes[0].y;
+  await pointer('pointerdown', 1, 100, 200, fastenerTarget);
+  await pointer('pointermove', 1, 120, 208, fastenerTarget);
+  paintFrame();
+  assert.equal(board.state.notes[0].x, fastenerStartX + 50);
+  assert.equal(board.state.notes[0].y, fastenerStartY + 20);
+  assert.equal(element('boardFastener10').style.left, `${board.state.notes[0].x}px`);
+  assert.equal(element('boardFastener10').style.top, `${board.state.notes[0].y}px`);
+  assert.ok(a.style.transform.includes('translate3d(50px, 20px, 0)'));
+  await pointer('pointerup', 1, 120, 208, fastenerTarget);
+  assert.equal(a.style.left, `${board.state.notes[0].x}px`);
+  assert.equal(a.style.top, `${board.state.notes[0].y}px`);
+  await tap(fastenerTarget);
+  assert.equal(board.state.pendingLink, 10, 'a pushpin tap selects its note');
+  await tap(fastenerTarget);
+  assert.equal(board.state.pendingLink, null, 'a second pushpin tap cancels selection');
   board.state.notes[0].color = 'orange';
   board.state.notes[1].color = 'mint';
   board.hide();
@@ -171,7 +192,7 @@ async function test() {
   assert.match(element('boardNotes').innerHTML, /data-id="11" data-color="green"/);
   assert.equal(board.state.notes[0].color, 'orange', 'rendering preserves saved legacy notes');
   assert.equal(board.state.notes[1].color, 'mint');
-  assert.ok(!elements.has('boardPins'), 'the artwork already includes pins');
-  console.log('PASS: link toggling, deletion without confirmation, failure recovery, coalesced drag frames, thread reuse, drag/save, pinch anchor and cancellation');
+  assert.match(element('boardFasteners').innerHTML, /class="board-note-fastener"/, 'the cropped pushpins render above threads');
+  console.log('PASS: link toggling, deletion without confirmation, failure recovery, coalesced drag frames, thread reuse, drag/save, pushpin drag/tap, pinch anchor and cancellation');
 }
 test().catch(error => { console.error(error); process.exitCode = 1; });

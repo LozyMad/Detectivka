@@ -1,0 +1,89 @@
+/* Contact composition: a dark dossier sheet and a small photo collage. */
+.corporate-contact { position: relative; isolation: isolate; padding: 100px 0 58px; background: #1c1714; }
+.corporate-contact::before { content: ''; position: absolute; z-index: -1; inset: 0; background: url('../assets/landing/corporate-paper-grain.svg') repeat; opacity: .18; pointer-events: none; }
+.corporate-contact::after { content: ''; position: absolute; inset: -1px 0 auto; height: 34px; background: var(--background); clip-path: polygon(0 0, 100% 0, 100% 39%, 97% 50%, 94% 45%, 91% 62%, 88% 54%, 85% 72%, 82% 61%, 79% 75%, 76% 66%, 73% 80%, 70% 68%, 67% 87%, 64% 75%, 61% 89%, 58% 70%, 55% 82%, 52% 72%, 49% 89%, 46% 76%, 43% 87%, 40% 70%, 37% 80%, 34% 63%, 31% 74%, 28% 55%, 25% 66%, 22% 52%, 19% 61%, 16% 46%, 13% 56%, 10% 36%, 7% 47%, 4% 30%, 0 42%); pointer-events: none; }
+.corporate-contact .contact-layout { max-width: 1040px; grid-template-columns: 1fr 1fr; gap: 90px; align-items: center; }
+.corporate-contact .enquiry-panel { position: relative; isolation: isolate; padding: 36px; border: 1px solid #aa8c6b33; border-radius: 28px 7px 7px 7px; background: #100d0b; box-shadow: 0 20px 38px #0004, 8px 9px 0 -2px #100d0b66; }
+.corporate-contact .enquiry-panel::before { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; background: url('../assets/landing/corporate-paper-grain.svg') repeat; opacity: .08; pointer-events: none; }
+.enquiry-intro { margin-bottom: 30px; }
+.enquiry-intro .product-eyebrow { margin-bottom: 14px; font-size: 10px; }
+.corporate-page .enquiry-intro h2 { margin: 0; font-size: 34px; line-height: 1.18; letter-spacing: -.045em; }
+.enquiry-intro > p:last-child { margin-top: 14px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.corporate-contact .enquiry-fields { grid-template-columns: 1fr; gap: 18px; }
+.corporate-contact .enquiry-fields label { gap: 8px; font-size: 12px; color: #ddd0c2; }
+.corporate-contact .enquiry-wide { grid-column: 1 / -1; }
+.corporate-contact .enquiry-fields .enquiry-field-title { display: flex; flex-wrap: wrap; gap: 4px 7px; align-items: baseline; color: #ddd0c2; font-size: 12px; font-weight: 600; }
+.enquiry-field-title small { color: #a8988b; font-size: 10px; font-weight: 400; }
+.corporate-contact .enquiry-fields input,
+.corporate-contact .enquiry-fields select { min-height: 48px; padding: 11px 15px; border: 1px solid #a88c7159; border-radius: 28px; background: #15110e; font-size: 14px; transition: border-color .2s, background .2s; }
+.corporate-contact .enquiry-fields select { padding-right: 12px; }
+.corporate-contact .enquiry-fields input::placeholder { color: #9c8e82; }
+.corporate-contact .enquiry-fields input:hover,
+.corporate-contact .enquiry-fields select:hover { border-color: #c29b787a; }
+.corporate-contact .enquiry-fields input:focus,
+.corporate-contact .enquiry-fields select:focus { background: #1c1510; }
+.enquiry-consent { display: flex; align-items: flex-start; gap: 10px; margin-top: 24px; color: #b9aa9b; font-size: 11px; line-height: 1.65; cursor: pointer; }
+.enquiry-consent input { flex: 0 0 auto; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--accent, #ba4b20); cursor: pointer; }
+.enquiry-consent a { color: #e5c2a2; text-decoration: underline; text-underline-offset: 3px; }
+.enquiry-consent a:hover { color: #fff0dd; }
+.enquiry-policy { display: inline-block; margin: 8px 0 0 28px; color: #b9aa9b; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+.enquiry-policy:hover { color: #efb487; }
+.enquiry-consent input:focus-visible, .enquiry-consent a:focus-visible { outline: 2px solid #eda86c; outline-offset: 4px; }
+.corporate-contact .enquiry-submit { margin-top: 24px; }
+.corporate-contact .enquiry-help { margin-top: 13px; color: #ad9b8d; font-size: 11px; line-height: 1.65; text-align: center; }
+.corporate-contact .enquiry-result { margin-top: 28px; padding-top: 24px; border-top: 1px solid #a88c7140; }
+.contact-side { min-width: 0; }
+.contact-messenger { text-align: center; }
+.contact-messenger .product-eyebrow { margin-bottom: 14px; font-size: 10px; }
+.contact-messenger h3 { font-size: 30px; font-weight: 500; line-height: 1.2; letter-spacing: -.045em; }
+.contact-telegram { width: min(100%, 350px); gap: 12px; margin-top: 24px; padding: 12px 22px; }
+.contact-telegram svg { flex-shrink: 0; width: 22px; height: 22px; }
+.contact-telegram > span { margin-left: auto; }
+.contact-handle { margin-top: 10px; color: #a8998b; font-size: 12px; }
+.contact-collage { position: relative; height: 420px; margin-top: 28px; }
+.contact-team-note { position: absolute; top: 0; right: 3%; width: 79%; padding: 22px 15px 58px; transform: rotate(4deg); background: #e1d5c3; color: #33261b; clip-path: polygon(0 5%, 7% 3%, 16% 4%, 24% 1%, 33% 3%, 43% 0, 52% 2%, 62% 1%, 70% 3%, 80% 1%, 90% 4%, 100% 2%, 99% 94%, 90% 96%, 80% 95%, 69% 98%, 59% 96%, 48% 100%, 38% 97%, 29% 99%, 19% 97%, 9% 99%, 1% 95%); text-align: center; }
+.contact-team-note > span { display: block; margin-bottom: 10px; color: #825137; font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.contact-team-note p { font: 22px/1.25 Georgia, serif; letter-spacing: -.025em; }
+.contact-snapshot { position: absolute; margin: 0; padding: 8px 8px 23px; width: 40%; max-width: 185px; background: #ded6ca; box-shadow: 0 12px 18px #0005; }
+.contact-snapshot::before { content: ''; position: absolute; top: -8px; left: 35%; width: 35%; height: 20px; transform: rotate(-4deg); background: #b0a0879c; clip-path: polygon(0 5%, 12% 0, 25% 7%, 37% 0, 50% 7%, 63% 0, 75% 6%, 87% 0, 100% 5%, 100% 95%, 87% 100%, 75% 93%, 63% 100%, 50% 94%, 37% 100%, 25% 94%, 12% 100%, 0 95%); }
+.contact-snapshot img { width: 100%; height: auto; aspect-ratio: 1 / 1.13; object-fit: cover; object-position: 50% 40%; filter: grayscale(1); }
+.contact-snapshot-discussion { top: 125px; left: 5%; transform: rotate(-9deg); z-index: 1; }
+.contact-snapshot-reading { top: 155px; right: 5%; transform: rotate(7deg); }
+.contact-photo-caption { position: absolute; bottom: 0; left: 0; right: 0; color: #b3a292; font: italic 12px/1.5 Georgia, serif; text-align: center; }
+.corporate-contact .contact-assurances { display: grid; gap: 7px; margin: 26px 0 0; padding: 0; list-style: none; color: #c8b6a5; font-size: 12px; line-height: 1.6; text-align: center; }
+.corporate-contact .contact-assurances li::before { content: '✓'; padding-right: 7px; color: #d19368; }
+.corporate-contact .contact-deadline { max-width: 1040px; margin-top: 38px; color: #a9998b; font-size: 12px; line-height: 1.7; text-align: center; }
+@media (max-width: 1100px) {
+  .corporate-contact .contact-layout { gap: 48px; }
+  .corporate-contact .enquiry-panel { padding: 30px; }
+}
+@media (max-width: 950px) {
+  .corporate-contact .contact-layout { gap: 34px; }
+  .corporate-page .enquiry-intro h2 { font-size: 30px; }
+  .corporate-contact .enquiry-panel { padding: 26px; }
+  .corporate-contact .enquiry-fields { grid-template-columns: 1fr; gap: 15px; }
+  .corporate-contact .enquiry-wide { grid-column: auto; }
+  .contact-messenger h3 { font-size: 28px; }
+  .contact-collage { height: 350px; }
+  .contact-team-note p { font-size: 19px; }
+}
+@media (max-width: 700px) {
+  .corporate-contact { padding: 66px 0 38px; }
+  .corporate-contact .contact-layout { width: min(500px, calc(100% - 36px)); grid-template-columns: 1fr; gap: 48px; }
+  .corporate-contact .enquiry-panel { padding: 28px 22px; }
+  .corporate-page .enquiry-intro h2 { font-size: 28px; }
+  .corporate-contact .enquiry-fields { gap: 18px; }
+  .corporate-contact .enquiry-fields input,
+  .corporate-contact .enquiry-fields select { font-size: 16px; }
+  .corporate-contact .enquiry-help { font-size: 12px; }
+  .contact-side { width: min(100%, 420px); margin-inline: auto; }
+  .contact-collage { height: 370px; }
+  .corporate-contact .contact-deadline { width: calc(100% - 48px); margin-top: 30px; }
+}
+@media (max-width: 380px) {
+  .corporate-contact .enquiry-panel { padding-inline: 18px; }
+  .corporate-page .enquiry-intro h2 { font-size: 26px; }
+  .contact-collage { height: 350px; }
+  .contact-team-note { width: 85%; }
+  .contact-team-note p { font-size: 19px; }
+}

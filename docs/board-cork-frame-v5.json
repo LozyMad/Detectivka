@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-06",
+  "generator": "built-in image_gen.imagegen",
+  "mode": "generate with concept material reference",
+  "reference": "output/board-concepts-20261006-v3/dark-cork-walnut-board.png",
+  "assets": [
+    {
+      "name": "dark-cork-surface-v5",
+      "prompt": "Use case: product-mockup. Asset type: opaque production material texture for an interactive detective board website. Image 1 is a MATERIAL AND COLOR REFERENCE only: use the dark tobacco-brown cork surface of the board, not its contents. Generate one clean flat orthographic macro material sheet of that SAME dark brown natural compressed cork, filling a landscape 1536x1024 canvas edge to edge. Warm deep tobacco / walnut-brown base roughly #4D392B, distinctly darker and more muted than golden-orange cork. Crisp clearly resolved small irregular natural compressed cork granules, realistic shallow pores and tiny flecks, restrained low-contrast varied brown detail. Keep the material fine and understated, little granules around 4-9 pixels at native display, so notes will remain the focal point. Even diffuse illumination across the whole tile, no broad gradients, no hotspots, no vignette. Seamless tileable material with matching edge tone horizontally and vertically, no dominant local mark or large motif. ONLY empty cork material. Absolutely no paper, no note, no photo, no pin, no magnet, no thread, no frame, no shadow of another object, no text, no UI, no ghost remnants of objects. No metal, no rust, no scratches, no leather, no concrete, no blur, no artificial oversharpening halos. This is a production texture, not a website screenshot.",
+      "transparent": false,
+      "generatedSource": "C:/Users/Lozy/.codex/generated_images/01a1109b-2c69-7832-a7b7-3bb53fd3cc64/exec-4a5a5494-8a6d-43d1-9176-6dcdb309189e.png",
+      "source": "output/board-textures-v5/source/dark-cork-surface-v5.png",
+      "served": "frontend/assets/board/dark-cork-surface-v5.webp"
+    },
+    {
+      "name": "walnut-frame-v5",
+      "prompt": "Use case: product-mockup. Asset type: transparent PNG nine-slice wooden frame asset for an interactive detective investigation board. Image 1 is a MATERIAL AND STYLE REFERENCE only: match its dark walnut wooden frame and aged small brass corner hardware. Generate a single SQUARE 1024x1024 wooden frame, completely straight-on orthographic view, all four rails visible and complete. Refined medium-narrow dark walnut hardwood rails about TEN percent of canvas width on each side, realistic fine directional walnut grain, restrained beveled inner lip, clean mitered corner joinery, small natural wear on edges, four small aged brass round screw heads in the corners. Elegant practical vintage detective bureau finish, dark rich brown with subtle warm highlights, not carved ornamental or orange varnish. Outer edges of the rails coincide with the canvas edges; no wide empty padding around the frame. The large entire center opening MUST be genuinely transparent alpha, as must any pixels outside the object. No center material, no cork, no board surface, no paper, no notes, no photos, no magnets, no pins, no thread, no text, no toolbar, no UI, no fake checkerboard printed inside, no background, no perspective, no watermark. Neutral even studio light with a restrained upper-left highlight. The rail midsections should have continuous restrained grain suitable for nine-slice stretching. Preserve crisp material details and clear frame silhouette.",
+      "transparent": true,
+      "generatedSource": "C:/Users/Lozy/.codex/generated_images/01a1109b-2c69-7832-a7b7-3bb53fd3cc64/exec-07a6c9a1-3782-4077-b957-b1145ea2140c.png",
+      "source": "output/board-textures-v5/source/walnut-frame-v5.png",
+      "served": "frontend/assets/board/walnut-frame-v5.webp"
+    }
+  ],
+  "reuseNotes": [
+    "frontend/assets/board/note-yellow-pinned.webp",
+    "frontend/assets/board/note-pink-pinned.webp",
+    "frontend/assets/board/note-blue-pinned.webp",
+    "frontend/assets/board/note-green-pinned.webp",
+    "frontend/assets/board/note-purple-pinned.webp"
+  ],
+  "rendering": "Direct repeat of the cork WebP at fixed 768x512 board coordinates on the same layout-zoom canvas as notes, pins and threads. Panning and zooming keep grain aligned with attachment points. Walnut frame uses a nine-slice border around the viewport. Threads above paper and below cropped original pushpins.",
+  "audit": "output/board-textures-v5/asset-audit.json"
+}

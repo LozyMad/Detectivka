@@ -4,24 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0c0908">
-  <meta name="description" content="Детектум — командная детективная игра в браузере. Исследуйте город, собирайте улики, обсуждайте версии и раскройте дело вместе.">
+  <meta name="description" content="Детектум — детективная игра для друзей: 120 минут расследования, команда 2–5 человек, 16+. Связывайте улики на доске и раскройте дело за минимум поездок по игровому городу.">
   <title>Детектум — командная детективная игра</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
   <link rel="preload" as="image" href="/assets/landing/noir-hero-v3.opt.webp">
   <link rel="stylesheet" href="/css/landing.css?v=6">
-  <script src="/js/landing.js?v=6" defer></script>
+  <link rel="stylesheet" href="/css/landing-product.css?v=12">
+  <script src="/js/landing-board-demo.js?v=7" defer></script>
 </head>
-<body>
+<body class="friends-page">
   <a class="skip-link" href="#main">К содержанию</a>
   <header class="site-header">
     <div class="shell header-inner">
       <a class="brand" href="/" aria-label="Детектум — главная">ДЕТЕКТУМ</a>
       <div class="audience-switch" aria-label="Формат игры"><span aria-current="page">С друзьями</span><a href="/corporate">Корпоратив</a></div>
       <nav aria-label="Разделы сайта">
-        <a href="#about">Об игре</a>
-        <a href="#how">Как играть</a>
+        <a href="#case">Дела и цены</a>
+        <a href="#board-preview">Доска расследования</a>
+        <a href="#how">Как начать</a>
         <a href="#questions">Вопросы</a>
       </nav>
       <a class="button button-small" href="/login">Войти в игру</a>
@@ -36,74 +38,124 @@
         <h1 id="hero-title"><span class="sr-only">Детектум</span><img src="/assets/landing/wordmark-v3.opt.webp" alt="" aria-hidden="true" width="2172" height="724"></h1>
         <p class="hero-subtitle">Командная детективная игра</p>
         <p class="hero-description">Город хранит тайны.<br>Соберите команду, чтобы их раскрыть.</p>
-        <a class="button" href="#about">Начать знакомство</a>
+        <a class="button" href="#case">Начать знакомство</a>
       </div>
     </section>
 
-    <section class="section intro-section" id="about" aria-labelledby="about-title">
+    <section class="product-facts" aria-label="Коротко об игре">
+      <dl class="shell product-facts-list">
+        <div><dt>2–5 человек</dt><dd>рекомендуем в команду</dd></div>
+        <div><dt>120 минут</dt><dd>чистого игрового времени</dd></div>
+        <div><dt>16+</dt><dd>возраст участников</dd></div>
+        <div><dt>В браузере</dt><dd>поездки по игровому городу</dd></div>
+      </dl>
+    </section>
+
+    <section class="case-section" id="case" aria-labelledby="case-title">
       <div class="shell">
-        <div class="section-heading centered">
-          <h2 id="about-title">Вы — главные герои<br>этого расследования</h2>
-          <p>Ищите зацепки в городе, сопоставляйте факты и обсуждайте версии.<br class="desktop-break"> Каждая находка приближает вашу команду к разгадке.</p>
+        <div class="section-heading centered"><p class="product-eyebrow">Дела «Детектума»</p><h2 id="case-title">Выберите расследование</h2></div>
+        <div class="case-catalog">
+          <article class="case-card case-card-upcoming" aria-labelledby="demo-case-title">
+            <div class="case-card-cover"><img src="/assets/landing/detectum-upcoming-cover-v1.webp" alt="Обложка с надписью «Детектум»" width="1536" height="1024" loading="lazy"></div>
+            <div class="case-card-body">
+              <p class="case-card-kind">Знакомство с игрой</p>
+              <h3 id="demo-case-title">Демо-дело</h3>
+              <p class="case-card-description">Первое знакомство с «Детектумом».</p>
+              <div class="case-card-footer"><button class="button case-card-action" type="button" disabled>СКОРО</button></div>
+            </div>
+          </article>
+          <article class="case-card" aria-labelledby="silence-case-title">
+            <div class="case-card-cover">
+              <img src="/assets/landing/silence-case-cover-v1.webp" alt="Досье и запечатанное письмо у окна ночного города" width="1536" height="1024" loading="lazy">
+              <p class="case-card-difficulty">Сложность: 3 из 5 <span class="difficulty-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></p>
+            </div>
+            <div class="case-card-body">
+              <p class="case-card-kind">Полное расследование</p>
+              <h3 id="silence-case-title">Ставка на молчание</h3>
+              <p class="case-card-description">120 минут, чтобы разобраться в материалах, проверить версии и ответить на вопросы расследования.</p>
+              <div class="case-card-footer"><p class="case-card-price">2 000 ₽ <span>за команду · онлайн</span></p><button class="button case-card-action" type="button" disabled>Начать игру</button></div>
+            </div>
+          </article>
+          <article class="case-card case-card-upcoming" aria-labelledby="monochrome-case-title">
+            <div class="case-card-cover"><img src="/assets/landing/detectum-upcoming-cover-v1.webp" alt="Обложка с надписью «Детектум»" width="1536" height="1024" loading="lazy"></div>
+            <div class="case-card-body">
+              <p class="case-card-kind">Новое расследование</p>
+              <h3 id="monochrome-case-title">Монохром</h3>
+              <p class="case-card-description">Новое дело «Детектума». Подробности — позже.</p>
+              <div class="case-card-footer"><button class="button case-card-action" type="button" disabled>СКОРО</button></div>
+            </div>
+          </article>
         </div>
-        <div class="evidence-scene">
-          <img src="/assets/landing/evidence-desk-v2.opt.webp" alt="Карта города, фотографии и улики, соединённые красной нитью" loading="lazy" width="1536" height="1024">
+        <div class="case-conditions">
+          <article class="case-price"><h3>Онлайн-доступ</h3><p class="price-note">Доступ на 7 дней. Срок начинается с момента оплаты.</p></article>
+          <article class="case-price"><h3>Офлайн в вашем городе</h3><button class="button button-unavailable" type="button" disabled>В разработке</button></article>
         </div>
-        <div class="feature-grid">
-          <article class="feature-card"><h3>Исследуйте город</h3><p>Находите адреса в книге, выбирайте локации и узнавайте, какие истории скрываются за их дверями.</p></article>
-          <article class="feature-card"><h3>Собирайте улики</h3><p>Изучайте документы и рассказы, делайте заметки. Важная деталь может оказаться совсем незаметной.</p></article>
-          <article class="feature-card"><h3>Проверяйте версии</h3><p>Обсуждайте догадки с командой и отвечайте на вопросы дела. Решение складывается из ваших находок.</p></article>
+      </div>
+    </section>
+
+    <section class="board-section" id="board-preview" aria-labelledby="board-preview-title">
+      <div class="shell">
+        <div class="section-heading centered"><p class="product-eyebrow">Доска расследования</p><h2 id="board-preview-title">Свяжите находки.<br>Проверьте свою версию.</h2><p>Прикрепляйте посещённые места, записывайте наблюдения и соединяйте стикеры нитями. На доске проще увидеть, что уже известно и куда стоит отправиться дальше.</p></div>
+        <figure class="board-demo" data-board-demo>
+          <div class="board-demo-controls" role="group" aria-label="Шаги работы с доской" hidden>
+            <button type="button" data-board-step="1" aria-pressed="false"><span>01</span> Прикрепить место</button>
+            <button type="button" data-board-step="2" aria-pressed="false"><span>02</span> Записать версию</button>
+            <button type="button" data-board-step="3" aria-pressed="true"><span>03</span> Связать находки</button>
+          </div>
+          <div class="board-demo-frame"><div class="board-demo-canvas">
+            <svg class="board-demo-threads" data-board-item="3" viewBox="0 0 1000 360" preserveAspectRatio="none" aria-hidden="true"><path d="M 180 72 Q 350 110 500 96"></path><path d="M 500 96 Q 660 120 820 72"></path></svg>
+            <article class="board-demo-note" data-board-item="1"><h3>Дом свидетеля</h3><small>Посещённое место</small><p>Свидетель утверждает, что был дома весь вечер.</p></article>
+            <article class="board-demo-note" data-board-item="2"><h3>Проверить алиби</h3><small>Версия команды</small><p>Кто ещё может подтвердить его слова?</p></article>
+            <article class="board-demo-note" data-board-item="3"><h3>Следующая зацепка</h3><small>Наблюдение команды</small><p>Вспоминаем соседей. Решаем, какой адрес проверить.</p></article>
+          </div></div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section people-section" id="atmosphere" aria-labelledby="people-title">
+      <div class="shell">
+        <div class="section-heading centered"><h2 id="people-title">За одним столом<br>или на расстоянии</h2><p>Выберите, как провести вечер. Дела и правила игры одинаковые.</p></div>
+        <div class="friends-format-grid">
+          <article><h3>Онлайн</h3><p>Каждый открывает игру на своём устройстве. Обсуждайте находки в созвоне, даже если вы в разных городах.</p></article>
+          <article><h3>Офлайн в вашем городе</h3><p>Очные игры в вашем городе — в разработке.</p></article>
+        </div>
+        <div class="photo-grid">
+          <img src="/assets/landing/game-notes-real.webp" alt="Участник записывает наблюдения по делу" loading="lazy" width="1067" height="1600">
+          <img class="photo-wide" src="/assets/landing/game-team-real.webp" alt="Команда обсуждает расследование за общим столом" loading="lazy" width="1600" height="900">
+          <img src="/assets/landing/game-reading-real.webp" alt="Участницы изучают материалы дела за общим столом" loading="lazy" width="1067" height="1600">
         </div>
       </div>
     </section>
 
     <section class="section how-section" id="how" aria-labelledby="how-title">
       <div class="shell">
-        <div class="section-heading centered"><h2 id="how-title">Как проходит игра</h2><p>Всё расследование — в одном интерфейсе.<br>Локации, материалы дела, заметки и вопросы всегда под рукой.</p></div>
+        <div class="section-heading centered"><h2 id="how-title">Как начать расследование</h2><p>Сначала договоритесь с друзьями о встрече.<br>Покупку и доступ оформим в Telegram.</p></div>
         <div class="how-layout">
-          <div class="game-preview"><img src="/assets/landing/game-interface.webp" alt="Интерфейс игры: поиск локации, история поездок и заметки" loading="lazy" width="1400" height="703"></div>
+          <div class="game-preview"><img src="/assets/landing/game-interface.webp" alt="Интерфейс «Детектума»: поиск адресов и история поездок" loading="lazy" width="1400" height="703"></div>
           <div class="steps">
-            <article><h3>Познакомьтесь с делом</h3><p>Изучите вводную и первые зацепки, чтобы понять, с чего начать расследование.</p></article>
-            <article><h3>Отправляйтесь по адресам</h3><p>Выбирайте локации и изучайте найденные сведения.</p></article>
-            <article><h3>Соберите картину событий</h3><p>Обсуждайте версии и фиксируйте важные детали.</p></article>
-            <article><h3>Раскройте дело</h3><p>Сформулируйте выводы и ответьте на вопросы сценария.</p></article>
+            <article><h3>Соберите команду</h3><p>Рекомендуем 2–5 участников от 16 лет. Выделите 120 минут на игру.</p></article>
+            <article><h3>Напишите в @detectum</h3><p>Обсудим формат, оплату и выдачу доступа.</p></article>
+            <article><h3>Получите доступ</h3><p>После оплаты выдадим данные игровой комнаты.</p></article>
+            <article><h3>Раскройте дело</h3><p>Исследуйте город и ответьте на вопросы. Результат и развязку узнаете автоматически на сайте.</p></article>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="section people-section" id="atmosphere" aria-labelledby="people-title">
-      <div class="shell">
-        <div class="section-heading centered"><h2 id="people-title">Одна команда.<br>Десятки догадок.</h2><p>Спорьте, замечайте, делитесь находками.<br>Самая неожиданная мысль может изменить ход расследования.</p></div>
-        <div class="photo-grid">
-          <img src="/assets/landing/detective-notes.webp" alt="Участница внимательно изучает материалы дела" loading="lazy" width="1100" height="1650">
-          <img class="photo-wide" src="/assets/landing/team-table.webp" alt="Команда обсуждает расследование за общим столом" loading="lazy" width="1600" height="900">
-          <img src="/assets/landing/team-screen.webp" alt="Участники сопоставляют найденную информацию" loading="lazy" width="1600" height="900">
-        </div>
-      </div>
-    </section>
-
-    <section class="story-section" aria-labelledby="story-title">
-      <div class="shell story-layout">
-        <div class="story-copy"><h2 id="story-title">Всё начинается<br>с одной зацепки</h2><p>Газетная заметка. Знакомое имя. Адрес на другом конце города. Из таких деталей складывается история, которую предстоит восстановить вашей команде.</p><p>Игровая газета — лишь одна из находок, которые встретятся вам по ходу расследования.</p></div>
-        <figure class="newspaper-stack"><img class="paper-stack-art" src="/assets/landing/paper-stack.webp" alt="" loading="lazy" width="920" height="1076"><img class="newspaper-page" src="/assets/landing/newspaper.webp" alt="Полная первая полоса игровой газеты «Городское время»" loading="lazy" width="1055" height="1491"></figure>
       </div>
     </section>
 
     <section class="section faq-section" id="questions" aria-labelledby="faq-title">
       <div class="shell"><div class="section-heading centered"><h2 id="faq-title">Остались вопросы?</h2></div>
         <div class="faq-grid">
-          <details><summary>У вас только одна игра?<span aria-hidden="true">+</span></summary><p>В «Детектуме» много разных историй и сценариев. Новое дело выходит каждый месяц — не пропустите.</p></details>
-          <details><summary>Можно ли играть удалённо с друзьями?<span aria-hidden="true">+</span></summary><p>Конечно! Можно созвониться с друзьями по Zoom или другому приложению и играть всем вместе на нашей платформе.</p></details>
-          <details><summary>Играть можно только в команде?<span aria-hidden="true">+</span></summary><p>Изначально это командная игра, прямо как настолка. Играть можно одной или несколькими командами. Оптимальное количество игроков для одной команды — 3–6. Однако можно сыграть и одному.</p></details>
-          <details><summary>Есть ли бесплатная версия игры?<span aria-hidden="true">+</span></summary><p>Да. Чтобы попробовать демо игру, зарегистрируйтесь и выберите её в личном кабинете.</p></details>
+          <details><summary>Сколько длится расследование?<span aria-hidden="true">+</span></summary><p>Чистое игровое время — 120 минут. За это время команда исследует дело и отвечает на вопросы.</p></details>
+          <details><summary>Сколько друзей приглашать?<span aria-hidden="true">+</span></summary><p>Рекомендуем собирать команду из 2–5 человек.</p></details>
+          <details><summary>Когда начинается онлайн-доступ?<span aria-hidden="true">+</span></summary><p>Сразу после оплаты. Дело доступно в течение недели с этого момента — учитывайте срок, когда планируете игру с друзьями.</p></details>
+          <details><summary>Какой возраст участников?<span aria-hidden="true">+</span></summary><p>Игра рассчитана на участников от 16 лет.</p></details>
         </div>
       </div>
     </section>
 
-    <section class="closing-section"><div class="shell centered"><h2>Ваше дело ждёт.</h2><p>Соберите друзей, обсудите первые версии и начните расследование вместе.</p><a class="button" href="/login">Войти в игру</a></div></section>
+    <section class="closing-section"><div class="shell centered"><h2>Выберите вечер.<br>Дело уже ждёт.</h2><p>Напишите нам в Telegram — обсудим формат и поможем получить доступ к расследованию.</p><a class="button" href="https://t.me/detectum" target="_blank" rel="noopener noreferrer">Заказать игру в Telegram</a><p class="existing-access">Уже есть доступ? <a class="product-text-link" href="/login">Войти в игру</a></p></div></section>
   </main>
 
-  <footer class="site-footer"><div class="shell footer-inner"><a class="brand" href="/" aria-label="Детектум — главная">ДЕТЕКТУМ</a><p>Командная детективная игра</p><a href="/corporate">Для корпоративов</a><a href="/admin-login">Организаторам</a></div></footer>
+  <footer class="site-footer"><div class="shell footer-inner"><a class="brand" href="/" aria-label="Детектум — главная">ДЕТЕКТУМ</a><p>Командная детективная игра · 16+</p><a href="/corporate">Для корпоративов</a><a href="https://t.me/detectum" target="_blank" rel="noopener noreferrer">Telegram</a><a href="/privacy.html">Конфиденциальность</a><a href="/login">Войти в игру</a></div></footer>
 </body>
 </html>

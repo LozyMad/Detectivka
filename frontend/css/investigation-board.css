@@ -95,8 +95,8 @@ body.board-open #board {
   min-width: 0;
   overflow: hidden;
   margin: 0 clamp(14px, 2vw, 34px);
-  border: 24px solid #513019;
-  border-image: url('../assets/board/walnut-frame.opt.webp') 11.2% / 24px / 0 stretch;
+  border: 24px solid #392519;
+  border-image: url('../assets/board/walnut-frame-v5.webp') 10% / 24px / 0 stretch;
   box-shadow: 0 10px 28px #000b, 0 0 4px #000;
 }
 
@@ -109,8 +109,8 @@ body.board-open #board {
   overflow: auto;
   border: 0;
   border-radius: 0;
-  background: #b68150;
-  box-shadow: inset 0 0 22px #28180caa;
+  background: #4d392b;
+  box-shadow: inset 0 0 22px #25190c88;
   cursor: grab;
   overscroll-behavior: contain;
   scrollbar-color: #8b633c #2d2118;
@@ -122,27 +122,38 @@ body.board-open #board {
 .board-canvas {
   position: relative;
   transform-origin: 0 0;
-  background: #b68150 url('../assets/board/cork.opt.webp') repeat;
-  background-size: 620px;
+  /* The cork shares board coordinates with the attached notes, pins and threads. */
+  background: #4d392b url('../assets/board/dark-cork-surface-v5.webp') 0 0 / 768px 512px repeat;
 }
-.board-threads, .board-notes { position: absolute; inset: 0; }
+.board-threads, .board-notes, .board-fasteners { position: absolute; inset: 0; }
 .board-notes { z-index: 2; pointer-events: none; }
-.board-threads { z-index: 1; pointer-events: none; }
+.board-threads { z-index: 3; pointer-events: none; }
+.board-fasteners { z-index: 4; pointer-events: none; }
+.board-note-fastener {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: var(--note-image) 0 0 / 100% 100% no-repeat;
+  clip-path: ellipse(24px 29px at 150px 43px);
+  transform: rotate(var(--note-tilt));
+  transform-origin: center;
+  pointer-events: auto;
+  cursor: move;
+  touch-action: none;
+}
 .board-empty { position: absolute; top: 580px; left: 880px; width: 470px; padding: 22px; border: 1px solid #5a351d91; border-radius: 7px; background: #fff2ccda; color: #44301c; text-align: center; font: 1.1rem/1.5 Georgia, serif; pointer-events: none; box-shadow: 3px 5px 10px #40220b66; }
 
 .investigation-note {
   --note-ink: #241f16;
   --note-secondary-ink: #403424;
+  --note-shadow: drop-shadow(5px 10px 7px #15191c70);
   position: absolute;
   width: 300px;
   height: 300px;
   padding: 75px 43px 37px;
   border: 0;
   color: var(--note-ink);
-  background-image: var(--note-image);
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  filter: drop-shadow(5px 10px 7px #3a230b80);
+  background: none;
   transform: rotate(var(--note-tilt));
   transform-origin: center;
   cursor: move;
@@ -151,14 +162,23 @@ body.board-open #board {
   user-select: none;
   transition: none !important;
 }
-.investigation-note:hover, .investigation-note.is-dragging { filter: drop-shadow(7px 15px 11px #261406a6); z-index: 5; }
+.investigation-note::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--note-image) 0 0 / 100% 100% no-repeat;
+  filter: var(--note-shadow);
+  pointer-events: none;
+}
+.investigation-note:hover, .investigation-note.is-dragging { --note-shadow: drop-shadow(7px 15px 11px #15191c96); z-index: 5; }
 .investigation-note.is-dragging { will-change: transform; }
-.investigation-note.is-connecting { filter: drop-shadow(0 0 5px #fff5bb) drop-shadow(0 0 12px #f2d178) drop-shadow(5px 10px 7px #3a230b80); outline: 3px dashed #fff1a6; outline-offset: -28px; }
-.investigation-note[data-color="yellow"] { --note-image: url('../assets/board/note-yellow-pinned.webp?v=1'); }
-.investigation-note[data-color="pink"] { --note-image: url('../assets/board/note-pink-pinned.webp?v=1'); --note-ink: #321a22; --note-secondary-ink: #45242f; }
-.investigation-note[data-color="blue"] { --note-image: url('../assets/board/note-blue-pinned.webp?v=1'); --note-ink: #152b3d; --note-secondary-ink: #243d50; }
-.investigation-note[data-color="green"] { --note-image: url('../assets/board/note-green-pinned.webp?v=1'); --note-ink: #20301a; --note-secondary-ink: #32452a; }
-.investigation-note[data-color="purple"] { --note-image: url('../assets/board/note-purple-pinned.webp?v=1'); --note-ink: #2e203c; --note-secondary-ink: #3c2b4b; }
+.investigation-note.is-connecting { --note-shadow: drop-shadow(0 0 5px #fff5bb) drop-shadow(0 0 12px #f2d178) drop-shadow(5px 10px 7px #3a230b80); outline: 3px dashed #fff1a6; outline-offset: -28px; }
+.investigation-note[data-color="yellow"], .board-note-fastener[data-color="yellow"] { --note-image: url('../assets/board/note-yellow-pinned.webp'); }
+.investigation-note[data-color="pink"], .board-note-fastener[data-color="pink"] { --note-image: url('../assets/board/note-pink-pinned.webp'); --note-ink: #321a22; --note-secondary-ink: #45242f; }
+.investigation-note[data-color="blue"], .board-note-fastener[data-color="blue"] { --note-image: url('../assets/board/note-blue-pinned.webp'); --note-ink: #152b3d; --note-secondary-ink: #243d50; }
+.investigation-note[data-color="green"], .board-note-fastener[data-color="green"] { --note-image: url('../assets/board/note-green-pinned.webp'); --note-ink: #20301a; --note-secondary-ink: #32452a; }
+.investigation-note[data-color="purple"], .board-note-fastener[data-color="purple"] { --note-image: url('../assets/board/note-purple-pinned.webp'); --note-ink: #2e203c; --note-secondary-ink: #3c2b4b; }
 .board-note-edit {
   position: absolute;
   top: 46px;
@@ -179,6 +199,10 @@ body.board-open #board {
 .board-note-title { display: block; margin-top: 0; font: 700 20px/1.12 Georgia, serif; overflow-wrap: anywhere; max-height: 65px; overflow: hidden; }
 .board-note-address { display: block; margin-top: 8px; padding-bottom: 9px; border-bottom: 1px solid #4d382c55; font: 12px/1.3 Arial, sans-serif; }
 .board-note-comment { display: -webkit-box; margin: 11px 0 0; overflow: hidden; font: 15px/1.35 Georgia, serif; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-line-clamp: 6; -webkit-box-orient: vertical; }
+/* Keep overview labels readable while paper and thread coordinates retain their zoom. */
+.investigation-note .board-note-title { font-size: max(20px, calc(11px / var(--board-zoom, 1))); }
+.investigation-note .board-note-address { font-size: max(12px, calc(9px / var(--board-zoom, 1))); }
+.investigation-note .board-note-comment { font-size: max(15px, calc(10px / var(--board-zoom, 1))); }
 /* Printed paper keeps its own ink in both site themes (including global small styles). */
 .investigation-note .board-note-title, .investigation-note .board-note-comment { color: var(--note-ink) !important; }
 .investigation-note .board-note-address { color: var(--note-secondary-ink) !important; }
@@ -221,13 +245,13 @@ body.board-open #board {
   min-height: 650px;
   padding: 165px 66px 60px;
   color: #30261e;
-  background: url('../assets/board/note-yellow-pinned.webp?v=1') center / cover no-repeat;
+  background: url('../assets/board/note-yellow-pinned.webp') center / cover no-repeat;
   filter: drop-shadow(8px 15px 14px #0009);
 }
-.board-note-dialog[data-color="pink"] { background-image: url('../assets/board/note-pink-pinned.webp?v=1'); }
-.board-note-dialog[data-color="blue"] { background-image: url('../assets/board/note-blue-pinned.webp?v=1'); }
-.board-note-dialog[data-color="green"] { background-image: url('../assets/board/note-green-pinned.webp?v=1'); }
-.board-note-dialog[data-color="purple"] { background-image: url('../assets/board/note-purple-pinned.webp?v=1'); }
+.board-note-dialog[data-color="pink"] { background-image: url('../assets/board/note-pink-pinned.webp'); }
+.board-note-dialog[data-color="blue"] { background-image: url('../assets/board/note-blue-pinned.webp'); }
+.board-note-dialog[data-color="green"] { background-image: url('../assets/board/note-green-pinned.webp'); }
+.board-note-dialog[data-color="purple"] { background-image: url('../assets/board/note-purple-pinned.webp'); }
 #boardNoteOverlay .board-note-dialog h2 { margin: 5px 0 10px; color: #30261e !important; font: 700 1.55rem Georgia, serif; }
 .board-note-place { display: block; font: 700 1.2rem Georgia, serif; overflow-wrap: anywhere; }
 .board-note-place[hidden] { display: none; }

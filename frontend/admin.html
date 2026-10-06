@@ -491,6 +491,7 @@
     </style>
     <link href="css/design-system.css?v=5" rel="stylesheet">
     <link href="css/dark-interface.css?v=2" rel="stylesheet">
+    <link href="css/admin-enquiries.css?v=1" rel="stylesheet">
 </head>
 <body class="admin-interface">
     <!-- Navigation -->
@@ -546,6 +547,9 @@
                     <a class="nav-link" href="#" data-tab="addressBook">
                         <i class="fas fa-book me-2"></i>Адресная книга
                     </a>
+                    <a class="nav-link" href="#enquiries" data-tab="enquiries">
+                        <i class="fas fa-inbox me-2" aria-hidden="true"></i>Заявки <span id="enquiriesBadge" class="enquiries-badge" hidden></span>
+                    </a>
                     <a class="nav-link" href="#" data-tab="backup">
                         <i class="fas fa-download me-2"></i>Бэкап сценариев
                     </a>
@@ -554,6 +558,53 @@
 
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 content-area main-content">
+                <section id="enquiries-tab" class="tab-content" style="display: none;" aria-labelledby="enquiriesTitle" data-no-persist>
+                    <div class="enquiries-header">
+                        <div><h3 id="enquiriesTitle"><i class="fas fa-inbox me-2" aria-hidden="true"></i>Заявки</h3><p>Обращения с сайта, статусы и договорённости.</p></div>
+                        <button id="enquiriesRefresh" class="btn btn-outline-primary" type="button"><i class="fas fa-sync-alt me-1" aria-hidden="true"></i>Обновить заявки</button>
+                    </div>
+                    <div class="enquiries-counts" aria-label="Заявки по статусам">
+                        <div><strong data-enquiry-count="new">0</strong><span>Новые</span></div>
+                        <div><strong data-enquiry-count="in_progress">0</strong><span>В работе</span></div>
+                        <div><strong data-enquiry-count="agreed">0</strong><span>Согласовано</span></div>
+                        <div><strong data-enquiry-count="closed">0</strong><span>Закрыто</span></div>
+                    </div>
+                    <div class="enquiries-filters">
+                        <div><label for="enquiriesSearch">Поиск по заявкам</label><input id="enquiriesSearch" class="form-control" type="search" maxlength="160" placeholder="Номер, компания, контакт или заметка" autocomplete="off"></div>
+                        <div><label for="enquiriesStatusFilter">Статус</label><select id="enquiriesStatusFilter" class="form-select"><option value="">Все статусы</option><option value="new">Новая</option><option value="in_progress">В работе</option><option value="agreed">Согласовано</option><option value="closed">Закрыто</option></select></div>
+                    </div>
+                    <p id="enquiriesError" class="enquiries-error" role="alert" hidden></p>
+                    <div class="enquiries-layout">
+                        <div id="enquiriesList" class="card">
+                            <div class="table-responsive">
+                                <table class="table table-hover enquiries-table mb-0">
+                                    <thead><tr><th scope="col">Получена</th><th scope="col">Компания</th><th scope="col">Участники</th><th scope="col">Связь</th><th scope="col">Статус</th><th scope="col"><span class="visually-hidden">Открыть заявку</span></th></tr></thead>
+                                    <tbody id="enquiriesTable"><tr><td colspan="6" class="text-center py-4">Загрузите список заявок.</td></tr></tbody>
+                                </table>
+                            </div>
+                            <div class="enquiries-pagination"><span id="enquiriesPageLabel" role="status"></span><div><button id="enquiriesPrevious" class="btn btn-sm btn-outline-secondary" type="button" disabled>Назад</button> <button id="enquiriesNext" class="btn btn-sm btn-outline-secondary" type="button" disabled>Далее</button></div></div>
+                        </div>
+                        <aside id="enquiryDetail" class="enquiries-detail" aria-label="Карточка заявки">
+                            <p id="enquiryDetailEmpty" class="enquiries-detail-empty">Откройте заявку, чтобы увидеть подробности, изменить статус и добавить заметку.</p>
+                            <div id="enquiryDetailContent" hidden>
+                                <h4 id="enquiryDetailTitle" tabindex="-1"></h4>
+                                <p id="enquiryDetailReference" class="enquiries-muted"></p>
+                                <dl><dt>Участников примерно</dt><dd id="enquiryDetailParticipants"></dd><dt>Формат</dt><dd id="enquiryDetailFormat"></dd><dt>Контакты</dt><dd id="enquiryDetailContacts" class="enquiries-contacts"></dd><dt>Источник</dt><dd id="enquiryDetailSource"></dd><dt>Согласие на обработку данных</dt><dd id="enquiryDetailConsent"></dd></dl>
+                                <form id="enquiryDetailForm">
+                                    <label for="enquiryDetailStatus" class="form-label">Статус заявки</label>
+                                    <select id="enquiryDetailStatus" class="form-select mb-3"><option value="new">Новая</option><option value="in_progress">В работе</option><option value="agreed">Согласовано</option><option value="closed">Закрыто</option></select>
+                                    <label for="enquiryDetailNotes" class="form-label">Заметки по заявке</label>
+                                    <textarea id="enquiryDetailNotes" class="form-control mb-3" rows="5" maxlength="5000" placeholder="Договорённости, следующий шаг, пожелания заказчика"></textarea>
+                                    <button id="enquiryDetailSave" class="btn btn-primary" type="submit">Сохранить изменения</button>
+                                    <button id="enquiryDetailReload" class="btn btn-outline-secondary mt-2" type="button" hidden>Обновить карточку без моих изменений</button>
+                                    <p id="enquiryDetailFeedback" class="enquiries-feedback" role="status"></p>
+                                    <p id="enquiryDetailUpdated" class="enquiries-muted"></p>
+                                </form>
+                            </div>
+                        </aside>
+                    </div>
+                </section>
+
                 <!-- Users Tab -->
                 <div id="users-tab" class="tab-content">
                     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -1631,7 +1682,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/game-network.js?v=1"></script>
-    <script src="js/admin.js?v=10"></script>
+    <script src="js/admin.js?v=11"></script>
+    <script src="js/admin-enquiries.js?v=2"></script>
     <script src="js/backup.js?v=2"></script>
     <script src="js/choices.js?v=2"></script>
     <script src="js/internet-cafe-admin.js?v=2"></script>

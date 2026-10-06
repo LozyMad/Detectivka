@@ -45,6 +45,7 @@ async function authFetch(url, options = {}) {
 document.addEventListener('DOMContentLoaded', () => {
     if (!checkAdminAuth()) return;
     setupEventListeners();
+    window.adminEnquiries?.init();
     loadInitialData().catch(error => console.error('Initial admin data:', error));
     adminPageReady = true;
     updateAdminPolling();
@@ -98,7 +99,7 @@ function setupAdminInterface(adminLevel) {
     const navLinks = sidebar.querySelectorAll('.nav-link');
     
     // Список вкладок, которые должны быть скрыты для обычных админов
-    const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup'];
+    const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup', 'enquiries'];
     
     if (adminLevel !== 'super_admin') {
         console.log('Hiding restricted tabs for regular admin');
@@ -637,7 +638,7 @@ function setupEventListeners() {
 
 function switchTab(tabName) {
     // Проверяем, доступна ли вкладка для текущего админа
-    const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup'];
+    const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup', 'enquiries'];
     if (currentUser.admin_level !== 'super_admin' && restrictedTabs.includes(tabName)) {
         showMessage('У вас нет доступа к этой вкладке', 'warning');
         return;
@@ -678,6 +679,8 @@ function switchTab(tabName) {
         });
     } else if (tabName === 'addressBook') {
         loadAddressBookSectionsAndEntries();
+    } else if (tabName === 'enquiries') {
+        window.adminEnquiries?.load();
     }
     updateAdminPolling();
 }

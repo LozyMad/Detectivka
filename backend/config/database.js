@@ -15,7 +15,7 @@ if (DB_TYPE === 'postgresql') {
   const sqlite3 = require('sqlite3').verbose();
   const path = require('path');
   
-  const dbPath = path.join(__dirname, '..', 'database.sqlite');
+  const dbPath = process.env.SQLITE_DB_PATH ? path.resolve(process.env.SQLITE_DB_PATH) : path.join(__dirname, '..', 'database.sqlite');
   db = new sqlite3.Database(dbPath);
   
   // Адаптер для SQLite чтобы работал как PostgreSQL
@@ -36,16 +36,19 @@ if (DB_TYPE === 'postgresql') {
   };
 }
 
+const enquiries = require('../services/enquiryStore').createEnquiryStore({ query, dialect: DB_TYPE });
+
 const init = async () => {
   try {
     if (DB_TYPE === 'postgresql') {
       // Для PostgreSQL используем готовую инициализацию
       await initMainDatabase();
+      await enquiries.init();
       return;
     }
     
     // Для SQLite используем старую логику
-    return new Promise((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       db.serialize(() => {
       // Users table
       db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -285,6 +288,7 @@ const init = async () => {
       });
     });
   });
+    await enquiries.init();
   } catch (error) {
     console.error('Error initializing database:', error);
     throw error;
@@ -295,5 +299,6 @@ module.exports = {
   db,
   query,
   getClient,
+  enquiries,
   init
 };

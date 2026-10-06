@@ -4,15 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0c0908">
-  <meta name="description" content="Детектум — корпоративная детективная игра для команды. Исследуйте дело, сопоставляйте документы и собирайте общую версию.">
-  <title>Корпоративная игра «Детектум» — расследование для команды</title>
+  <meta name="description" content="Детектум — детективный тимбилдинг для вашей команды. 120 минут общих догадок и решений, онлайн или за одним столом. Команды по 2–5 человек, ведущий не нужен.">
+  <title>Детектум — детективный тимбилдинг для компаний</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="preload" as="image" href="/assets/landing/corporate-hero.opt.webp">
+  <link rel="preload" as="image" href="/assets/landing/corporate-team-v2.webp">
   <link rel="stylesheet" href="/css/landing.css?v=6">
-  <link rel="stylesheet" href="/css/corporate.css?v=6">
-  <script src="js/landing.js?v=6" defer></script>
+  <link rel="stylesheet" href="/css/corporate.css?v=12">
+  <link rel="stylesheet" href="/css/landing-product.css?v=12">
+  <link rel="stylesheet" href="/css/corporate-process.css?v=5">
+  <link rel="stylesheet" href="/css/corporate-contact.css?v=2">
+  <script src="/js/corporate-enquiry.js?v=4" defer></script>
 </head>
 <body class="corporate-page">
   <a class="skip-link" href="#main">К содержанию</a>
@@ -21,122 +24,171 @@
       <a class="brand" href="/" aria-label="Детектум — главная">ДЕТЕКТУМ</a>
       <div class="audience-switch" aria-label="Формат игры"><a href="/">С друзьями</a><span aria-current="page">Корпоратив</span></div>
       <nav aria-label="Разделы страницы">
-        <a href="#format">О формате</a>
-        <a href="#how">Как проходит игра</a>
-        <a href="#inside">Что внутри</a>
+        <a href="#teamwork">Почему тимбилдинг</a>
+        <a href="#format">Форматы</a>
         <a href="#questions">Вопросы</a>
       </nav>
-      <a class="button button-small header-cta" href="#contact">Обсудить корпоративный формат</a>
+      <a class="button button-small" href="#contact">Обсудить тимбилдинг</a>
     </div>
   </header>
 
   <main id="main">
-    <section class="corporate-hero" aria-labelledby="hero-title">
-      <img class="corporate-hero-art" src="/assets/landing/corporate-hero.opt.webp" alt="" fetchpriority="high">
-      <div class="corporate-hero-shade" aria-hidden="true"></div>
-      <div class="shell corporate-hero-content">
-        <p class="eyebrow">ДЕТЕКТИВНАЯ ИГРА ДЛЯ КОМАНД</p>
-        <h1 id="hero-title">Корпоратив, где каждый становится частью расследования</h1>
-        <p>Соберите коллег за одним расследованием. Изучайте улики, обсуждайте версии и проверяйте догадки — здесь любая находка может изменить ход игры.</p>
-        <div class="hero-actions"><a class="button" href="#contact">Обсудить корпоративный формат</a><a class="button-quiet" href="#how">Как проходит игра <span aria-hidden="true">↘</span></a></div>
-        <p class="hero-meta">Игра в браузере · в офисе или онлайн</p>
-      </div>
-    </section>
-
-    <section class="corporate-facts" aria-label="Коротко об игре">
-      <div class="shell facts-grid">
-        <div><strong>В браузере</strong><span>без установки приложений</span></div>
-        <div><strong>Вместе или онлайн</strong><span>под удобный формат встречи</span></div>
-        <div><strong>Документы и улики</strong><span>каждая деталь имеет значение</span></div>
-        <div><strong>Командное расследование</strong><span>от первых догадок до разгадки</span></div>
-      </div>
-    </section>
-
-    <section class="corporate-mechanic" id="format" aria-labelledby="format-title">
-      <div class="shell">
-        <div class="section-heading centered"><p class="eyebrow">ОДНО ДЕЛО. МНОГО ВЗГЛЯДОВ</p><h2 id="format-title">Команда движется дальше, когда делится находками</h2><p>В «Детектуме» участники изучают одно дело и сами решают, какие зацепки проверить. Один замечает дату, другой — противоречие в показаниях. Общую картину команда собирает вместе.</p></div>
-        <div class="mechanic-grid">
-          <article><span>01 / ДЕЛО</span><h3>Общее дело</h3><p>Перед вами запутанная история. Восстановите события и найдите объяснение, которое сходится с фактами.</p></article>
-          <article><span>02 / ПОИСК</span><h3>Разные зацепки</h3><p>Адреса, газетные статьи, фотографии и показания открывают разные фрагменты истории.</p></article>
-          <article><span>03 / ВЕРСИЯ</span><h3>Общая версия</h3><p>Сопоставьте найденные факты, проверьте объяснения и сформулируйте ответ вместе.</p></article>
+    <section class="team-hero" aria-labelledby="hero-title">
+      <div class="shell team-hero-layout">
+        <div class="team-hero-copy">
+          <p class="product-eyebrow">Детектум · для компаний</p>
+          <h1 id="hero-title">Тимбилдинг<br>с азартом<br><em>расследования.</em></h1>
+          <p class="team-hero-description">У коллег появляется общее дело: найти зацепки, проверить версии и вместе раскрыть историю. 120 минут общения, догадок и совместных решений.</p>
+          <div class="team-hero-actions"><a class="button" href="#contact">Обсудить тимбилдинг</a><a class="product-text-link" href="#teamwork">Почему это работает <span aria-hidden="true">↓</span></a></div>
+          <p class="team-hero-note">Онлайн или за одним столом. Игра проходит без ведущего.</p>
         </div>
+        <figure class="team-hero-visual"><img src="/assets/landing/corporate-team-v2.webp" width="1672" height="941" alt="" fetchpriority="high"><figcaption>Иллюстрация командного расследования</figcaption></figure>
       </div>
     </section>
 
-    <section class="corporate-benefits-section" aria-labelledby="benefits-title">
-      <div class="shell">
-        <div class="section-heading centered"><h2 id="benefits-title">Новый опыт для команды.<br>Понятная организация для вас.</h2></div>
-        <div class="corporate-benefits">
-          <article class="corporate-benefit"><span class="benefit-index">01</span><h3>Для компании</h3><p>Повод собрать коллег вне рабочих задач: познакомить сотрудников из разных отделов, отметить событие или просто провести вечер вместе.</p></article>
-          <article class="corporate-benefit"><span class="benefit-index">02</span><h3>Для участников</h3><p>Азарт расследования, неожиданные находки и живые обсуждения. Стройте версии, спорьте и замечайте то, что упустили другие.</p></article>
-          <article class="corporate-benefit"><span class="benefit-index">03</span><h3>Для организатора</h3><p>Готовая игра с сюжетом и материалами. Вы выбираете дату и формат встречи, а детали проведения мы согласуем заранее.</p></article>
+    <section class="product-facts team-facts" aria-label="Коротко о тимбилдинге">
+      <dl class="shell product-facts-list">
+        <div><dt>120 минут</dt><dd>чистого игрового времени</dd></div>
+        <div><dt>2–5 человек</dt><dd>рекомендуем в одну команду</dd></div>
+        <div><dt>Два формата</dt><dd>онлайн или вместе на площадке</dd></div>
+        <div><dt>Без ведущего</dt><dd>команда расследует самостоятельно</dd></div>
+      </dl>
+    </section>
+
+    <section class="team-process" id="experience" aria-labelledby="experience-title">
+      <div class="shell team-process-scene">
+        <div class="team-process-head">
+          <div class="section-heading"><h2 id="experience-title">Организуем всё под ключ<br>с вас только сотрудники</h2></div>
+          <figure class="team-process-photo"><img src="/assets/landing/game-joint-discovery-real-v2.webp" width="1600" height="900" alt="Двое участников обычной игры «Детектума» вместе изучают материалы дела" loading="lazy"><figcaption>За игровым столом «Детектума»</figcaption></figure>
         </div>
-        <div class="corporate-scene"><img src="assets/landing/team-whisper.webp" alt="Участники делятся наблюдениями за столом" loading="lazy"><div class="scene-note"><span>КОЛЛЕГИ В РОЛИ ДЕТЕКТИВОВ</span><h3>«Подождите, а если всё было иначе?»</h3><p>Одна догадка меняет разговор. Кто-то находит подтверждение, кто-то замечает несостыковку — и обсуждение начинается заново.</p></div></div>
-      </div>
-    </section>
-
-    <section class="corporate-flow" id="how" aria-labelledby="how-title">
-      <div class="shell corporate-flow-layout">
-        <div class="flow-copy">
-          <div class="section-heading"><p class="eyebrow">ПЛАН РАССЛЕДОВАНИЯ</p><h2 id="how-title">Четыре шага от первого адреса до общей версии</h2><p>Команда знакомится с делом, выбирает направления расследования и проверяет предположения по материалам.</p></div>
-          <ol class="corporate-steps">
-            <li class="corporate-step"><span>01</span><div><h3>Получите вводную</h3><p>Узнайте, что предстоит расследовать, и изучите первые зацепки.</p></div></li>
-            <li class="corporate-step"><span>02</span><div><h3>Исследуйте город</h3><p>Открывайте адреса, находите материалы и решайте, что проверить следующим.</p></div></li>
-            <li class="corporate-step"><span>03</span><div><h3>Сверьте факты</h3><p>Делитесь находками, сравнивайте даты и показания, проверяйте версии.</p></div></li>
-            <li class="corporate-step"><span>04</span><div><h3>Соберите ответ</h3><p>Сформулируйте объяснение, которое лучше всего подтверждается найденными уликами.</p></div></li>
+        <div class="team-process-route">
+          <picture class="team-process-art" aria-hidden="true"><source media="(max-width: 760px)" srcset="/assets/landing/corporate-process-dossier-mobile-v5.webp"><img src="/assets/landing/corporate-process-dossier-base-v5.webp" width="1308" height="1202" alt="" loading="lazy"></picture>
+          <svg class="team-process-threads" viewBox="0 0 1308 1202" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="process-pin-brass" x1="0" y1="0" x2="1" y2="1">
+                <stop stop-color="#5b3217"/><stop offset=".25" stop-color="#f1ce7d"/><stop offset=".5" stop-color="#b27b38"/><stop offset=".75" stop-color="#5b321a"/><stop offset="1" stop-color="#d4a555"/>
+              </linearGradient>
+              <radialGradient id="process-pin-center" cx="35%" cy="30%">
+                <stop stop-color="#cda768"/><stop offset=".3" stop-color="#926330"/><stop offset=".7" stop-color="#382216"/><stop offset="1" stop-color="#22160f"/>
+              </radialGradient>
+              <filter id="process-pin-shadow" x="-60%" y="-60%" width="220%" height="220%">
+                <feDropShadow dx="2" dy="3" stdDeviation="2.5" flood-color="#160e09" flood-opacity=".8"/>
+              </filter>
+              <g id="process-pin-head" filter="url(#process-pin-shadow)">
+                <circle r="10.5" fill="url(#process-pin-brass)" stroke="#553217" stroke-width="1"/>
+                <circle r="6.4" fill="url(#process-pin-center)" stroke="#e3bb6e" stroke-width=".7"/>
+                <path d="M-7 1A7 7 0 0 1 1-7" fill="none" stroke="#f6daa0" stroke-width="1.2" opacity=".8"/>
+              </g>
+            </defs>
+            <g class="thread-lines">
+              <path data-thread-from="01" data-thread-to="02" d="M708 376L614 552"/>
+              <path data-thread-from="02" data-thread-to="03" d="M614 552L708 711"/>
+              <path data-thread-from="03" data-thread-to="04" d="M708 711L614 874"/>
+            </g>
+            <g class="thread-pins">
+              <use href="#process-pin-head" x="708" y="376" data-pin="01"/>
+              <use href="#process-pin-head" x="614" y="552" data-pin="02"/>
+              <use href="#process-pin-head" x="708" y="711" data-pin="03"/>
+              <use href="#process-pin-head" x="614" y="874" data-pin="04"/>
+            </g>
+          </svg>
+          <div class="team-process-watch" aria-hidden="true">
+            <img class="process-watch-case" src="/assets/landing/detectum-stopwatch-case-v5.webp" width="1122" height="1402" alt="" loading="lazy">
+            <img class="process-watch-face" src="/assets/landing/detectum-stopwatch-face-v5.svg" width="1122" height="1402" alt="" loading="lazy">
+          </div>
+          <p class="team-process-duration">Игровой процесс занимает<br>всего <strong>120 минут</strong></p>
+          <ol class="team-process-steps">
+            <li><span class="process-step-number" aria-hidden="true">01</span><h3>Все подключаются<br>в видеоконференцию или<br>собираются офлайн</h3></li>
+            <li><span class="process-step-number" aria-hidden="true">02</span><h3>Распределяются по командам<br>и сессионным залам</h3></li>
+            <li><span class="process-step-number" aria-hidden="true">03</span><h3>Играют на нашей платформе</h3></li>
+            <li><span class="process-step-number" aria-hidden="true">04</span><h3>В финале — лидерборд,<br>аналитика и эмоции, которые<br>обсуждают ещё неделю</h3></li>
           </ol>
         </div>
-        <div class="corporate-flow-art"><img src="assets/landing/investigator.webp" alt="Участник внимательно изучает документы расследования" loading="lazy"></div>
       </div>
     </section>
 
-    <section class="corporate-inside" id="inside" aria-labelledby="inside-title">
-      <div class="shell">
-        <div class="section-heading centered"><p class="eyebrow">ВНУТРИ ИГРЫ</p><h2 id="inside-title">Город, документы и заметки — в одном расследовании</h2><p>Адресная книга помогает находить нужные места. Материалы дела и показания дают отдельные зацепки. Команда сопоставляет их, чтобы понять, куда двигаться дальше.</p></div>
-        <div class="inside-gallery">
-          <div class="inside-screens">
-            <figure><img src="/assets/landing/corporate-addressbook.opt.webp" alt="Экран адресной книги игры" width="2543" height="1269" loading="lazy"><figcaption>Адресная книга <span>Найдите следующую зацепку</span></figcaption></figure>
-            <figure><img src="/assets/landing/corporate-questions.opt.webp" alt="Экран вопросов сценария" width="2560" height="1278" loading="lazy"><figcaption>Вопросы расследования <span>Сформулируйте общую версию</span></figcaption></figure>
+    <section class="team-benefits team-section" id="teamwork" aria-labelledby="teamwork-title">
+      <div class="shell team-benefits-layout">
+        <div>
+          <div class="section-heading"><p class="product-eyebrow">Что изменится?</p><h2 id="teamwork-title">Мы решаем реальные<br>боли удаленных команд</h2></div>
+          <div class="team-benefit-list">
+            <article><span aria-hidden="true">01</span><div><h3>в онлайне нет своей «курилки»</h3><p>Мы создаём пространство, где коллеги знакомятся и общаются неформально.</p></div></article>
+            <article><span aria-hidden="true">02</span><div><h3>совместная работа перестаёт тормозить</h3><p>Сотрудники из разных отделов начинают доверять и понимать друг друга.</p></div></article>
+            <article><span aria-hidden="true">03</span><div><h3>уходит чувство изоляции и одиночества</h3><p>Люди становятся частью единого целого.</p></div></article>
+            <article><span aria-hidden="true">04</span><div><h3>предотвращаем выгорание и текучку</h3><p>Мы возвращаем сотрудникам ощущение значимости и признания.</p></div></article>
           </div>
-          <figure class="inside-document"><img src="/assets/landing/corporate-case-file.opt.webp" alt="Пример документа из игры" width="1055" height="1491" loading="lazy"><figcaption>Материалы дела <span>Изучите детали и сопоставьте факты</span></figcaption></figure>
+        </div>
+        <figure class="team-real-moment"><img src="/assets/landing/game-collaboration-real.webp" width="1600" height="900" alt="Игроки «Детектума» обсуждают материалы дела за общим столом" loading="lazy"><figcaption>За игровым столом «Детектума». Фото участников обычной игры.</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="team-formats team-section" id="format" aria-labelledby="formats-title">
+      <div class="shell">
+        <div class="section-heading centered"><p class="product-eyebrow">Где соберётся команда</p><h2 id="formats-title">За одним столом.<br>Или из разных городов.</h2><p>Дела и правила игры одинаковые. Выберите формат, который подходит вашим коллегам.</p></div>
+        <div class="team-format-grid">
+          <article class="team-format-card"><img src="/assets/landing/corporate-online-v3.webp" width="1600" height="900" alt="Иллюстрация: игрок изучает карту и обсуждает расследование с коллегами по видеосвязи" loading="lazy"><div class="team-format-copy"><p class="product-eyebrow">Онлайн</p><h3>Расследуйте вместе.<br>Даже на расстоянии.</h3><p>Коллеги открывают игру на своих устройствах и обсуждают находки в созвоне. Можно собрать команду из разных мест.</p><a class="product-text-link" href="#contact">Обсудить онлайн-игру <span aria-hidden="true">↗</span></a></div></article>
+          <article class="team-format-card"><img src="/assets/landing/game-table-documents-real.webp" width="1600" height="901" alt="Участники обычной игры «Детектума» вместе изучают документы дела за столом" loading="lazy"><div class="team-format-copy"><p class="product-eyebrow">На вашей площадке</p><h3>Рядом с коллегами.<br>Внутри одной истории.</h3><p>Соберитесь вместе и обсуждайте версии за общим столом. Все адреса и поездки находятся внутри игры.</p><a class="product-text-link" href="#contact">Обсудить очную игру <span aria-hidden="true">↗</span></a></div></article>
         </div>
       </div>
     </section>
 
-    <section class="corporate-formats" aria-labelledby="formats-title">
-      <div class="shell"><div class="section-heading centered"><h2 id="formats-title">Доступные форматы</h2></div>
-        <div class="format-grid">
-          <article class="format-card"><h3>Полностью онлайн</h3><p>Каждый подключается откуда удобно. Откройте игру в браузере и обсуждайте находки в общем созвоне.</p></article>
-          <article class="format-card"><h3>Гибридный</h3><p>Часть коллег собирается в офисе, остальные присоединяются удалённо. Все исследуют одно дело и обмениваются версиями.</p></article>
-          <article class="format-card"><h3>Очный</h3><p>Соберитесь в офисе или на выбранной площадке. Изучайте материалы на экране и обсуждайте улики за одним столом.</p></article>
-          <article class="format-card"><h3>Разовая игра</h3><p>Одно расследование в выбранную дату — для корпоративного вечера, знакомства коллег или праздника команды.</p></article>
+    <section class="team-scenario team-section" aria-labelledby="scenario-title">
+      <div class="shell">
+        <div class="section-heading"><p class="product-eyebrow">Сценарий вашего вечера</p><h2 id="scenario-title">Начните с готового дела.</h2></div>
+        <div class="team-scenario-grid">
+          <article class="team-ready-case"><img src="/assets/landing/silence-case-cover-v1.webp" width="1536" height="1024" alt="Досье у окна ночного города — обложка «Ставки на молчание»" loading="lazy"><div><p class="product-eyebrow">Готовое расследование</p><h3>Ставка на молчание</h3><p>Разберитесь в материалах, проверьте версии и ответьте на вопросы дела вместе с коллегами.</p><p class="scenario-meta">120 минут · сложность 3 из 5 · 16+</p><a class="product-text-link" href="#contact">Обсудить это дело <span aria-hidden="true">↗</span></a></div></article>
+          <aside class="team-customization"><span class="customization-mark" aria-hidden="true">+</span><h3>Под вашу компанию</h3><p>Предлагаем кастомизацию. Расскажите, что хотите адаптировать: объём изменений и условия согласуем отдельно.</p><a class="product-text-link" href="#contact">Обсудить адаптацию <span aria-hidden="true">↗</span></a></aside>
         </div>
       </div>
     </section>
 
     <section class="corporate-contact" id="contact" aria-labelledby="contact-title">
-      <div class="shell contact-layout"><div><p class="eyebrow">СЛЕДУЮЩИЙ ХОД — ЗА ВАМИ</p><h2 id="contact-title">Обсудим дело для вашей команды</h2><p>Расскажите, сколько человек планирует играть и какой формат встречи вам удобен. Обсудим дату, условия и подойдёт ли «Детектум» вашей группе.</p></div><div class="contact-panel"><span>НАПИШИТЕ НАМ</span><a class="contact-handle" href="https://t.me/detectum" target="_blank" rel="noopener noreferrer">@detectum <span aria-hidden="true">↗</span></a><p>Укажите название компании, число участников и желаемый формат встречи. Ответим в переписке.</p><a class="button" href="https://t.me/detectum" target="_blank" rel="noopener noreferrer">Обсудить корпоративный формат</a></div></div>
+      <div class="shell contact-layout">
+        <div class="enquiry-panel">
+          <div class="enquiry-intro"><h2 id="contact-title">Оставьте заявку.<br>Мы свяжемся с вами.</h2></div>
+          <form class="corporate-enquiry-form" action="/api/enquiries/corporate" method="post" data-corporate-enquiry data-consent-version="corporate-2026-10-05-v1" hidden>
+            <div class="enquiry-fields">
+              <label>Название компании<input name="company" autocomplete="organization" placeholder="Название компании" maxlength="160" required></label>
+              <label>Телефон<input name="phone" type="tel" autocomplete="tel" placeholder="+7 (___) ___-__-__" maxlength="40" required></label>
+              <label>Почта<input name="email" type="email" autocomplete="email" placeholder="you@company.ru" maxlength="254" required></label>
+            </div>
+            <label class="enquiry-consent"><input name="consent" type="checkbox" required><span>Даю <a href="/consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a>.</span></label>
+            <a class="enquiry-policy" href="/privacy.html" target="_blank" rel="noopener">Политика конфиденциальности</a>
+            <p class="enquiry-error" data-enquiry-error role="alert" hidden></p>
+            <button class="button enquiry-submit" type="submit">Отправить заявку</button>
+          </form>
+          <div class="enquiry-result" data-enquiry-result hidden>
+            <span class="enquiry-success-mark" aria-hidden="true">✓</span>
+            <h3 tabindex="-1" data-enquiry-heading>Заявка отправлена</h3>
+            <p>Получили ваш запрос. Свяжемся с вами, чтобы обсудить формат и стоимость тимбилдинга.</p>
+            <button class="enquiry-another" type="button" data-enquiry-another>Отправить ещё одну заявку</button>
+          </div>
+          <noscript><p class="enquiry-help">Напишите в <a class="product-text-link" href="https://t.me/detectum">@detectum</a>: укажите название компании, телефон и почту.</p></noscript>
+        </div>
+        <aside class="contact-side" aria-labelledby="contact-direct-title">
+          <div class="contact-messenger"><p class="product-eyebrow">Можно сразу написать</p><h3 id="contact-direct-title">Узнайте детали<br>и стоимость игры.</h3><a class="button contact-telegram" href="https://t.me/detectum" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m21 3-4 18-6-5-4 3 1-7-5-2L21 3Zm-13 9 3 4L21 3 8 12Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>Написать в Telegram <span aria-hidden="true">↗</span></a><p class="contact-handle">@detectum</p></div>
+          <div class="contact-collage"><div class="contact-team-note"><span>Дело для всей команды</span><p>Коллеги становятся<br>командой детективов.</p></div><figure class="contact-snapshot contact-snapshot-discussion"><img src="/assets/landing/game-discussion-close-real.webp" width="1066" height="1600" alt="Участница обычной игры «Детектума» обсуждает зацепки с командой" loading="lazy"></figure><figure class="contact-snapshot contact-snapshot-reading"><img src="/assets/landing/game-case-reading-real.webp" width="1067" height="1600" alt="Участница обычной игры «Детектума» изучает документы дела" loading="lazy"></figure><p class="contact-photo-caption">За игровым столом «Детектума»</p></div>
+          <ul class="contact-assurances"><li>Договор и закрывающие документы</li><li>Помощь с распределением команд заранее</li></ul>
+        </aside>
+      </div>
     </section>
 
-    <section class="section faq-section corporate-faq" id="questions" aria-labelledby="faq-title">
-      <div class="shell"><div class="section-heading centered"><h2 id="faq-title">Частые вопросы</h2></div><div class="faq-grid">
-        <div class="faq-column">
-          <details name="corporate-questions"><summary>Какие формы оплат есть?<span aria-hidden="true">+</span></summary><p>Мы принимаем оплату на ИП с физических и юридических лиц. По карточке или переводом. Предоставляем все закрывающие документы. Также доступна оплата за рубежом.</p></details>
-          <details name="corporate-questions"><summary>Есть договор?<span aria-hidden="true">+</span></summary><p>Да, мы заключаем договор на проведение мероприятия.</p></details>
-          <details name="corporate-questions"><summary>Есть ли возможность брендировать и кастомизировать игру?<span aria-hidden="true">+</span></summary><p>Да, мы можем адаптировать игру под заказчика. Например, поменять названия персонажей на ваших сотрудников, добавить ваш офис на карту города и так далее. Обсуждается отдельно и подстраивается под конкретного клиента.</p></details>
-          <details name="corporate-questions"><summary>Как сотрудники разбиваются на команды?<span aria-hidden="true">+</span></summary><p>Мы можем разбить сотрудников на команды случайным образом, либо вы нам передаете списки команд, в которых сотрудники хотят играть.</p></details>
-          <details name="corporate-questions"><summary>Это похоже на квиз?<span aria-hidden="true">+</span></summary><p>Нет, это не похоже на квиз, это больше похоже на цифровую настольную игру.</p></details>
+    <section class="section faq-section" id="questions" aria-labelledby="faq-title">
+      <div class="shell"><div class="section-heading centered"><h2 id="faq-title">Ответы для организатора</h2></div>
+        <div class="faq-grid">
+          <details><summary>С какого возраста можно участвовать?<span aria-hidden="true">+</span></summary><p>Игра рассчитана на участников от 16 лет.</p></details>
+          <details><summary>Нужен ли ведущий?<span aria-hidden="true">+</span></summary><p>Нет. Участники сами выбирают адреса, изучают материалы, строят версии и отвечают на вопросы дела.</p></details>
+          <details><summary>Как разделить коллег на команды?<span aria-hidden="true">+</span></summary><p>Коллеги могут распределиться сами, или мы поможем сделать это заранее. Рекомендуем по 2–5 человек в команде.</p></details>
+          <details><summary>Сколько времени занимает игра?<span aria-hidden="true">+</span></summary><p>На расследование отводится 120 минут чистого игрового времени.</p></details>
+          <details><summary>Чем отличаются онлайн и офлайн?<span aria-hidden="true">+</span></summary><p>В онлайне каждый участник играет со своего устройства. В офлайне коллеги собираются вместе. Дело и механика игры одинаковые.</p></details>
+          <details><summary>Есть договор и закрывающие документы?<span aria-hidden="true">+</span></summary><p>Да, для корпоративного заказа предоставляем договор и закрывающие документы.</p></details>
+          <details><summary>Можно адаптировать игру под компанию?<span aria-hidden="true">+</span></summary><p>Да, предлагаем кастомизацию. Расскажите о пожеланиях — согласуем объём изменений и условия.</p></details>
+          <details><summary>За сколько дней нужно заказать?<span aria-hidden="true">+</span></summary><p>Минимум за 5 рабочих дней. Возможность срочного проведения нужно уточнить отдельно в @detectum.</p></details>
+          <details><summary>Кто готовит площадку для офлайна?<span aria-hidden="true">+</span></summary><p>Площадку и устройства предоставляет заказчик.</p></details>
         </div>
-        <div class="faq-column">
-          <details name="corporate-questions"><summary>Можно попробовать игру до покупки?<span aria-hidden="true">+</span></summary><p>Да, пробная версия игры доступна бесплатно для всех.</p></details>
-          <details name="corporate-questions"><summary>Что нужно для игры?<span aria-hidden="true">+</span></summary><p>Ничего устанавливать не нужно, играть можно прямо в браузере.</p></details>
-          <details name="corporate-questions"><summary>Есть ли ограничение по количеству людей?<span aria-hidden="true">+</span></summary><p>Мы можем проводить игры до 500 человек без ограничений. Условия для большего количества людей оговариваются отдельно.</p></details>
-          <details name="corporate-questions"><summary>Есть ли скидки?<span aria-hidden="true">+</span></summary><p>Да, мы предоставляем скидки при оплате нескольких игр.</p></details>
-        </div>
-      </div></div>
+      </div>
     </section>
   </main>
-
-  <footer class="site-footer"><div class="shell footer-inner"><a class="brand" href="/" aria-label="Детектум — главная">ДЕТЕКТУМ</a><p>Командная детективная игра</p><a href="/">С друзьями</a></div></footer>
+  <footer class="site-footer"><div class="shell footer-inner"><a class="brand" href="/" aria-label="Детектум — главная">ДЕТЕКТУМ</a><p>Командная детективная игра · 16+</p><a href="/">С друзьями</a><a href="https://t.me/detectum" target="_blank" rel="noopener noreferrer">Telegram</a><a href="/privacy.html">Конфиденциальность</a><a href="/login">Войти в игру</a></div></footer>
 </body>
 </html>

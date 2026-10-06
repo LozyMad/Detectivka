@@ -33,6 +33,7 @@ const choiceRoutes = require('./routes/choices');
 const nuclearRoutes = require('./routes/nuclear');
 const internetCafeRoutes = require('./routes/internetCafe');
 const applicationRoutes = require('./routes/applications');
+const enquiryRoutes = require('./routes/enquiries');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -159,6 +160,8 @@ app.use(express.static(path.join(__dirname, '../frontend'), {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
+app.use('/api/enquiries', enquiryRoutes.publicRouter);
+app.use('/api/admin/enquiries', enquiryRoutes.adminRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/questions', questionRoutes); // Админские вопросы
 app.use('/api/super-admin', superAdminRoutes);

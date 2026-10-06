@@ -111,3 +111,22 @@ Thumbs.db
 
 # Private deployment bundles (database copies, uploads and production secrets)
 deploy/beget/private/
+
+# Local checkouts, network captures, database snapshots and export bundles
+/tmp/
+/output/*
+
+# Reusable artwork sources, generation scripts and site design deliverables
+!/output/board-concepts-20261006-v1/
+!/output/board-concepts-20261006-v2/
+!/output/board-concepts-20261006-v3/
+!/output/board-textures-v2/
+!/output/board-textures-v5/
+!/output/corporate-process-20261004/
+!/output/corporate-process-20261005/
+!/output/corporate-redesign-20261004/
+!/output/imagegen/
+!/output/site-redesign-20261004/
+!/output/site-strategy-20261004/
+/output/**/preview-state*.json
+/output/**/*.zip
