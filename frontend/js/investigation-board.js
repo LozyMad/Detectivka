@@ -62,12 +62,13 @@
       ...state.notes.map(note => Number(note.x) + 450));
     state.height = Math.max(1600, Math.ceil(viewportHeight / state.zoom) + 1,
       ...state.notes.map(note => Number(note.y) + 420));
-    $('boardCanvas').style.width = `${state.width}px`;
-    $('boardCanvas').style.height = `${state.height}px`;
-    // Layout zoom paints text at the displayed size instead of resampling a scaled layer.
-    $('boardCanvas').style.zoom = String(state.zoom);
-    $('boardCanvas').style.transform = '';
+    $('boardCanvas').style.width = `${state.width * state.zoom}px`;
+    $('boardCanvas').style.height = `${state.height * state.zoom}px`;
+    // Render at screen size: iPad Safari can ignore CSS zoom for explicitly styled text.
+    // No scaled compositing layer is needed, so small text and cork remain sharp.
     $('boardCanvas').style.setProperty('--board-zoom', state.zoom);
+    $('boardCanvas').style.setProperty('--board-title-size', `${Math.min(20, Math.max(18, 10 / state.zoom)) * state.zoom}px`);
+    $('boardCanvas').style.setProperty('--board-comment-size', `${Math.min(15, Math.max(14, 9 / state.zoom)) * state.zoom}px`);
     $('boardScaleShell').style.width = `${state.width * state.zoom}px`;
     $('boardScaleShell').style.height = `${state.height * state.zoom}px`;
     $('boardZoomLabel').textContent = `${Math.round(state.zoom * 100)}%`;
@@ -90,6 +91,8 @@
     }
   }
 
+  const scaledLength = value => `calc(${Number(value)}px * var(--board-zoom, 1))`;
+
   function renderNotes() {
     if (!state.notes.length) {
       $('boardNotes').innerHTML = '<div class="board-empty">Доска пока пуста.<br>Создайте стикер или прикрепите место из игры.</div>';
@@ -100,7 +103,7 @@
       return `<article class="investigation-note ${state.pendingLink === Number(note.id) ? 'is-connecting' : ''}"
         data-id="${Number(note.id)}" data-color="${paperColor(note.color)}" tabindex="0" role="button"
         aria-label="Выбрать стикер: ${escape(note.title)}" aria-pressed="${state.pendingLink === Number(note.id)}"
-        style="left:${Number(note.x)}px;top:${Number(note.y)}px;--note-tilt:${tilt}deg">
+        style="left:${scaledLength(note.x)};top:${scaledLength(note.y)};--note-tilt:${tilt}deg">
           <button type="button" class="board-note-edit" title="Редактировать стикер" aria-label="Редактировать стикер: ${escape(note.title)}">⋯</button>
           <span class="board-note-body">
             <strong class="board-note-title">${escape(note.title)}</strong>
@@ -114,7 +117,7 @@
   function renderFasteners() {
     $('boardFasteners').innerHTML = state.notes.map(note =>
       `<span id="boardFastener${Number(note.id)}" class="board-note-fastener" data-note-id="${Number(note.id)}"
-        data-color="${paperColor(note.color)}" style="left:${Number(note.x)}px;top:${Number(note.y)}px;--note-tilt:${noteTilt(note.id)}deg"></span>`
+        data-color="${paperColor(note.color)}" style="left:${scaledLength(note.x)};top:${scaledLength(note.y)};--note-tilt:${noteTilt(note.id)}deg"></span>`
     ).join('');
   }
 
@@ -123,7 +126,7 @@
     const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
     return `<button type="button" class="board-thread-segment" data-link-id="${Number(linkId)}"
       aria-label="Удалить нить" title="Нажмите, чтобы удалить нить"
-      style="left:${x1}px;top:${y1 - 12}px;width:${length}px;transform:rotate(${angle}deg)"></button>`;
+      style="left:${scaledLength(x1)};top:${scaledLength(y1 - 12)};width:${scaledLength(length)};transform:rotate(${angle}deg)"></button>`;
   }
 
   function threadPoints(a, b) {
@@ -158,8 +161,8 @@
   function moveThreads(noteId) {
     const note = noteById(noteId), fastener = $(`boardFastener${noteId}`);
     if (note && fastener) {
-      fastener.style.left = `${Number(note.x)}px`;
-      fastener.style.top = `${Number(note.y)}px`;
+      fastener.style.left = scaledLength(note.x);
+      fastener.style.top = scaledLength(note.y);
     }
     for (const link of state.links) {
       if (Number(link.note_a) !== noteId && Number(link.note_b) !== noteId) continue;
@@ -169,9 +172,9 @@
       const points = threadPoints(a, b);
       elements.forEach((element, index) => {
         const start = points[index], end = points[index + 1];
-        element.style.left = `${start.x}px`;
-        element.style.top = `${start.y - 12}px`;
-        element.style.width = `${Math.hypot(end.x - start.x, end.y - start.y)}px`;
+        element.style.left = scaledLength(start.x);
+        element.style.top = scaledLength(start.y - 12);
+        element.style.width = scaledLength(Math.hypot(end.x - start.x, end.y - start.y));
         element.style.transform = `rotate(${Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI}deg)`;
       });
     }
@@ -477,7 +480,7 @@
     function paintNote() {
       if (!gesture?.note || !gesture.moved) return;
       const { note, element, noteX, noteY } = gesture;
-      element.style.transform = `translate3d(${note.x - noteX}px, ${note.y - noteY}px, 0) rotate(var(--note-tilt))`;
+      element.style.transform = `translate3d(${(note.x - noteX) * state.zoom}px, ${(note.y - noteY) * state.zoom}px, 0) rotate(var(--note-tilt))`;
       // Grow the cork only when needed, rather than forcing board layout on every move.
       if (Number(note.x) + 450 > state.width || Number(note.y) + 420 > state.height) updateDimensions();
       moveThreads(Number(note.id));
@@ -581,8 +584,8 @@
         if (cancelled) restoreNote();
         else if (completed?.note && completed.moved) {
           flushNoteFrame();
-          completed.element.style.left = `${completed.note.x}px`;
-          completed.element.style.top = `${completed.note.y}px`;
+          completed.element.style.left = scaledLength(completed.note.x);
+          completed.element.style.top = scaledLength(completed.note.y);
           completed.element.style.transform = '';
           updateDimensions();
         }

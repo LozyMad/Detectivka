@@ -1,6 +1,62 @@
 /* Player case board. The fine grain is drawn in CSS so the layout needs no extra image asset. */
 body.game-container > .container.mt-3 { margin-top: 0 !important; }
 .player-mobile-toolbar { display: none; }
+.player-bottom-nav { display: none; }
+.player-nav-icon { width: 17px; height: 17px; margin-right: 6px; vertical-align: -3px; }
+/* The same four controls become a fixed bottom bar on phones and touch tablets. */
+body.game-container.has-bottom-nav { padding-bottom: var(--player-bottom-nav-height, 64px); }
+body.has-bottom-nav #playerBottomNav {
+    --bottom-nav-surface: #f4eddf;
+    --bottom-nav-text: #6b6355;
+    --bottom-nav-active: #806224;
+    display: block;
+    position: fixed;
+    z-index: 1030;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0 max(6px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(6px, env(safe-area-inset-left));
+    background: var(--bottom-nav-surface);
+    border-top: 1px solid #a991623d;
+    box-shadow: 0 -4px 18px #00000014;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+html.theme-dark body.has-bottom-nav #playerBottomNav {
+    --bottom-nav-surface: #191f1c;
+    --bottom-nav-text: #a7ada7;
+    --bottom-nav-active: #e3bf70;
+}
+body.board-open #playerBottomNav { z-index: 2300; }
+#playerBottomNav #playerNavTabs { display: block !important; width: 100%; margin: 0 !important; }
+#playerBottomNav .btn-group { display: flex; width: 100%; margin: 0; }
+body.game-container #playerBottomNav .btn {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 64px;
+    margin: 0 !important;
+    padding: 7px 2px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--bottom-nav-text) !important;
+    font: 500 11px/1.2 Arial, sans-serif !important;
+    white-space: nowrap;
+    box-shadow: none !important;
+    touch-action: manipulation;
+}
+#playerBottomNav .player-nav-icon { display: block; width: 24px; height: 24px; margin: 0; }
+#playerBottomNav .board-nav-full-label { display: none; }
+#playerBottomNav .board-nav-short-label { display: block; }
+body.game-container #playerBottomNav .btn.active { color: var(--bottom-nav-active) !important; font-weight: 700 !important; }
+#playerBottomNav .btn.active::before { content: ''; position: absolute; top: 0; width: 26px; height: 2px; border-radius: 0 0 2px 2px; background: currentColor; }
+body.game-container #playerBottomNav .btn:focus-visible { outline: 2px solid var(--bottom-nav-active); outline-offset: -5px; }
 body.game-container #questions, body.game-container #addressbook { padding-top: 1rem; }
 #game {
     --board-ink: #242927;

@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Детектум - Игра</title>
     <script src="js/theme.js?v=2"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -383,8 +383,8 @@
     </style>
     <link href="css/design-system.css?v=5" rel="stylesheet">
     <link href="css/dark-interface.css?v=2" rel="stylesheet">
-    <link href="css/game-dossier.css?v=13" rel="stylesheet">
-    <link href="css/investigation-board.css?v=27" rel="stylesheet">
+    <link href="css/game-dossier.css?v=14" rel="stylesheet">
+    <link href="css/investigation-board.css?v=28" rel="stylesheet">
 </head>
 <body class="game-container">
     <nav class="navbar navbar-dark bg-dark" id="gameNavbar">
@@ -406,18 +406,18 @@
                     </div>
                     <!-- Центральная часть: кнопки навигации -->
                     <div class="d-flex align-items-center" id="playerNavTabs">
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-outline-light active" id="game-tab" type="button">
-                                <i class="fas fa-map-marker-alt me-2"></i>Игра
+                        <div class="btn-group" role="group" aria-label="Разделы игры">
+                            <button class="btn btn-outline-light active" id="game-tab" type="button" aria-controls="game" aria-current="page">
+                                <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Z"/><path d="M9 3v16M15 5v16"/></svg><span class="player-nav-label">Игра</span>
                             </button>
-                            <button class="btn btn-outline-light" id="questions-tab" type="button">
-                                <i class="fas fa-question-circle me-2"></i>Вопросы
+                            <button class="btn btn-outline-light" id="questions-tab" type="button" aria-controls="questions">
+                                <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11a9 9 0 0 1-9 9H4l-2 2V11a9 9 0 0 1 19 0Z"/><path d="M9.5 8a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 15h.01"/></svg><span class="player-nav-label">Вопросы</span>
                             </button>
-                            <button class="btn btn-outline-light" id="addressbook-tab" type="button" aria-label="Адресная книга" title="Адресная книга">
-                                <i class="fas fa-book me-2"></i><span class="board-nav-full-label">Адресная книга</span><span class="board-nav-short-label" aria-hidden="true">Адреса</span>
+                            <button class="btn btn-outline-light" id="addressbook-tab" type="button" aria-controls="addressbook" aria-label="Адресная книга" title="Адресная книга">
+                                <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M3 7h4M3 12h4M3 17h4"/><circle cx="13" cy="9" r="2"/><path d="M9.5 16a3.5 3.5 0 0 1 7 0"/></svg><span class="board-nav-full-label">Адресная книга</span><span class="board-nav-short-label" aria-hidden="true">Адреса</span>
                             </button>
-                            <button class="btn btn-outline-light" id="board-tab" type="button" aria-label="Доска расследования" title="Доска расследования">
-                                <i class="fas fa-thumbtack me-2"></i><span class="board-nav-full-label">Доска расследования</span><span class="board-nav-short-label" aria-hidden="true">Доска</span>
+                            <button class="btn btn-outline-light" id="board-tab" type="button" aria-controls="board" aria-label="Доска расследования" title="Доска расследования">
+                                <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m8 9 8 6"/><rect x="5" y="7" width="5" height="5" rx=".7"/><rect x="14" y="13" width="5" height="4" rx=".7"/></svg><span class="board-nav-full-label">Доска расследования</span><span class="board-nav-short-label" aria-hidden="true">Доска</span>
                             </button>
                         </div>
                     </div>
@@ -442,7 +442,8 @@
         </div>
     </nav>
 
-    <div class="player-mobile-toolbar" id="playerMobileToolbar" aria-label="Навигация и состояние игры"></div>
+    <div class="player-mobile-toolbar" id="playerMobileToolbar" aria-label="Состояние игры"></div>
+    <nav class="player-bottom-nav" id="playerBottomNav" aria-label="Разделы игры"></nav>
 
     <div class="container mt-3">
         <div class="tab-content" id="gameTabContent">
@@ -725,8 +726,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/no-copy.js?v=1"></script>
     <script src="js/game-network.js?v=1"></script>
-    <script src="js/game.js?v=35&t=20261003&encoding=fixed"></script>
-    <script src="js/investigation-board.js?v=19"></script>
+    <script src="js/game.js?v=36&t=20261006&encoding=fixed"></script>
+    <script src="js/investigation-board.js?v=20"></script>
     <script src="js/persist-inputs.js"></script>
 </body>
 </html>

@@ -193,6 +193,8 @@ app.get('/game-login', (req, res) => {
 });
 
 app.get('/game', (req, res) => {
+  // Load the current stylesheet/controller revisions after each deployment.
+  res.setHeader('Cache-Control', 'no-store');
   res.sendFile(path.join(__dirname, '../frontend/game.html'));
 });
 

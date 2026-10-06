@@ -110,7 +110,7 @@ async function test() {
   assert.equal(frames.size, 1, 'multiple moves paint once in the next frame');
   assert.equal(a.style.left, undefined, 'dragging does not change layout position on each move');
   paintFrame();
-  assert.equal(a.style.transform, 'translate3d(120px, 60px, 0) rotate(var(--note-tilt))');
+  assert.equal(a.style.transform, 'translate3d(60px, 30px, 0) rotate(var(--note-tilt))');
   assert.equal(threads.htmlWrites, threadWrites, 'dragging preserves existing thread DOM');
   assert.equal(threads.querySelectorAll('.board-thread-segment')[0], segments[0]);
   assert.ok(segments[0].style.transform, 'the existing thread follows the moving note');
@@ -119,8 +119,8 @@ async function test() {
   await pointer('pointerup', 1, 160, 230, a);
   assert.equal(board.state.notes[0].x, 1090);
   assert.equal(board.state.notes[0].y, 670);
-  assert.equal(a.style.left, '1090px');
-  assert.equal(a.style.top, '670px');
+  assert.equal(a.style.left, 'calc(1090px * var(--board-zoom, 1))');
+  assert.equal(a.style.top, 'calc(670px * var(--board-zoom, 1))');
   assert.equal(a.style.transform, '');
   assert.equal(frames.size, 0);
   assert.equal(requests.filter(r => r.url.endsWith('/position')).length, 1);
@@ -200,12 +200,12 @@ async function test() {
   paintFrame();
   assert.equal(board.state.notes[0].x, fastenerStartX + 50);
   assert.equal(board.state.notes[0].y, fastenerStartY + 20);
-  assert.equal(element('boardFastener10').style.left, `${board.state.notes[0].x}px`);
-  assert.equal(element('boardFastener10').style.top, `${board.state.notes[0].y}px`);
-  assert.ok(a.style.transform.includes('translate3d(50px, 20px, 0)'));
+  assert.equal(element('boardFastener10').style.left, `calc(${board.state.notes[0].x}px * var(--board-zoom, 1))`);
+  assert.equal(element('boardFastener10').style.top, `calc(${board.state.notes[0].y}px * var(--board-zoom, 1))`);
+  assert.ok(a.style.transform.includes('translate3d(20px, 8px, 0)'));
   await pointer('pointerup', 1, 120, 208, fastenerTarget);
-  assert.equal(a.style.left, `${board.state.notes[0].x}px`);
-  assert.equal(a.style.top, `${board.state.notes[0].y}px`);
+  assert.equal(a.style.left, `calc(${board.state.notes[0].x}px * var(--board-zoom, 1))`);
+  assert.equal(a.style.top, `calc(${board.state.notes[0].y}px * var(--board-zoom, 1))`);
   await tap(fastenerTarget);
   assert.equal(board.state.pendingLink, 10, 'a pushpin tap selects its note');
   await tap(fastenerTarget);

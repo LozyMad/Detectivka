@@ -58,6 +58,7 @@ function setScenarioBanner(scenarioId) {
 
 function setupMobileGameLayout() {
     const toolbar = document.getElementById('playerMobileToolbar');
+    const bottomNav = document.getElementById('playerBottomNav');
     const collapse = document.getElementById('navbarCollapse');
     const tabs = document.getElementById('playerNavTabs');
     const stats = document.getElementById('playerNavStats');
@@ -68,7 +69,7 @@ function setupMobileGameLayout() {
     const boardAccount = document.getElementById('boardAccount');
     const boardMenu = document.getElementById('boardAccountMenu');
     const sidebar = document.querySelector('.dossier-sidebar');
-    if (!toolbar || !collapse || !tabs || !stats || !sidebar) return;
+    if (!toolbar || !bottomNav || !collapse || !tabs || !stats || !sidebar) return;
 
     const tabHome = tabs.parentElement;
     const statHome = stats.parentElement;
@@ -78,6 +79,7 @@ function setupMobileGameLayout() {
     const controlsHome = controls?.parentElement;
     const timerHome = timer?.parentElement;
     const mobile = window.matchMedia('(max-width: 767.98px)');
+    const bottomNavigation = window.matchMedia('(max-width: 1279.98px), (hover: none) and (pointer: coarse)');
     const desktopBoard = window.matchMedia('(min-width: 768px) and (min-height: 501px), (min-width: 951px)');
     const landscapeBoard = window.matchMedia('(orientation: landscape) and (max-height: 900px) and (max-width: 1279.98px)');
     const narrowLandscape = window.matchMedia('(max-width: 740px)');
@@ -87,20 +89,22 @@ function setupMobileGameLayout() {
         statHome.prepend(stats);
         if (timer && timerHome) timerHome.prepend(timer);
         tabHome.insertBefore(tabs, statHome);
-        const combined = document.body.classList.contains('board-open') && (desktopBoard.matches || landscapeBoard.matches) &&
+        const combined = document.body.classList.contains('board-open') && (bottomNavigation.matches || desktopBoard.matches || landscapeBoard.matches) &&
             !!(controls && timer && boardNav && boardTimer && boardMenu);
+        document.body.classList.toggle('has-bottom-nav', bottomNavigation.matches);
         document.body.classList.toggle('board-desktop-header', combined);
         document.body.classList.toggle('board-landscape-header', combined && landscapeBoard.matches);
+        document.body.classList.toggle('board-touch-header', combined && bottomNavigation.matches);
         if (boardAccount) boardAccount.open = false;
         if (combined) {
-            boardNav.append(tabs);
+            if (!bottomNavigation.matches) boardNav.append(tabs);
             // On smaller landscape phones the live timer remains accessible in the account menu.
             if (!landscapeBoard.matches || !narrowLandscape.matches) boardTimer.append(timer);
             boardMenu.append(controls);
             sidebarHome.append(sidebar);
             toolbarHome.insertBefore(toolbar, toolbarNext);
         } else if (mobile.matches) {
-            toolbar.append(tabs, stats);
+            toolbar.append(stats);
             const activePane = document.querySelector('#gameTabContent .tab-pane.active') || document.getElementById('game');
             placeMobileToolbar(activePane);
             collapse.append(sidebar);
@@ -110,15 +114,22 @@ function setupMobileGameLayout() {
             sidebarHome.append(sidebar);
             toolbarHome.insertBefore(toolbar, toolbarNext);
         }
+        // Keep the original buttons, their listeners and unique IDs across all four views.
+        if (bottomNavigation.matches) bottomNav.append(tabs);
+        updateBottomNavHeight();
         const navbar = document.getElementById('gameNavbar');
         if (navbar) document.body.style.setProperty('--board-nav-height', `${navbar.offsetHeight}px`);
     };
+    function updateBottomNavHeight() {
+        document.body.style.setProperty('--player-bottom-nav-height', `${bottomNavigation.matches ? bottomNav.offsetHeight : 0}px`);
+    }
     arrangePlayerNavigation = arrange;
     arrange();
-    for (const media of [mobile, desktopBoard, landscapeBoard, narrowLandscape]) {
+    for (const media of [mobile, bottomNavigation, desktopBoard, landscapeBoard, narrowLandscape]) {
         if (media.addEventListener) media.addEventListener('change', arrange);
         else media.addListener(arrange);
     }
+    new ResizeObserver(updateBottomNavHeight).observe(bottomNav);
     boardAccount?.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
             event.stopPropagation();
@@ -1013,6 +1024,8 @@ function setupTabSwitching() {
             if (!btn) return;
             const panes = [gameContent, questionsContent, addressbookContent, boardContent];
             btn.classList.toggle('active', panes[i] === pane);
+            if (panes[i] === pane) btn.setAttribute('aria-current', 'page');
+            else btn.removeAttribute('aria-current');
         });
         document.body.classList.toggle('board-open', pane === boardContent);
         arrangePlayerNavigation();
