@@ -9,9 +9,11 @@
     (palette.some(([value]) => value === color) ? color : 'yellow'));
   const noteTilt = id => ((Number(id) * 7) % 7 - 3) * .45;
   const state = { notes: [], links: [], zoom: 1, width: 2400, height: 1600,
-    pendingLink: null, connecting: false, editing: null, trip: null, free: false, centred: false, statusTimer: null, revision: 0 };
+    pendingLink: null, connecting: false, editing: null, trip: null, free: false, centred: false, fitView: false, statusTimer: null, revision: 0 };
   let loadPromise = null;
   let positionDrain = null;
+  let viewportSize = null;
+  let resizeFitFrame = null;
   const pendingPositions = new Map();
   const defaultHint = 'Нажмите на два стикера, чтобы создать или убрать нить. Перетаскивайте стикеры и приближайте доску.';
   const threadSegments = new Map();
@@ -69,6 +71,23 @@
     $('boardScaleShell').style.width = `${state.width * state.zoom}px`;
     $('boardScaleShell').style.height = `${state.height * state.zoom}px`;
     $('boardZoomLabel').textContent = `${Math.round(state.zoom * 100)}%`;
+    // Keep the same board point in view when tablet rotation or the toolbar changes its size.
+    // Ignore the hidden tab: a zero-sized viewport must not replace its previous geometry.
+    if (viewportWidth && viewportHeight) {
+      const resized = viewportSize && (viewportSize.width !== viewportWidth || viewportSize.height !== viewportHeight);
+      if (viewportSize) {
+        viewport.scrollLeft += (viewportSize.width - viewportWidth) / 2;
+        viewport.scrollTop += (viewportSize.height - viewportHeight) / 2;
+      }
+      viewportSize = { width: viewportWidth, height: viewportHeight };
+      // An overview still shows every note after rotation; a manually zoomed view keeps its center.
+      if (resized && state.fitView && resizeFitFrame === null) {
+        resizeFitFrame = requestAnimationFrame(() => {
+          resizeFitFrame = null;
+          if (state.fitView && viewport.clientWidth && viewport.clientHeight) fitNotes();
+        });
+      }
+    }
   }
 
   function renderNotes() {
@@ -228,13 +247,14 @@
     }
     changeZoom(zoom);
     centerOn();
+    state.fitView = true;
   }
 
   async function show(focusId) {
     try {
       await load();
       requestAnimationFrame(() => {
-        if (focusId) centerOn(noteById(focusId));
+        if (focusId) { state.fitView = false; centerOn(noteById(focusId)); }
         else if (!state.centred) fitNotes();
         state.centred = true;
       });
@@ -429,6 +449,7 @@
   }
 
   function changeZoom(next, pointer) {
+    state.fitView = false;
     const viewport = $('boardViewport');
     const old = state.zoom;
     state.zoom = Math.max(.4, Math.min(2.5, Math.round(next * 100) / 100));
@@ -484,6 +505,7 @@
       render();
     }
     function beginPinch() {
+      state.fitView = false;
       // A second finger cancels the tentative sticker drag, including its save.
       restoreNote();
       const { center, distance } = pair();
@@ -527,6 +549,7 @@
         gesture.element.classList.add('is-dragging');
       }
       gesture.moved = true;
+      state.fitView = false;
       if (gesture.note) {
         const note = gesture.note;
         note.x = Math.min(20000, Math.max(0, Math.round(gesture.noteX + dx / gesture.zoom)));

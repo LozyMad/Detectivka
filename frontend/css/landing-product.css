@@ -71,7 +71,7 @@ html { scroll-behavior: auto; }
 .board-demo-controls button span { color: #e2a36e; font-weight: 800; }
 .board-demo-controls button[aria-pressed="true"] { background: #513521; border-color: #dfad7c; color: #fff0d9; }
 .board-demo-controls button:hover { border-color: #dfad7c; }
-.board-demo-frame { border: 20px solid #392519; border-image: url('../assets/board/walnut-frame-v5.webp') 10% / 20px / 0 stretch; box-shadow: 0 16px 38px #0007; }
+.board-demo-frame { border: 20px solid #392519; border-image: url('../assets/board/walnut-frame-v5.webp') 114 114 122 114 / 20px / 0 stretch; box-shadow: 0 16px 38px #0007; }
 .board-demo-canvas { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 6px; padding: 16px 20px 24px; background: #4d392b url('../assets/board/dark-cork-surface-v5.webp') left top repeat; background-size: calc(768px / var(--board-pixel-ratio, 1)) calc(512px / var(--board-pixel-ratio, 1)); isolation: isolate; }
 .board-demo-note { position: relative; z-index: 1; aspect-ratio: 1; padding: 25% 14% 13%; background: var(--demo-note) center / 100% 100% no-repeat; filter: drop-shadow(3px 5px 5px #3a230b65); color: #241f16; transform: rotate(-1deg); }
 .board-demo-note:nth-of-type(2) { margin-top: 24px; transform: rotate(1.5deg); }

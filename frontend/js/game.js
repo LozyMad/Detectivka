@@ -79,7 +79,7 @@ function setupMobileGameLayout() {
     const timerHome = timer?.parentElement;
     const mobile = window.matchMedia('(max-width: 767.98px)');
     const desktopBoard = window.matchMedia('(min-width: 768px) and (min-height: 501px), (min-width: 951px)');
-    const landscapeBoard = window.matchMedia('(orientation: landscape) and (max-height: 500px) and (max-width: 1100px)');
+    const landscapeBoard = window.matchMedia('(orientation: landscape) and (max-height: 900px) and (max-width: 1279.98px)');
     const narrowLandscape = window.matchMedia('(max-width: 740px)');
     const arrange = () => {
         // Move the existing controls so timers, active tabs and click handlers stay in sync.

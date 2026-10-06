@@ -12,15 +12,21 @@ The live board paints the cork on the same canvas as its notes, pins and threads
 zooming move the grain with the attachment points. CSS layout zoom preserves sharp overview
 text, while a repeated texture fills growing canvas bounds without stretching the source.
 The wooden frame stays around the viewport. Public demos use the same cork and frame assets.
-`walnut-frame-v5.webp` preserves a transparent opening and is rendered as a 10% nine-slice border.
+`walnut-frame-v5.webp` preserves a transparent opening and uses the measured pixel slices
+`114 114 122 114` (top/right/bottom/left) for its 1254px nine-slice border. A 10% slice includes
+transparent inner pixels and leaves a visible gap between the wood and the moving cork.
 The original `note-{yellow,pink,blue,green,purple}-pinned.webp` files supplied by the user are reused
 without re-encoding or changing their contents, including their original red pushpins.
 Live notes, edit dialogs and public board demos all use these restored images.
 
 Paper stays below threads, with a cropped pushpin layer above threads. The layer forwards taps
 and drags to the corresponding note. The existing red-thread.opt.webp and thread appearance remain
-unchanged. Thread endpoints still meet the original pin bases. Text retains the layout-zoom fix
-and minimum displayed sizes in the overview.
+unchanged. Thread endpoints still meet the original pin bases. Text uses layout zoom and a bounded
+overview boost: titles are 18–20px, addresses 12px and comments 14–15px in board coordinates.
+Mobile text autosizing stays at 100%. Titles/address lines and comment excerpts have explicit
+line limits, so the paper body never compresses a heading or cuts a line halfway through.
+Landscape tablets use the compact game toolbar. Rotation refits an overview, while a manual
+zoom or pan keeps the board point at the viewport center (subject to the canvas edges).
 Generated sources: `output/board-textures-v5/source/`.
 Prompts and asset paths: `docs/board-cork-frame-v5.json`.
 Conversion, alpha checks and reused-image hashes: `output/board-textures-v5/prepare-assets.cjs`

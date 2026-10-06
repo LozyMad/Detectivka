@@ -31,13 +31,13 @@ class Element {
 }
 
 async function test() {
-  const elements = new Map(), requests = [], frames = new Map();
+  const elements = new Map(), requests = [], frames = new Map(), windowEvents = new Map();
   let frameId = 0, failDelete = false;
   const paintFrame = () => { const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback()); };
   const element = id => { if (!elements.has(id)) elements.set(id, new Element(id)); return elements.get(id); };
   const sandbox = {
     document: { getElementById: element, addEventListener() {}, querySelector: () => null },
-    window: { addEventListener() {} }, gameStorage: { getItem: () => 'test' },
+    window: { addEventListener(name, callback) { windowEvents.set(name, callback); } }, gameStorage: { getItem: () => 'test' },
     ResizeObserver: class { observe() {} }, setTimeout: () => 0, clearTimeout() {},
     requestAnimationFrame: callback => { frames.set(++frameId, callback); return frameId; },
     cancelAnimationFrame: id => frames.delete(id), alert: () => {},
@@ -166,6 +166,31 @@ async function test() {
   assert.equal(board.state.zoom, .4);
   assert.ok(board.state.width * .4 >= viewport.offsetWidth);
   assert.ok(board.state.height * .4 >= viewport.offsetHeight);
+  // Rotation keeps the board point at the center of a manually positioned view.
+  viewport.scrollLeft = 350; viewport.scrollTop = 120;
+  const centeredPoint = [(350 + viewport.offsetWidth / 2) / board.state.zoom,
+    (120 + viewport.offsetHeight / 2) / board.state.zoom];
+  viewport.clientWidth = 800; viewport.clientHeight = 300;
+  viewport.offsetWidth = 816; viewport.offsetHeight = 316;
+  windowEvents.get('resize')();
+  assert.equal((viewport.scrollLeft + viewport.offsetWidth / 2) / board.state.zoom, centeredPoint[0]);
+  assert.equal((viewport.scrollTop + viewport.offsetHeight / 2) / board.state.zoom, centeredPoint[1]);
+  assert.equal(board.state.zoom, .4, 'rotation preserves a manually selected zoom');
+  // In overview mode, rotation refits all papers instead of cutting the top/bottom notes off.
+  await element('boardZoomReset').emit('click', {});
+  viewport.clientWidth = 356; viewport.clientHeight = 620;
+  viewport.offsetWidth = 372; viewport.offsetHeight = 636;
+  windowEvents.get('resize')();
+  paintFrame();
+  for (const note of board.state.notes) {
+    assert.ok(note.x * board.state.zoom - viewport.scrollLeft >= 0);
+    assert.ok((note.x + 300) * board.state.zoom - viewport.scrollLeft <= viewport.clientWidth);
+    assert.ok(note.y * board.state.zoom - viewport.scrollTop >= 0);
+    assert.ok((note.y + 300) * board.state.zoom - viewport.scrollTop <= viewport.clientHeight);
+  }
+  // Resume the gesture checks at the same manually chosen scale.
+  for (let i = 0; i < 4; i++) await element('boardZoomOut').emit('click', {});
+  assert.equal(board.state.zoom, .4);
   // The pushpin overlay routes dragging and taps to its paper and follows the coalesced paint.
   const fastenerTarget = { closest: selector => selector === '.board-note-fastener' ? { dataset: { noteId: '10' } } : null };
   sandbox.document.querySelector = selector => selector === '#boardNotes .investigation-note[data-id="10"]' ? a : null;
@@ -193,6 +218,6 @@ async function test() {
   assert.equal(board.state.notes[0].color, 'orange', 'rendering preserves saved legacy notes');
   assert.equal(board.state.notes[1].color, 'mint');
   assert.match(element('boardFasteners').innerHTML, /class="board-note-fastener"/, 'the cropped pushpins render above threads');
-  console.log('PASS: link toggling, deletion without confirmation, failure recovery, coalesced drag frames, thread reuse, drag/save, pushpin drag/tap, pinch anchor and cancellation');
+  console.log('PASS: link toggling, deletion without confirmation, failure recovery, coalesced drag frames, thread reuse, drag/save, pushpin drag/tap, pinch anchor, rotation, overview refit and cancellation');
 }
 test().catch(error => { console.error(error); process.exitCode = 1; });
