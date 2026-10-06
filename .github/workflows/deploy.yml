@@ -24,12 +24,12 @@ jobs:
       - name: Call deploy webhook on server
         env:
           DEPLOY_SECRET: ${{ secrets.DETEKTUM }}
-          DEPLOY_URL: https://www.detektum.ru/api/deploy
+          DEPLOY_URL: https://detektum.ru/api/deploy
         run: |
           echo "Calling deploy endpoint..."
           RESP=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL" \
             -H "X-Deploy-Secret: $DEPLOY_SECRET" \
-            --connect-timeout 15 --max-time 45) || true
+            --connect-timeout 15 --max-time 180) || true
           BODY=$(echo "$RESP" | head -n -1)
           CODE=$(echo "$RESP" | tail -n 1)
           echo "Response code: $CODE"
@@ -38,7 +38,7 @@ jobs:
             echo "Deploy OK"
           else
             if [ "$CODE" = "000" ]; then
-              echo "::error::Connection failed (000). Check pm2 status, Nginx, HTTPS and DNS for www.detektum.ru."
+              echo "::error::Connection failed (000). Check pm2 status, Nginx, HTTPS and DNS for detektum.ru."
             else
               echo "::error::Deploy failed (code $CODE). Check GitHub secret DETEKTUM matches DEPLOY_SECRET in server .env."
             fi
