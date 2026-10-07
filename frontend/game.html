@@ -384,9 +384,15 @@
     <link href="css/design-system.css?v=5" rel="stylesheet">
     <link href="css/dark-interface.css?v=2" rel="stylesheet">
     <link href="css/game-dossier.css?v=15" rel="stylesheet">
-    <link href="css/investigation-board.css?v=28" rel="stylesheet">
+    <link href="css/investigation-board.css?v=29" rel="stylesheet">
+    <link href="css/game-workspace.css?v=15" rel="stylesheet">
 </head>
 <body class="game-container">
+    <aside id="workspaceRail" class="workspace-rail" aria-label="Навигация расследования">
+        <a class="workspace-brand" href="#game" aria-label="Детектум — журнал расследования"><span class="workspace-monogram">Д</span><span class="workspace-brand-name">Детектум</span></a>
+        <nav id="workspaceNavHost" aria-label="Разделы игры"></nav>
+        <button type="button" id="workspaceRailToggle" class="workspace-rail-toggle" aria-label="Развернуть навигацию" aria-expanded="false" aria-controls="workspaceNavHost"><i class="fas fa-angle-double-right" aria-hidden="true"></i><span>Свернуть меню</span></button>
+    </aside>
     <nav class="navbar navbar-dark bg-dark" id="gameNavbar">
         <div class="container">
             <!-- Мобильная строка: логотип + кнопка сворачивания -->
@@ -408,10 +414,10 @@
                     <div class="d-flex align-items-center" id="playerNavTabs">
                         <div class="btn-group" role="group" aria-label="Разделы игры">
                             <button class="btn btn-outline-light active" id="game-tab" type="button" aria-controls="game" aria-current="page">
-                                <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Z"/><path d="M9 3v16M15 5v16"/></svg><span class="player-nav-label">Игра</span>
+                                <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 12h8M8 17h5"/></svg><span class="player-nav-label">Журнал</span>
                             </button>
                             <button class="btn btn-outline-light" id="questions-tab" type="button" aria-controls="questions">
-                                <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11a9 9 0 0 1-9 9H4l-2 2V11a9 9 0 0 1 19 0Z"/><path d="M9.5 8a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 15h.01"/></svg><span class="player-nav-label">Вопросы</span>
+                                <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11a9 9 0 0 1-9 9H4l-2 2V11a9 9 0 0 1 19 0Z"/><path d="M9.5 8a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 15h.01"/></svg><span class="player-nav-label">Ответы</span>
                             </button>
                             <button class="btn btn-outline-light" id="addressbook-tab" type="button" aria-controls="addressbook" aria-label="Адресная книга" title="Адресная книга">
                                 <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M3 7h4M3 12h4M3 17h4"/><circle cx="13" cy="9" r="2"/><path d="M9.5 16a3.5 3.5 0 0 1 7 0"/></svg><span class="board-nav-full-label">Адресная книга</span><span class="board-nav-short-label" aria-hidden="true">Адреса</span>
@@ -419,8 +425,8 @@
                             <button class="btn btn-outline-light" id="board-tab" type="button" aria-controls="board" aria-label="Доска расследования" title="Доска расследования">
                                 <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m8 9 8 6"/><rect x="5" y="7" width="5" height="5" rx=".7"/><rect x="14" y="13" width="5" height="4" rx=".7"/></svg><span class="board-nav-full-label">Доска расследования</span><span class="board-nav-short-label" aria-hidden="true">Доска</span>
                             </button>
-                            <button class="btn btn-outline-light" id="applications-tab" type="button" aria-controls="applications" aria-label="Приложения" hidden>
-                                <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M7 12h10M7 16h7"/></svg><span class="player-nav-label">Приложения</span><span class="player-nav-compact-label" aria-hidden="true">Файлы</span>
+                            <button class="btn btn-outline-light" id="applications-tab" type="button" aria-controls="applications" aria-label="Материалы дела" hidden>
+                                <svg class="player-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M7 12h10M7 16h7"/></svg><span class="player-nav-label">Материалы</span><span class="player-nav-compact-label" aria-hidden="true">Файлы</span>
                             </button>
                         </div>
                     </div>
@@ -456,38 +462,14 @@
                     <img id="caseBannerImage" class="case-banner-image" alt="" fetchpriority="high" decoding="async" hidden>
                     <div class="case-banner-content">
                         <i class="far fa-file-alt case-banner-icon" aria-hidden="true"></i>
-                        <div><div class="case-overline">ТЕКУЩЕЕ ДЕЛО</div><h1 id="caseTitle">Дело расследуется</h1></div>
+                        <div><div class="case-overline"><span class="case-live-dot" aria-hidden="true"></span> РАССЛЕДОВАНИЕ</div><h1 id="caseTitle">Дело расследуется</h1><p class="case-caption">Каждая поездка приближает к разгадке.</p></div>
                     </div>
                 </section>
                 <div class="dossier-layout">
                     <div class="dossier-main">
-                        <section class="game-card location-search-card" aria-labelledby="locationSearchTitle">
-                            <h2 id="locationSearchTitle">Поиск локации</h2>
-                            <div class="row g-3 align-items-end">
-                                <div class="col-md-5">
-                                    <label for="districtSelect" class="form-label">Район</label>
-                                    <select class="form-select" id="districtSelect">
-                                        <option value="">Выберите район</option>
-                                        <option value="С">С</option><option value="Ю">Ю</option><option value="З">З</option>
-                                        <option value="В">В</option><option value="Ц">Ц</option><option value="П">П</option>
-                                        <option value="СВ">СВ</option><option value="СЗ">СЗ</option>
-                                        <option value="ЮВ">ЮВ</option><option value="ЮЗ">ЮЗ</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="houseNumber" class="form-label">Номер дома</label>
-                                    <input type="text" class="form-control" id="houseNumber" placeholder="Введите номер дома">
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="apartmentNumber" class="form-label">Квартира/Офис</label>
-                                    <input type="text" class="form-control" id="apartmentNumber" placeholder="Необязательно">
-                                </div>
-                            </div>
-                            <button class="btn w-100" id="goBtn" onclick="visitLocation()"><i class="fas fa-car me-2" aria-hidden="true"></i>Поехали!</button>
-                        </section>
                         <section class="trip-history-section" aria-labelledby="tripHistoryTitle">
                             <div class="trip-history-heading">
-                                <h2 id="tripHistoryTitle"><i class="far fa-clock" aria-hidden="true"></i> История поездок</h2>
+                                <h2 id="tripHistoryTitle">Журнал расследования <span id="journalCount" class="workspace-count">0</span></h2>
                                 <label class="visually-hidden" for="tripSearch">Поиск по истории поездок</label>
                                 <input type="search" id="tripSearch" class="form-control" placeholder="Поиск по истории" autocomplete="off">
                             </div>
@@ -496,9 +478,38 @@
                             </div>
                         </section>
                     </div>
+                    <div class="dossier-utilities">
+                        <section class="game-card location-search-card" aria-labelledby="locationSearchTitle">
+                            <div class="workspace-section-overline">СЛЕДУЮЩИЙ ШАГ</div>
+                            <h2 id="locationSearchTitle">Куда отправимся?</h2>
+                            <p class="dispatch-caption">Введите адрес или выберите его в справочнике.</p>
+                            <div id="selectedDestination" class="selected-destination" role="status" hidden></div>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-5">
+                                    <label for="districtSelect" class="form-label">Район</label>
+                                    <select class="form-select" id="districtSelect">
+                                        <option value="">—</option>
+                                        <option value="С">С</option><option value="Ю">Ю</option><option value="З">З</option>
+                                        <option value="В">В</option><option value="Ц">Ц</option><option value="П">П</option>
+                                        <option value="СВ">СВ</option><option value="СЗ">СЗ</option>
+                                        <option value="ЮВ">ЮВ</option><option value="ЮЗ">ЮЗ</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="houseNumber" class="form-label">Номер дома</label>
+                                    <input type="text" class="form-control" id="houseNumber" placeholder="№ дома" autocomplete="off">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="apartmentNumber" class="form-label">Кв. / офис</label>
+                                    <input type="text" class="form-control" id="apartmentNumber" placeholder="Если есть" autocomplete="off">
+                                </div>
+                            </div>
+                            <button class="btn w-100" id="goBtn" onclick="visitLocation()"><i class="fas fa-arrow-right me-2" aria-hidden="true"></i>Поехать</button>
+                            <button type="button" class="dispatch-directory" onclick="document.getElementById('addressbook-tab').click()"><i class="far fa-address-book" aria-hidden="true"></i> Открыть справочник <span aria-hidden="true">↗</span></button>
+                        </section>
                     <aside class="dossier-sidebar" aria-label="Приложения и заметки">
                         <section class="latest-location" aria-labelledby="receivedApplicationsTitle">
-                            <h2 id="receivedApplicationsTitle"><i class="far fa-folder-open" aria-hidden="true"></i> Полученные приложения</h2>
+                            <h2 id="receivedApplicationsTitle"><i class="far fa-folder-open" aria-hidden="true"></i> Материалы дела <span id="materialsCount" class="workspace-count">0</span></h2>
                             <div id="receivedApplicationsList" class="received-applications-list">Пока нет приложений</div>
                         </section>
                         <section class="player-notes" aria-labelledby="playerNotesTitle">
@@ -508,12 +519,13 @@
                             <p id="playerNotesStatus" class="notes-status" role="status">Заметки сохраняются автоматически</p>
                         </section>
                     </aside>
+                    </div>
                 </div>
             </div>
 
             <div class="tab-pane fade player-applications-pane" id="applications" role="tabpanel" aria-labelledby="applications-tab">
                 <header class="player-applications-heading">
-                    <h1>Приложения</h1>
+                    <div class="workspace-section-overline">РАБОТА С УЛИКАМИ</div><h1>Материалы дела</h1>
                     <p>Материалы, полученные во время расследования, и ваши заметки.</p>
                 </header>
                 <div id="mobileDossierHost"></div>
@@ -524,7 +536,9 @@
                 <div class="row justify-content-center">
                     <div class="col-md-10 col-lg-8">
                         <div class="game-card p-4">
-                            <h2 class="text-center mb-4">Вопросы сценария</h2>
+                            <div class="workspace-section-overline">ВАША ВЕРСИЯ</div>
+                            <h2 class="questions-heading">Бланк ответов</h2>
+                            <p class="workspace-tool-caption">Сопоставляйте факты в журнале и формулируйте свою версию. Черновики сохраняются автоматически.</p>
                             <div id="questionsList">
                                 <p class="text-muted text-center">Загрузка вопросов...</p>
                             </div>
@@ -535,10 +549,15 @@
 
             <!-- Вкладка адресной книги (только просмотр) -->
             <div class="tab-pane fade" id="addressbook" role="tabpanel">
+                <header class="workspace-tool-header"><div class="workspace-section-overline">ГОРОД И ЕГО ЖИТЕЛИ</div><h1>Адресная книга</h1><p>Найдите человека или место и выберите адрес для поездки.</p>
+                    <div class="addressbook-search">
+                        <label for="playerAddressBookSearch" class="visually-hidden">Поиск по имени, месту или адресу</label>
+                        <input type="search" id="playerAddressBookSearch" class="form-control" placeholder="Имя, название, адрес…" autocomplete="off">
+                    </div>
+                </header>
                 <div class="row g-3">
                     <div class="col-md-4 col-lg-3">
                         <div class="game-card p-3 addressbook-panel-game">
-                            <div class="text-uppercase small fw-bold text-secondary mb-2">Карта города</div>
                             <div class="text-uppercase small fw-bold mb-2" style="color: var(--noir-gold);">Частные лица</div>
                             <div id="playerAddressBookPrivateTabs" class="addressbook-tabs-game"></div>
                         </div>
@@ -548,10 +567,6 @@
                         </div>
                     </div>
                     <div class="col-md-8 col-lg-9">
-                        <div class="game-card p-3 mb-3">
-                            <label class="form-label small text-secondary">Поиск по адресу / названию</label>
-                            <input type="text" id="playerAddressBookSearch" class="form-control form-control-sm" placeholder="Например: Центральный, Мирослав, 10...">
-                        </div>
                         <div class="game-card p-4">
                             <h5 class="mb-3" id="playerAddressBookActiveLabel">—</h5>
                             <div class="table-responsive">
@@ -702,7 +717,8 @@
         <div class="application-window">
             <div class="application-header">
                 <button type="button" id="applicationBackBtn" disabled aria-label="Назад к файлам">← Назад</button>
-                <strong id="applicationTitle">Приложение</strong>
+            <strong id="applicationTitle">Приложение</strong>
+            <button type="button" id="applicationZoomBtn" aria-pressed="false" hidden>Увеличить</button>
                 <button type="button" id="applicationCloseBtn" aria-label="Закрыть">✕</button>
             </div>
             <div id="applicationFiles" class="application-files"></div>
@@ -737,8 +753,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/no-copy.js?v=1"></script>
     <script src="js/game-network.js?v=1"></script>
-    <script src="js/game.js?v=37&t=20261006&encoding=fixed"></script>
-    <script src="js/investigation-board.js?v=20"></script>
+    <script src="js/game.js?v=40&t=20261007&encoding=fixed"></script>
+    <script src="js/investigation-board.js?v=21"></script>
     <script src="js/persist-inputs.js"></script>
 </body>
 </html>

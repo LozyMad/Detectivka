@@ -13,6 +13,38 @@ function game(fetchImpl) {
 const healthy = call => json(call.url.endsWith('/state') ? state : call.url.endsWith('/attempts') ?
   { attempts: [], choices_included: true } : { addresses: [] });
 
+test('selecting a directory address fills the route without recording a visit', () => {
+  const b = game(healthy);
+  let returnedToJournal = false;
+  b.element('game-tab').click = () => { returnedToJournal = true; };
+  b.run("tripCount = 3; choosePlayerDestination({district:'Ц',house_number:'7',apartment:'2',name:'Анна Белова'});");
+  assert.equal(b.element('districtSelect').value, 'Ц');
+  assert.equal(b.element('houseNumber').value, '7');
+  assert.equal(b.element('apartmentNumber').value, '2');
+  assert.equal(b.element('selectedDestination').textContent, 'Анна Белова');
+  assert.equal(b.run('tripCount'), 3);
+  assert.equal(b.calls.length, 0);
+  assert.equal(returnedToJournal, true);
+});
+
+test('a late directory search cannot replace the results of the newer query', async () => {
+  const first = deferred(), second = deferred();
+  const b = game(call => call.url.includes('q=first') ? first.promise : second.promise);
+  b.sandbox.URLSearchParams = URLSearchParams;
+  b.run("playerAddressBookSectionsLoaded = true; playerAddressBookFilter.q = 'first';");
+  const older = b.run('loadPlayerAddressBookEntries()');
+  await flush();
+  b.run("playerAddressBookFilter.q = 'second';");
+  const newer = b.run('loadPlayerAddressBookEntries()');
+  await flush();
+  second.resolve(json({entries:[{district:'Ц',house_number:'7',name:'New result'}]}));
+  await newer;
+  first.resolve(json({entries:[{district:'Ю',house_number:'8',name:'Old result'}]}));
+  await older;
+  assert.match(b.element('playerAddressBookTableBody').innerHTML, /New result/);
+  assert.doesNotMatch(b.element('playerAddressBookTableBody').innerHTML, /Old result/);
+});
+
 test('room refresh is single-flight even across 1000 callers and recovers after timeout', async () => {
   let broken = true;
   const b = game(call => broken ? hanging(call) : healthy(call));

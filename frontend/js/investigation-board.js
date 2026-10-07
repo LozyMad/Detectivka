@@ -121,24 +121,31 @@
     ).join('');
   }
 
-  function segment(x1, y1, x2, y2, linkId) {
-    const length = Math.hypot(x2 - x1, y2 - y1);
+  function segment(x1, y1, x2, y2, linkId, index) {
+    // A small overlap joins the textured pieces without a visible gap.
+    const length = Math.hypot(x2 - x1, y2 - y1) + 1.2;
     const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
     return `<button type="button" class="board-thread-segment" data-link-id="${Number(linkId)}"
-      aria-label="Удалить нить" title="Нажмите, чтобы удалить нить"
+      ${index ? 'tabindex="-1" aria-hidden="true"' : 'aria-label="Удалить нить"'} title="Нажмите, чтобы удалить нить"
       style="left:${scaledLength(x1)};top:${scaledLength(y1 - 12)};width:${scaledLength(length)};transform:rotate(${angle}deg)"></button>`;
   }
 
   function threadPoints(a, b) {
-    // The pin is part of the new artwork. Attach threads at its base, accounting for paper rotation.
+    // The artwork's shaft is at (150, 46) on a 300px note. Keep the thread beneath the pin cap.
     const anchor = note => {
       const angle = noteTilt(note.id) * Math.PI / 180;
-      return { x: Number(note.x) + 150 + 96 * Math.sin(angle),
-        y: Number(note.y) + 150 - 96 * Math.cos(angle) };
+      return { x: Number(note.x) + 150 + 104 * Math.sin(angle),
+        y: Number(note.y) + 150 - 104 * Math.cos(angle) };
     };
     const start = anchor(a), end = anchor(b);
     const sag = Math.min(22, Math.hypot(end.x - start.x, end.y - start.y) * .028);
-    return [start, { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 + sag }, end];
+    const control = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 + 2 * sag };
+    // Approximate one quadratic curve, sharing every join between neighboring pieces.
+    return Array.from({ length: 9 }, (_, index) => {
+      const t = index / 8, u = 1 - t;
+      return { x: u * u * start.x + 2 * u * t * control.x + t * t * end.x,
+        y: u * u * start.y + 2 * u * t * control.y + t * t * end.y };
+    });
   }
 
   function renderThreads() {
@@ -146,9 +153,11 @@
       const a = noteById(link.note_a);
       const b = noteById(link.note_b);
       if (!a || !b) return '';
-      const [start, middle, end] = threadPoints(a, b);
-      return segment(start.x, start.y, middle.x, middle.y, link.id) +
-        segment(middle.x, middle.y, end.x, end.y, link.id);
+      const points = threadPoints(a, b);
+      return points.slice(0, -1).map((start, index) => {
+        const end = points[index + 1];
+        return segment(start.x, start.y, end.x, end.y, link.id, index);
+      }).join('');
     }).join('');
     threadSegments.clear();
     for (const element of $('boardThreads').querySelectorAll('.board-thread-segment')) {
@@ -174,7 +183,7 @@
         const start = points[index], end = points[index + 1];
         element.style.left = scaledLength(start.x);
         element.style.top = scaledLength(start.y - 12);
-        element.style.width = scaledLength(Math.hypot(end.x - start.x, end.y - start.y));
+        element.style.width = scaledLength(Math.hypot(end.x - start.x, end.y - start.y) + 1.2);
         element.style.transform = `rotate(${Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI}deg)`;
       });
     }

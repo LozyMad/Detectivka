@@ -53,12 +53,23 @@ async function test() {
   };
   sandbox.window.gameNetwork = { fetch: sandbox.fetch };
   const source = fs.readFileSync('frontend/js/investigation-board.js', 'utf8')
-    .replace('window.investigationBoard = { show, openFromTrip, hide: clearSelection };', 'window.investigationBoard = { show, openFromTrip, hide: clearSelection, init, state };');
+    .replace('window.investigationBoard = { show, openFromTrip, hide: clearSelection };', 'window.investigationBoard = { show, openFromTrip, hide: clearSelection, init, state, threadPoints };');
   vm.runInNewContext(source, sandbox);
   const board = sandbox.window.investigationBoard;
   board.init();
   assert.equal((element('boardColorOptions').innerHTML.match(/type="radio"/g) || []).length, 5);
   board.state.notes = [{ id: 10, x: 950, y: 600, title: 'A' }, { id: 11, x: 1280, y: 600, title: 'B' }];
+  const curve = board.threadPoints(...board.state.notes);
+  const reversed = board.threadPoints(...board.state.notes.slice().reverse());
+  assert.equal(curve[0].x, reversed.at(-1).x, 'a shared pin has the same anchor in either direction');
+  assert.equal(curve[0].y, reversed.at(-1).y);
+  const pin = curve[0], note = board.state.notes[0];
+  assert.ok(Math.abs(Math.hypot(pin.x - note.x - 150, pin.y - note.y - 150) - 104) < 1e-8,
+    'the thread attaches to the pin shaft in the artwork, accounting for note rotation');
+  assert.ok(curve[4].y > (curve[0].y + curve.at(-1).y) / 2, 'the thread sags below its anchors');
+  const slopes = curve.slice(1).map((p, i) => Math.atan2(p.y - curve[i].y, p.x - curve[i].x));
+  assert.ok(slopes.slice(1).every((angle, i) => Math.abs(angle - slopes[i]) < .04),
+    'neighboring thread pieces form a smooth bend rather than a central kink');
   board.state.zoom = .5;
   const viewport = element('boardViewport');
   const a = new Element('a'); a.dataset.id = '10';

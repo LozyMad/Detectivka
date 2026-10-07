@@ -35,6 +35,39 @@ let applicationObjectUrl = null;
 let applicationRequestId = 0;
 let applicationController = null;
 let arrangePlayerNavigation = () => {};
+let activePlayerPane = 'game';
+let applicationReturnFocus = null;
+let applicationReturnAddress = null;
+function syncWorkspaceRail() {
+    const toggle = document.getElementById('workspaceRailToggle');
+    if (toggle) {
+        const expanded = document.body.classList.contains('workspace-rail-expanded');
+        toggle.setAttribute('aria-expanded', String(expanded));
+        toggle.setAttribute('aria-label', expanded ? 'Свернуть навигацию' : 'Развернуть навигацию');
+    }
+}
+
+function isDesktopWorkspace() {
+    return document.documentElement.classList.contains('theme-dark') &&
+        window.matchMedia('(min-width: 1280px) and (min-height: 501px)').matches &&
+        !window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+}
+
+function syncWorkspacePanes() {
+    const workspace = isDesktopWorkspace();
+    const tool = ['questions', 'addressbook', 'applications'].includes(activePlayerPane);
+    document.body.classList.toggle('desktop-workspace', workspace);
+    document.body.classList.toggle('workspace-tool-open', workspace && tool);
+    document.body.dataset.workspacePane = activePlayerPane;
+    for (const id of ['game', 'questions', 'addressbook', 'applications', 'board']) {
+        const pane = document.getElementById(id);
+        if (!pane) continue;
+        const visible = id === activePlayerPane || (workspace && tool && id === 'game');
+        pane.classList.toggle('active', visible);
+        pane.classList.toggle('show', visible);
+        pane.classList.toggle('fade', !visible);
+    }
+}
 
 function setScenarioTitle(text) {
     const el = document.getElementById('scenarioTitle');
@@ -69,9 +102,12 @@ function setupMobileGameLayout() {
     const boardAccount = document.getElementById('boardAccount');
     const boardMenu = document.getElementById('boardAccountMenu');
     const sidebar = document.querySelector('.dossier-sidebar');
+    const utilities = document.querySelector('.dossier-utilities');
+    const journal = document.querySelector('.dossier-main');
     const applicationsTab = document.getElementById('applications-tab');
     const applicationsPane = document.getElementById('applications');
     const mobileDossier = document.getElementById('mobileDossierHost');
+    const workspaceNav = document.getElementById('workspaceNavHost');
     if (!toolbar || !bottomNav || !collapse || !tabs || !stats || !sidebar) return;
 
     const tabHome = tabs.parentElement;
@@ -87,10 +123,14 @@ function setupMobileGameLayout() {
     const desktopBoard = window.matchMedia('(min-width: 768px) and (min-height: 501px), (min-width: 951px)');
     const landscapeBoard = window.matchMedia('(orientation: landscape) and (max-height: 900px) and (max-width: 1279.98px)');
     const narrowLandscape = window.matchMedia('(max-width: 740px)');
+    const workspaceSize = window.matchMedia('(min-width: 1280px) and (min-height: 501px)');
     const arrange = () => {
-        if (applicationsTab) applicationsTab.hidden = !phone.matches;
+        const dark = document.documentElement.classList.contains('theme-dark');
+        const workspace = isDesktopWorkspace();
+        syncWorkspacePanes();
+        if (applicationsTab) applicationsTab.hidden = !(phone.matches || dark);
         // Return to the game when a phone becomes a tablet/desktop layout.
-        if (!phone.matches && applicationsPane?.classList.contains('active')) {
+        if (!phone.matches && !dark && applicationsPane?.classList.contains('active')) {
             document.getElementById('game-tab').click();
             return;
         }
@@ -107,25 +147,32 @@ function setupMobileGameLayout() {
         document.body.classList.toggle('board-touch-header', combined && bottomNavigation.matches);
         if (boardAccount) boardAccount.open = false;
         if (combined) {
-            if (!bottomNavigation.matches) boardNav.append(tabs);
+            if (!bottomNavigation.matches) (workspace && workspaceNav ? workspaceNav : boardNav).append(tabs);
             // On smaller landscape phones the live timer remains accessible in the account menu.
             if (!landscapeBoard.matches || !narrowLandscape.matches) boardTimer.append(timer);
             boardMenu.append(controls);
             toolbarHome.insertBefore(toolbar, toolbarNext);
         } else if (mobile.matches) {
             toolbar.append(stats);
-            const activePane = document.querySelector('#gameTabContent .tab-pane.active') || document.getElementById('game');
+            const activePane = document.getElementById(activePlayerPane) || document.getElementById('game');
             placeMobileToolbar(activePane);
         } else {
             tabHome.insertBefore(tabs, statHome);
             statHome.prepend(stats);
             toolbarHome.insertBefore(toolbar, toolbarNext);
         }
-        const sidebarTarget = phone.matches && mobileDossier ? mobileDossier : sidebarHome;
+        const sidebarTarget = (phone.matches || activePlayerPane === 'applications') && mobileDossier ? mobileDossier : sidebarHome;
         // Preserve the notes input and its focus when only viewport height changes.
         if (sidebar.parentElement !== sidebarTarget) sidebarTarget.append(sidebar);
+        // Reading and keyboard order follow the visible phone layout as well.
+        if (utilities && journal && utilities.parentElement === journal.parentElement) {
+            if (phone.matches && utilities.nextElementSibling !== journal) journal.before(utilities);
+            else if (!phone.matches && journal.nextElementSibling !== utilities) journal.after(utilities);
+        }
         // Keep the original buttons, their listeners and unique IDs across all four views.
         if (bottomNavigation.matches) bottomNav.append(tabs);
+        else if (workspace && !combined && workspaceNav) workspaceNav.append(tabs);
+        syncWorkspaceRail();
         updateBottomNavHeight();
         const navbar = document.getElementById('gameNavbar');
         if (navbar) document.body.style.setProperty('--board-nav-height', `${navbar.offsetHeight}px`);
@@ -135,11 +182,29 @@ function setupMobileGameLayout() {
     }
     arrangePlayerNavigation = arrange;
     arrange();
-    for (const media of [mobile, phone, bottomNavigation, desktopBoard, landscapeBoard, narrowLandscape]) {
+    for (const media of [mobile, phone, bottomNavigation, desktopBoard, landscapeBoard, narrowLandscape, workspaceSize]) {
         if (media.addEventListener) media.addEventListener('change', arrange);
         else media.addListener(arrange);
     }
     new ResizeObserver(updateBottomNavHeight).observe(bottomNav);
+    new MutationObserver(arrange).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    document.querySelector('.workspace-brand')?.addEventListener('click', event => {
+        event.preventDefault();
+        document.getElementById('game-tab').click();
+    });
+    document.getElementById('workspaceRailToggle')?.addEventListener('click', () => {
+        document.body.classList.toggle('workspace-rail-expanded');
+        syncWorkspaceRail();
+    });
+    document.getElementById('workspaceRail')?.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && document.body.classList.contains('workspace-rail-expanded')) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.body.classList.remove('workspace-rail-expanded');
+            syncWorkspaceRail();
+            document.getElementById('workspaceRailToggle')?.focus();
+        }
+    });
     boardAccount?.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
             event.stopPropagation();
@@ -309,6 +374,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setScenarioBanner(room?.scenario_id);
     } catch (_) {}
     setupDistrictSelect();
+    for (const id of ['districtSelect', 'houseNumber', 'apartmentNumber']) {
+        document.getElementById(id)?.addEventListener('input', () => {
+            const destination = document.getElementById('selectedDestination');
+            if (destination) destination.hidden = true;
+        });
+    }
     loadTripHistory();
     loadScenarioInfo();
     setupPlayerNotes();
@@ -458,6 +529,8 @@ async function visitLocation() {
             
             document.getElementById('houseNumber').value = '';
             if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
+            const destination = document.getElementById('selectedDestination');
+            if (destination) destination.hidden = true;
             
             // Интернет-кафе открывается только по ссылке в истории поездок.
             // Проверяем интерактивные выборы для остальных адресов.
@@ -482,6 +555,8 @@ async function visitLocation() {
             updateTripHistory();
             document.getElementById('houseNumber').value = '';
             if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
+            const destination = document.getElementById('selectedDestination');
+            if (destination) destination.hidden = true;
         }
     } catch (error) {
         console.error('Error visiting location:', error);
@@ -514,6 +589,8 @@ function updateTripCounter() {
     if (counter) {
         counter.textContent = `Поездок: ${tripCount}`;
     }
+    const count = document.getElementById('journalCount');
+    if (count) count.textContent = String(tripCount);
 }
 
 // Загрузка истории поездок
@@ -666,6 +743,8 @@ function updateReceivedApplications() {
         }
     }
     items.sort((a, b) => a.number - b.number);
+    const count = document.getElementById('materialsCount');
+    if (count) count.textContent = String(items.length);
     if (!items.length) {
         target.textContent = 'Пока нет приложений';
         return;
@@ -720,7 +799,7 @@ function updateTripHistory() {
                     </button>` : ''
                 }
             </div>
-            <div class="trip-description">${trip.success
+            <div class="trip-description" aria-hidden="${collapsed}" ${collapsed ? 'inert' : ''}><div class="trip-description-inner">${trip.success
                 ? `<div class="trip-description-text">${renderScenarioText(trip.description || '', trip.address_id)}</div>`
                 : `<strong>По этому адресу нет информации</strong>`
             }${apps.length
@@ -734,7 +813,7 @@ function updateTripHistory() {
             }${trip.success && trip.address_id && gameStorage.getItem('roomUser')
                 ? `<div><button type="button" class="trip-board-button" data-trip-id="${escapeHtmlPlayer(trip.id)}"><i class="fas fa-thumbtack" aria-hidden="true"></i> Добавить на доску</button></div>`
                 : ''
-            }</div></div>
+            }</div></div></div>
             <button type="button" class="trip-toggle" data-trip-key="${escapeHtmlPlayer(key)}" aria-expanded="${!collapsed}" aria-label="${collapsed ? 'Развернуть' : 'Свернуть'} поездку: ${escapeHtmlPlayer(formatTripAddressLabel(trip))}"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>
         </article>
     `; }).join('');
@@ -746,7 +825,14 @@ function updateTripHistory() {
             if (collapsedTripKeys.has(key)) collapsedTripKeys.delete(key);
             else collapsedTripKeys.add(key);
             saveCollapsedTrips();
-            updateTripHistory();
+            const collapsed = collapsedTripKeys.has(key);
+            const card = button.closest('.trip-item');
+            card.classList.toggle('is-collapsed', collapsed);
+            const description = card.querySelector('.trip-description');
+            description.setAttribute('aria-hidden', String(collapsed));
+            description.toggleAttribute('inert', collapsed);
+            button.setAttribute('aria-expanded', String(!collapsed));
+            button.setAttribute('aria-label', button.getAttribute('aria-label').replace(/^(Развернуть|Свернуть)/, collapsed ? 'Развернуть' : 'Свернуть'));
         });
     });
     if (freshTripTimer) clearTimeout(freshTripTimer);
@@ -1011,6 +1097,7 @@ function setupTabSwitching() {
     window.addEventListener('resize', updateBoardNavHeight);
 
     function showPane(pane) {
+        activePlayerPane = pane.id;
         const wasBoardOpen = document.body.classList.contains('board-open');
         const wasApplicationsOpen = applicationsContent?.classList.contains('active');
         if (wasBoardOpen && pane !== boardContent) window.investigationBoard?.hide();
@@ -1091,6 +1178,27 @@ function setupTabSwitching() {
 let playerAddressBookSections = null;
 let playerAddressBookSectionsLoaded = false;
 let playerAddressBookFilter = { category: 'Частные лица', letter_group: 'А-Б', q: '' };
+let playerAddressBookRequestVersion = 0;
+let playerAddressBookSearchTimer = null;
+
+function choosePlayerDestination(entry) {
+    const district = document.getElementById('districtSelect');
+    const house = document.getElementById('houseNumber');
+    const apartment = document.getElementById('apartmentNumber');
+    if (!district || !house || !apartment) return;
+    district.value = entry.district || '';
+    selectedDistrict = district.value || null;
+    house.value = String(entry.house_number || '');
+    apartment.value = String(entry.apartment || '');
+    const destination = document.getElementById('selectedDestination');
+    if (destination) {
+        destination.textContent = entry.name || `${entry.district} · Дом ${entry.house_number}`;
+        destination.hidden = false;
+    }
+    document.getElementById('game-tab').click();
+    document.querySelector('.location-search-card')?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    document.getElementById('goBtn')?.focus({ preventScroll: true });
+}
 
 function escapeHtmlPlayer(s) {
     if (s == null || s === undefined) return '';
@@ -1147,6 +1255,8 @@ function renderScenarioText(text, addressId = null) {
 
 function clearApplicationPreview() {
     document.getElementById('applicationPreview').replaceChildren();
+    const zoom = document.getElementById('applicationZoomBtn');
+    if (zoom) { zoom.hidden = true; zoom.setAttribute('aria-pressed', 'false'); zoom.textContent = 'Увеличить'; }
     if (applicationObjectUrl) URL.revokeObjectURL(applicationObjectUrl);
     applicationObjectUrl = null;
 }
@@ -1164,6 +1274,15 @@ function closeApplicationFolder() {
     overlay.classList.remove('is-open');
     overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = overlay.dataset.previousOverflow || '';
+    if (applicationReturnFocus?.isConnected) applicationReturnFocus.focus({ preventScroll: true });
+    else {
+        const origin = [...document.querySelectorAll('.scenario-application-link')].find(element =>
+            applicationReturnAddress && element.dataset.addressId === String(applicationReturnAddress.addressId) &&
+            element.dataset.number === String(applicationReturnAddress.number) && element.getClientRects().length);
+        (origin || document.getElementById(`${activePlayerPane}-tab`))?.focus({ preventScroll: true });
+    }
+    applicationReturnFocus = null;
+    applicationReturnAddress = null;
 }
 
 function showApplicationFiles() {
@@ -1182,11 +1301,16 @@ async function openApplicationFolder(addressId, number, fallbackUrl = '') {
     const requestId = ++applicationRequestId;
     const overlay = document.getElementById('applicationOverlay');
     overlay.dataset.title = `Приложение ${number}`;
-    if (!overlay.classList.contains('is-open')) overlay.dataset.previousOverflow = document.body.style.overflow;
+    if (!overlay.classList.contains('is-open')) {
+        overlay.dataset.previousOverflow = document.body.style.overflow;
+        applicationReturnFocus = document.activeElement;
+        applicationReturnAddress = { addressId, number };
+    }
     overlay.classList.add('is-open');
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     showApplicationFiles();
+    document.getElementById('applicationCloseBtn')?.focus();
     const controller = applicationController = new AbortController();
     const list = document.getElementById('applicationFiles');
     list.textContent = 'Загрузка файлов…';
@@ -1242,7 +1366,12 @@ async function openApplicationFile(base, file, index, token) {
         viewer.src = applicationObjectUrl;
         viewer.title = displayName;
         viewer.alt = displayName;
-        if (viewer.tagName === 'IMG') viewer.decoding = 'async';
+        if (viewer.tagName === 'IMG') {
+            viewer.decoding = 'async';
+            const zoom = document.getElementById('applicationZoomBtn');
+            if (zoom) zoom.hidden = false;
+            viewer.addEventListener('dblclick', toggleApplicationImageZoom);
+        }
         preview.append(viewer);
     } catch (error) {
         if (requestId === applicationRequestId) preview.textContent = error.message;
@@ -1256,14 +1385,32 @@ document.addEventListener('click', event => {
     openApplicationFolder(link.dataset.addressId, link.dataset.number, link.dataset.fallbackUrl || '');
 });
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('applicationZoomBtn')?.addEventListener('click', toggleApplicationImageZoom);
     document.getElementById('applicationCloseBtn')?.addEventListener('click', closeApplicationFolder);
     document.getElementById('applicationBackBtn')?.addEventListener('click', () => { applicationRequestId++; showApplicationFiles(); });
     document.getElementById('applicationOverlay')?.addEventListener('click', event => {
         if (event.target.id === 'applicationOverlay') closeApplicationFolder();
     });
 });
+function toggleApplicationImageZoom() {
+    const image = document.querySelector('#applicationPreview img');
+    const button = document.getElementById('applicationZoomBtn');
+    if (!image || !button) return;
+    const enlarged = image.classList.toggle('is-enlarged');
+    button.setAttribute('aria-pressed', String(enlarged));
+    button.textContent = enlarged ? 'Вписать' : 'Увеличить';
+}
 document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && document.getElementById('applicationOverlay')?.classList.contains('is-open')) closeApplicationFolder();
+    const overlay = document.getElementById('applicationOverlay');
+    if (!overlay?.classList.contains('is-open')) return;
+    if (event.key === 'Escape') closeApplicationFolder();
+    if (event.key === 'Tab') {
+        const controls = [...overlay.querySelectorAll('button:not(:disabled), a[href], iframe')].filter(element => element.getClientRects().length);
+        if (!controls.length) return;
+        const first = controls[0], last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
 });
 
 async function loadPlayerAddressBookSectionsAndEntries() {
@@ -1325,7 +1472,10 @@ async function loadPlayerAddressBookSectionsAndEntries() {
             searchEl.value = playerAddressBookFilter.q || '';
             searchEl.oninput = () => {
                 playerAddressBookFilter.q = searchEl.value.trim();
-                loadPlayerAddressBookEntries();
+                // Ignore older responses immediately, including while the debounce is pending.
+                playerAddressBookRequestVersion++;
+                clearTimeout(playerAddressBookSearchTimer);
+                playerAddressBookSearchTimer = setTimeout(loadPlayerAddressBookEntries, 250);
             };
         }
         await loadPlayerAddressBookEntries();
@@ -1337,6 +1487,7 @@ async function loadPlayerAddressBookSectionsAndEntries() {
 }
 
 async function loadPlayerAddressBookEntries() {
+    const requestVersion = ++playerAddressBookRequestVersion;
     const token = gameStorage.getItem('token');
     const tbody = document.getElementById('playerAddressBookTableBody');
     const labelEl = document.getElementById('playerAddressBookActiveLabel');
@@ -1363,6 +1514,7 @@ async function loadPlayerAddressBookEntries() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json().catch(() => ({}));
+        if (requestVersion !== playerAddressBookRequestVersion) return;
         if (!response.ok) throw new Error(data.error || 'Ошибка загрузки (' + response.status + ')');
         const entries = data.entries || [];
 
@@ -1371,17 +1523,21 @@ async function loadPlayerAddressBookEntries() {
             return;
         }
 
-        tbody.innerHTML = entries.map(e => {
+        tbody.innerHTML = entries.map((e, index) => {
             const apartmentCell = `<td>${showApartment ? escapeHtmlPlayer(e.apartment) : ''}</td>`;
             return `<tr>
                 <td>${escapeHtmlPlayer(e.district)}</td>
                 <td>${escapeHtmlPlayer(e.house_number)}</td>
                 ${apartmentCell}
-                <td>${escapeHtmlPlayer(e.name)}</td>
+                <td class="address-entry-main"><button type="button" class="address-entry-select" data-entry-index="${index}"><span>${escapeHtmlPlayer(e.name)}</span><span class="address-entry-location">${escapeHtmlPlayer(e.district)} · Дом ${escapeHtmlPlayer(e.house_number)}${e.apartment ? ', кв. ' + escapeHtmlPlayer(e.apartment) : ''}</span><span class="address-entry-action">Выбрать адрес <span aria-hidden="true">→</span></span></button></td>
                 <td>${escapeHtmlPlayer(e.note)}</td>
             </tr>`;
         }).join('');
+        tbody.querySelectorAll('.address-entry-select').forEach(button => {
+            button.addEventListener('click', () => choosePlayerDestination(entries[Number(button.dataset.entryIndex)]));
+        });
     } catch (err) {
+        if (requestVersion !== playerAddressBookRequestVersion) return;
         console.error('loadPlayerAddressBookEntries:', err);
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Ошибка загрузки</td></tr>';
     }
@@ -1483,7 +1639,17 @@ function saveAnswer(scenarioId, roomUser, questionId, text) {
     }
     try {
         gameStorage.setItem(key, JSON.stringify(saved));
-    } catch (e) {}
+        return true;
+    } catch (e) { return false; }
+}
+
+function updateAnswerDraftStatus() {
+    const fields = document.querySelectorAll('#questionsList .answer-input');
+    const filled = [...fields].filter(field => field.value.trim()).length;
+    const summary = document.getElementById('answerDraftSummary');
+    if (summary) summary.textContent = `${filled} из ${fields.length} заполнено`;
+    const progress = document.getElementById('answerDraftProgress');
+    if (progress) progress.value = filled;
 }
 
 function displayQuestions(questions, scenarioId, roomUser) {
@@ -1500,9 +1666,10 @@ function displayQuestions(questions, scenarioId, roomUser) {
     lastAnswersRoomUser = roomUser;
     const saved = scenarioId && roomUser !== undefined ? loadSavedAnswers(scenarioId, roomUser) : {};
     
-    const questionsHtml = questions.map(question => `
+    const questionsHtml = questions.map((question, index) => `
         <div class="question-item mb-4 p-3 border rounded">
-            <h5 class="mb-3">${question.question_text}</h5>
+            <div class="question-meta"><span>ВОПРОС ${String(index + 1).padStart(2, '0')}</span><span id="draftStatus_${question.id}" class="question-draft-status">${saved[question.id] ? 'Черновик сохранён' : 'Пока без ответа'}</span></div>
+            <h5 class="mb-3">${escapeHtmlPlayer(question.question_text)}</h5>
             <div class="mb-3">
                 <label for="answer_${question.id}" class="form-label">Ваш ответ:</label>
                 <textarea class="form-control answer-input" id="answer_${question.id}" data-question-id="${question.id}" rows="3" placeholder="Введите ваш ответ...">${escapeHtmlForTextarea(saved[question.id] || '')}</textarea>
@@ -1519,13 +1686,17 @@ function displayQuestions(questions, scenarioId, roomUser) {
         </div>
     `;
     
-    container.innerHTML = questionsHtml + bulkControlsHtml;
+    container.innerHTML = `<div class="answer-draft-summary"><span id="answerDraftSummary"></span><progress id="answerDraftProgress" max="${questions.length}" value="0" aria-label="Заполненные ответы"></progress></div>` + questionsHtml + bulkControlsHtml;
+    updateAnswerDraftStatus();
     
     if (scenarioId && roomUser !== undefined) {
         container.querySelectorAll('.answer-input').forEach(textarea => {
             const questionId = textarea.dataset.questionId;
             textarea.addEventListener('input', () => {
-                saveAnswer(scenarioId, roomUser, questionId, textarea.value);
+                const savedSuccessfully = saveAnswer(scenarioId, roomUser, questionId, textarea.value);
+                const status = document.getElementById(`draftStatus_${questionId}`);
+                if (status) status.textContent = savedSuccessfully ? (textarea.value.trim() ? 'Черновик сохранён' : 'Пока без ответа') : 'Не удалось сохранить';
+                updateAnswerDraftStatus();
             });
         });
     }

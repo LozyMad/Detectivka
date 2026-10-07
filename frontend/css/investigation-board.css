@@ -134,7 +134,8 @@ body.board-open #board {
   width: calc(300px * var(--board-zoom, 1));
   height: calc(300px * var(--board-zoom, 1));
   background: var(--note-image) 0 0 / 100% 100% no-repeat;
-  clip-path: ellipse(calc(24px * var(--board-zoom, 1)) calc(29px * var(--board-zoom, 1)) at 50% calc(43px * var(--board-zoom, 1)));
+  /* Trace only the pushpin: a broad ellipse also copied paper over the thread ends. */
+  clip-path: polygon(50% 5.6%, 53% 6.4%, 55.2% 8.2%, 56.4% 10.6%, 56.3% 13%, 55.1% 15.3%, 56% 17.4%, 55.7% 19.6%, 54% 21.5%, 51.4% 22.6%, 48.5% 22.6%, 46% 21.7%, 44.5% 20%, 44% 17.7%, 45% 15.2%, 44.7% 13%, 44.8% 10.1%, 46% 7.8%, 48% 6.2%);
   transform: rotate(var(--note-tilt));
   transform-origin: center;
   pointer-events: auto;
