@@ -1,8 +1,9 @@
 /* Raster dossier artwork; copy stays in the document for accessibility. */
-.team-process { position: relative; isolation: isolate; padding: 30px 0 80px; overflow: hidden; }
-/* The empty backdrop fills the viewport; the dossier artwork keeps its original layout. */
-.team-process::before { content: ''; position: absolute; z-index: -1; inset: 30px 0 80px; background: url('../assets/landing/corporate-process-backdrop-v1.webp') center top / cover no-repeat; mask-image: linear-gradient(transparent, #000 3%, #000 95%, transparent); }
-.team-process-scene { position: relative; isolation: isolate; aspect-ratio: 1308 / 1202; }
+.team-process { position: relative; isolation: isolate; padding: 30px 0 24px; }
+/* Continue the backdrop into the next section with a long fade behind its content. */
+.team-process::before { content: ''; position: absolute; z-index: -1; inset: 30px 0 -520px; pointer-events: none; background: url('../assets/landing/corporate-process-backdrop-v1.webp') center top / cover no-repeat; mask-image: linear-gradient(transparent, #000 3%, #000 calc(100% - 900px), transparent); }
+.team-process + .team-benefits { position: relative; z-index: 1; padding-top: 32px; }
+.team-process-scene { position: relative; isolation: isolate; aspect-ratio: 1308 / 1202; margin-bottom: calc(min(1120px, 100vw - 64px) * -.1); }
 .team-process-head { position: absolute; z-index: 2; inset: 0; }
 .team-process .section-heading { position: absolute; top: 5.2%; left: 5.6%; width: 51%; margin: 0; }
 .corporate-page .team-process h2 { font-size: clamp(32px, 3.55vw, 46px); line-height: 1.16; text-wrap: pretty; letter-spacing: -.045em; color: #f6ecda; }
@@ -39,15 +40,15 @@
 }
 @media (max-width: 760px) {
   .team-process-threads { display: none; }
-  .team-process { padding: 30px 0 52px; }
-  .team-process::before { bottom: 52px; mask-image: linear-gradient(transparent, #000 3%, #000 93%, transparent); }
-  .team-process-scene { width: min(100%, 600px); aspect-ratio: auto; }
+  .team-process { padding: 30px 0 24px; }
+  .team-process::before { bottom: -300px; mask-image: linear-gradient(transparent, #000 3%, #000 calc(100% - 600px), transparent); }
+  .team-process-scene { width: min(100%, 600px); aspect-ratio: auto; margin-bottom: 0; }
   .team-process-head { position: relative; display: grid; gap: 32px; padding: 10px 26px 20px; }
   .team-process .section-heading { position: static; width: auto; }
   .corporate-page .team-process h2 { font-size: clamp(30px, 7.7vw, 44px); line-height: 1.16; }
   .team-process-photo { position: relative; top: auto; left: auto; width: 86%; max-width: 360px; margin: 0 auto; padding: 8px 8px 18px; transform: rotate(-3deg); }
   .team-process-photo figcaption { margin-top: 8px; font-size: 12px; }
-  .team-process-route { position: relative; aspect-ratio: 887 / 1774; }
+  .team-process-route { position: relative; aspect-ratio: 887 / 1774; margin-bottom: -20%; }
   .team-process-watch { top: .25%; right: 7%; width: 24%; }
   .team-process-art img { mask-image: linear-gradient(transparent, #000 3%, #000 93%, transparent), linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
   .team-process-duration { top: 5.3%; left: 10%; width: 53%; font-size: clamp(12px, 3.3vw, 16px); text-align: left; line-height: 1.6; }

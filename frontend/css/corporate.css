@@ -3,6 +3,8 @@
 .corporate-page { background: var(--background); }
 .corporate-page h1, .corporate-page h2 { letter-spacing: -.055em; }
 .team-section { padding: 88px 0; }
+.team-benefits.team-section { padding-bottom: 32px; }
+.team-formats.team-section { padding-top: 32px; }
 .corporate-page .section-heading { max-width: 730px; margin: 0 0 36px; }
 .corporate-page .section-heading.centered { margin-inline: auto; }
 .corporate-page .section-heading .product-eyebrow { margin: 0 0 16px; color: #edb28c; font-size: 12px; }
