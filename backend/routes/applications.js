@@ -11,6 +11,75 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024, files: 30 } });
 
+async function adminScenario(req, res, next) {
+  try {
+    if (!req.user?.is_admin) return res.status(403).json({ error: 'Нет доступа' });
+    const scenarioId = applications.positiveId(req.params.scenarioId);
+    const available = await Scenario.getAvailableForAdmin(req.user.id, req.user.admin_level);
+    if (!available.some(item => Number(item.id) === scenarioId)) return res.status(403).json({ error: 'Нет доступа к сценарию' });
+    next();
+  } catch (error) {
+    if (error.message === 'Неверный идентификатор') return res.status(400).json({ error: error.message });
+    next(error);
+  }
+}
+
+async function playerScenario(req, res, next) {
+  try {
+    if (!req.roomUser) return res.status(403).json({ error: 'Доступно только игроку комнаты' });
+    const scenarioId = applications.positiveId(req.params.scenarioId);
+    const room = await Room.getById(req.roomUser.room_id);
+    if (!room || Number(room.scenario_id) !== scenarioId) return res.status(403).json({ error: 'Нет доступа к сценарию' });
+    next();
+  } catch (error) {
+    if (error.message === 'Неверный идентификатор') return res.status(400).json({ error: error.message });
+    next(error);
+  }
+}
+
+router.get('/admin/scenarios/:scenarioId/briefing', authenticateToken, adminScenario, async (req, res, next) => {
+  try {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ briefing: await applications.getBriefing(req.params.scenarioId) });
+  } catch (error) { next(error); }
+});
+
+router.post('/admin/scenarios/:scenarioId/briefing', authenticateToken, adminScenario,
+  (req, res, next) => upload.array('files')(req, res, error => {
+    if (error) return res.status(400).json({ error: 'До 30 файлов, каждый не больше 20 МБ' });
+    next();
+  }), async (req, res, next) => {
+    try {
+      const briefing = await applications.saveBriefing(req.params.scenarioId, req.files);
+      res.status(201).json({ briefing });
+    } catch (error) {
+      if (/^(Неверный|Выберите|В одном|Размер|Разрешены)/.test(error.message)) return res.status(400).json({ error: error.message });
+      next(error);
+    }
+  });
+
+router.delete('/admin/scenarios/:scenarioId/briefing', authenticateToken, adminScenario, async (req, res, next) => {
+  try { await applications.removeBriefing(req.params.scenarioId); res.json({ ok: true }); }
+  catch (error) { next(error); }
+});
+
+router.get('/game/scenarios/:scenarioId/briefing', authenticateToken, playerScenario, async (req, res, next) => {
+  try {
+    const briefing = await applications.getBriefing(req.params.scenarioId);
+    if (!briefing) return res.status(404).json({ error: 'Брифинг не загружен' });
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ application: briefing });
+  } catch (error) { next(error); }
+});
+
+router.get('/game/scenarios/:scenarioId/briefing/files/:fileId', authenticateToken, playerScenario, async (req, res, next) => {
+  try {
+    const file = await applications.getBriefingFile(req.params.scenarioId, req.params.fileId);
+    if (!file) return res.status(404).json({ error: 'Файл не найден' });
+    await sendApplicationFile(req, res, next, file);
+  } catch (error) { next(error); }
+});
+
 async function adminAddress(req, res, next) {
   try {
     if (!req.user?.is_admin) return res.status(403).json({ error: 'Нет доступа' });
@@ -117,7 +186,10 @@ router.get('/game/available', authenticateToken, async (req, res, next) => {
         applications: attached.map(app => ({ number: app.number, file_count: app.files.length }))
       };
     }));
-    res.json({ scenario_id: room.scenario_id, addresses: found });
+    const briefing = await applications.getBriefing(room.scenario_id);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ scenario_id: room.scenario_id, addresses: found,
+      briefing: briefing ? { file_count: briefing.files.length } : null });
   } catch (error) { next(error); }
 });
 
@@ -133,6 +205,11 @@ router.get('/game/scenarios/:scenarioId/addresses/:addressId/:number/files/:file
   try {
     const file = await applications.getFile(req.params.scenarioId, req.params.addressId, req.params.number, req.params.fileId);
     if (!file) return res.status(404).json({ error: 'Файл не найден' });
+    await sendApplicationFile(req, res, next, file);
+  } catch (error) { next(error); }
+});
+
+async function sendApplicationFile(req, res, next, file) {
     const preview = req.query.preview === '1' && file.type.startsWith('image/')
       ? await imagePreview(file.path, previewWidth(req.query.width, 2400))
       : { path: file.path, type: file.type };
@@ -143,7 +220,6 @@ router.get('/game/scenarios/:scenarioId/addresses/:addressId/:number/files/:file
     const stream = fs.createReadStream(preview.path);
     stream.on('error', next);
     stream.pipe(res);
-  } catch (error) { next(error); }
-});
+}
 
 module.exports = router;

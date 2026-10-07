@@ -21,6 +21,10 @@ function folder(scenarioId, addressId, number) {
   return path.join(ROOT, String(positiveId(scenarioId)), String(positiveId(addressId)), String(positiveId(number)));
 }
 
+function briefingFolder(scenarioId) {
+  return path.join(ROOT, String(positiveId(scenarioId)), 'briefing');
+}
+
 function detectType(buffer) {
   if (buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return 'image/png';
   if (buffer.subarray(0, 3).equals(Buffer.from([255, 216, 255]))) return 'image/jpeg';
@@ -54,7 +58,11 @@ async function list(scenarioId, addressId) {
 }
 
 async function get(scenarioId, addressId, number) {
-  const manifestPath = path.join(folder(scenarioId, addressId, number), 'manifest.json');
+  return getAt(folder(scenarioId, addressId, number), positiveId(number));
+}
+
+async function getAt(target, number = null) {
+  const manifestPath = path.join(target, 'manifest.json');
   try {
     const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
     let repaired = false;
@@ -63,7 +71,7 @@ async function get(scenarioId, addressId, number) {
       if (decoded !== file.name) { file.name = decoded; repaired = true; }
     }
     if (repaired) await fs.writeFile(manifestPath, JSON.stringify(manifest), 'utf8');
-    return { number: positiveId(number), files: manifest.files || [] };
+    return { ...(number === null ? {} : { number }), files: manifest.files || [] };
   } catch (error) {
     if (error.code === 'ENOENT') return null;
     throw error;
@@ -71,6 +79,10 @@ async function get(scenarioId, addressId, number) {
 }
 
 async function save(scenarioId, addressId, number, files) {
+  return saveAt(folder(scenarioId, addressId, number), files, positiveId(number));
+}
+
+async function saveAt(target, files, number = null) {
   if (!files?.length) throw new Error('Выберите папку с изображениями или PDF');
   if (files.length > 30) throw new Error('В одном приложении может быть не больше 30 файлов');
   if (files.reduce((sum, file) => sum + file.size, 0) > 100 * 1024 * 1024) {
@@ -85,7 +97,6 @@ async function save(scenarioId, addressId, number, files) {
     }
     return { name, type, size: file.size, data: file.buffer, id: crypto.randomUUID() + extension };
   }).sort((a, b) => a.name.localeCompare(b.name, 'ru', { numeric: true }));
-  const target = folder(scenarioId, addressId, number);
   const staging = target + '.upload-' + crypto.randomUUID();
   const backup = target + '.backup-' + crypto.randomUUID();
   await fs.mkdir(staging, { recursive: true });
@@ -100,7 +111,7 @@ async function save(scenarioId, addressId, number, files) {
       throw error;
     }
     if (hadPrevious) await fs.rm(backup, { recursive: true, force: true });
-    return { number: positiveId(number), files: manifest.files };
+    return { ...(number === null ? {} : { number }), files: manifest.files };
   } finally {
     await fs.rm(staging, { recursive: true, force: true });
   }
@@ -111,6 +122,16 @@ async function getFile(scenarioId, addressId, number, fileId) {
   const file = application?.files.find(item => item.id === fileId);
   return file ? { ...file, path: path.join(folder(scenarioId, addressId, number), file.id) } : null;
 }
+
+async function getBriefingFile(scenarioId, fileId) {
+  const briefing = await getBriefing(scenarioId);
+  const file = briefing?.files.find(item => item.id === fileId);
+  return file ? { ...file, path: path.join(briefingFolder(scenarioId), file.id) } : null;
+}
+
+const getBriefing = scenarioId => getAt(briefingFolder(scenarioId));
+const saveBriefing = (scenarioId, files) => saveAt(briefingFolder(scenarioId), files);
+const removeBriefing = scenarioId => fs.rm(briefingFolder(scenarioId), { recursive: true, force: true });
 
 async function remove(scenarioId, addressId, number) {
   await fs.rm(folder(scenarioId, addressId, number), { recursive: true, force: true });
@@ -131,6 +152,9 @@ async function copyScenario(sourceId, targetId, addressIdMap) {
     try { await fs.cp(source, target, { recursive: true, errorOnExist: true, force: false }); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
+  try { await fs.cp(briefingFolder(sourceId), briefingFolder(targetId), { recursive: true, errorOnExist: true, force: false }); }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
 }
 
-module.exports = { list, get, save, getFile, remove, removeAddress, removeScenario, copyScenario, positiveId };
+module.exports = { list, get, save, getFile, remove, removeAddress, removeScenario, copyScenario, positiveId,
+  getBriefing, saveBriefing, getBriefingFile, removeBriefing };

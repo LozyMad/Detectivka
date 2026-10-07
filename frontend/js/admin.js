@@ -1332,11 +1332,79 @@ async function editScenario(scenarioId) {
     bannerPreview.onerror = () => { bannerPreview.style.display = 'none'; };
     bannerPreview.src = `${API_BASE}/scenarios/${scenario.id}/banner?v=${Date.now()}`;
 
+    document.getElementById('scenarioBriefingFiles').value = '';
+    document.getElementById('deleteScenarioBriefingBtn').hidden = true;
+
     // Load questions for this scenario
-    await loadScenarioQuestions(scenarioId);
+    await Promise.all([loadScenarioQuestions(scenarioId), loadScenarioBriefing(scenarioId)]);
 
     const modal = new bootstrap.Modal(document.getElementById('editScenarioModal'));
     modal.show();
+}
+
+async function loadScenarioBriefing(scenarioId) {
+    const target = document.getElementById('scenarioBriefingStatus');
+    target.textContent = 'Загрузка…';
+    try {
+        const response = await authFetch(`${API_BASE}/applications/admin/scenarios/${scenarioId}/briefing`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Не удалось загрузить брифинг');
+        if (document.getElementById('editScenarioId').value !== String(scenarioId)) return;
+        const files = data.briefing?.files || [];
+        target.textContent = files.length ? files.map(file => file.name).join(' · ') : 'Брифинг ещё не загружен';
+        document.getElementById('deleteScenarioBriefingBtn').hidden = !files.length;
+    } catch (error) {
+        if (document.getElementById('editScenarioId').value === String(scenarioId)) target.textContent = error.message;
+    }
+}
+
+async function uploadScenarioBriefing() {
+    const scenarioId = document.getElementById('editScenarioId').value;
+    const input = document.getElementById('scenarioBriefingFiles');
+    const files = [...input.files];
+    if (!files.length) return showMessage('Выберите PDF или изображения брифинга', 'warning');
+    if (files.some(file => !/\.(pdf|png|jpe?g|webp)$/i.test(file.name))) {
+        return showMessage('Разрешены PDF, JPG, PNG и WEBP', 'warning');
+    }
+    if (files.length > 30 || files.some(file => file.size > 20 * 1024 * 1024) ||
+        files.reduce((sum, file) => sum + file.size, 0) > 100 * 1024 * 1024) {
+        return showMessage('До 30 файлов по 20 МБ, всего до 100 МБ', 'warning');
+    }
+    const button = document.getElementById('uploadScenarioBriefingBtn');
+    const removeButton = document.getElementById('deleteScenarioBriefingBtn');
+    const form = new FormData();
+    files.forEach(file => form.append('files', file, file.name));
+    button.disabled = removeButton.disabled = true;
+    button.textContent = 'Загрузка…';
+    try {
+        const response = await authFetch(`${API_BASE}/applications/admin/scenarios/${scenarioId}/briefing`, {
+            method: 'POST', body: form, timeoutMs: 120000
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Не удалось загрузить брифинг');
+        if (document.getElementById('editScenarioId').value === String(scenarioId)) input.value = '';
+        showMessage('Брифинг загружен и доступен игрокам этого сценария', 'success');
+        if (document.getElementById('editScenarioId').value === String(scenarioId)) await loadScenarioBriefing(scenarioId);
+    } catch (error) { showMessage(error.message, 'danger'); }
+    finally {
+        button.disabled = removeButton.disabled = false;
+        button.textContent = 'Загрузить брифинг';
+    }
+}
+
+async function deleteScenarioBriefing() {
+    const scenarioId = document.getElementById('editScenarioId').value;
+    if (!confirm('Удалить брифинг этого сценария?')) return;
+    const button = document.getElementById('deleteScenarioBriefingBtn');
+    const uploadButton = document.getElementById('uploadScenarioBriefingBtn');
+    button.disabled = uploadButton.disabled = true;
+    try {
+        const response = await authFetch(`${API_BASE}/applications/admin/scenarios/${scenarioId}/briefing`, { method: 'DELETE' });
+        if (!response.ok) throw new Error((await response.json()).error || 'Не удалось удалить брифинг');
+        showMessage('Брифинг удалён', 'success');
+        if (document.getElementById('editScenarioId').value === String(scenarioId)) await loadScenarioBriefing(scenarioId);
+    } catch (error) { showMessage(error.message, 'danger'); }
+    finally { button.disabled = uploadButton.disabled = false; }
 }
 
 async function updateScenario() {

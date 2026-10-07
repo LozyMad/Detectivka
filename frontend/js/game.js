@@ -7,6 +7,8 @@ let tripCount = 0;
 let tripHistory = [];
 let receivedApplications = new Map();
 let receivedApplicationAddresses = new Map();
+let scenarioBriefing = null;
+let applicationScenarioId = null;
 const collapsedTripKeys = new Set();
 let freshTripTimer = null;
 let cachedScenarioName = null; // Кэш для имени сценария
@@ -397,6 +399,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(id)?.addEventListener('change', savePlayerRoute);
     }
     loadTripHistory();
+    // Initial materials do not have to wait for the trip history request.
+    refreshAvailableApplications();
     loadScenarioInfo();
     setupPlayerNotes();
     document.getElementById('tripSearch')?.addEventListener('input', updateTripHistory);
@@ -754,6 +758,8 @@ async function refreshAvailableApplications() {
         const data = await response.json();
         receivedApplications = new Map((data.addresses || []).map(item => [Number(item.address_id), item.applications || []]));
         receivedApplicationAddresses = new Map((data.addresses || []).map(item => [Number(item.address_id), item]));
+        scenarioBriefing = data.briefing || null;
+        applicationScenarioId = Number(data.scenario_id) || null;
         updateTripHistory();
     } catch (error) {
         console.error('Error loading available applications:', error);
@@ -773,12 +779,16 @@ function updateReceivedApplications() {
     }
     items.sort((a, b) => a.number - b.number);
     const count = document.getElementById('materialsCount');
-    if (count) count.textContent = String(items.length);
-    if (!items.length) {
+    if (count) count.textContent = String(items.length + (scenarioBriefing ? 1 : 0));
+    if (!items.length && !scenarioBriefing) {
         target.textContent = 'Пока нет приложений';
         return;
     }
-    target.innerHTML = items.map(app => `<button type="button" class="received-application scenario-application-link" data-address-id="${app.addressId}" data-number="${app.number}">
+    const briefing = scenarioBriefing ? `<button type="button" class="received-application scenario-application-link" data-briefing="true">
+        <i class="far fa-file-alt" aria-hidden="true"></i> Брифинг дела
+        <small>Начальные материалы · ${Number(scenarioBriefing.file_count) || 0} файл(ов)</small>
+    </button>` : '';
+    target.innerHTML = briefing + items.map(app => `<button type="button" class="received-application scenario-application-link" data-address-id="${app.addressId}" data-number="${app.number}">
         <i class="far fa-folder-open" aria-hidden="true"></i> Приложение ${app.number}
         <small>${escapeHtmlPlayer(app.address)} · ${app.file_count} файл(ов)</small>
     </button>`).join('');
@@ -1282,6 +1292,8 @@ function clearApplicationPreview() {
     document.getElementById('applicationPreview').replaceChildren();
     const zoom = document.getElementById('applicationZoomBtn');
     if (zoom) { zoom.hidden = true; zoom.setAttribute('aria-pressed', 'false'); zoom.textContent = 'Увеличить'; }
+    const download = document.getElementById('applicationDownloadBtn');
+    if (download) { download.hidden = true; download.href = ''; download.download = ''; delete download.dataset.filename; }
     if (applicationObjectUrl) URL.revokeObjectURL(applicationObjectUrl);
     applicationObjectUrl = null;
 }
@@ -1302,8 +1314,9 @@ function closeApplicationFolder() {
     if (applicationReturnFocus?.isConnected) applicationReturnFocus.focus({ preventScroll: true });
     else {
         const origin = [...document.querySelectorAll('.scenario-application-link')].find(element =>
-            applicationReturnAddress && element.dataset.addressId === String(applicationReturnAddress.addressId) &&
-            element.dataset.number === String(applicationReturnAddress.number) && element.getClientRects().length);
+            applicationReturnAddress && (applicationReturnAddress.briefing ? element.dataset.briefing === 'true' :
+                element.dataset.addressId === String(applicationReturnAddress.addressId) &&
+                element.dataset.number === String(applicationReturnAddress.number)) && element.getClientRects().length);
         (origin || document.getElementById(`${activePlayerPane}-tab`))?.focus({ preventScroll: true });
     }
     applicationReturnFocus = null;
@@ -1319,17 +1332,17 @@ function showApplicationFiles() {
     document.getElementById('applicationTitle').textContent = document.getElementById('applicationOverlay').dataset.title || 'Приложение';
 }
 
-async function openApplicationFolder(addressId, number, fallbackUrl = '') {
-    const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id;
+async function openApplicationFolder(addressId, number, fallbackUrl = '', briefing = false) {
+    const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id || applicationScenarioId;
     const token = gameStorage.getItem('token');
     if (!scenarioId || !token) return;
     const requestId = ++applicationRequestId;
     const overlay = document.getElementById('applicationOverlay');
-    overlay.dataset.title = `Приложение ${number}`;
+    overlay.dataset.title = briefing ? 'Брифинг дела' : `Приложение ${number}`;
     if (!overlay.classList.contains('is-open')) {
         overlay.dataset.previousOverflow = document.body.style.overflow;
         applicationReturnFocus = document.activeElement;
-        applicationReturnAddress = { addressId, number };
+        applicationReturnAddress = { addressId, number, briefing };
     }
     overlay.classList.add('is-open');
     overlay.setAttribute('aria-hidden', 'false');
@@ -1339,7 +1352,8 @@ async function openApplicationFolder(addressId, number, fallbackUrl = '') {
     const controller = applicationController = new AbortController();
     const list = document.getElementById('applicationFiles');
     list.textContent = 'Загрузка файлов…';
-    const base = `${API_BASE}/applications/game/scenarios/${encodeURIComponent(scenarioId)}/addresses/${encodeURIComponent(addressId)}/${encodeURIComponent(number)}`;
+    const base = `${API_BASE}/applications/game/scenarios/${encodeURIComponent(scenarioId)}` +
+        (briefing ? '/briefing' : `/addresses/${encodeURIComponent(addressId)}/${encodeURIComponent(number)}`);
     try {
         const response = await window.gameNetwork.fetch(base, { signal: controller.signal, headers: { Authorization: `Bearer ${token}` } });
         if (response.status === 404 && fallbackUrl) {
@@ -1387,6 +1401,14 @@ async function openApplicationFile(base, file, index, token) {
         if (requestId !== applicationRequestId) return;
         clearApplicationPreview();
         applicationObjectUrl = URL.createObjectURL(blob);
+        if (file.type === 'application/pdf') {
+            const download = document.getElementById('applicationDownloadBtn');
+            if (download) {
+                download.href = applicationObjectUrl;
+                download.download = download.dataset.filename = file.name || 'Материал.pdf';
+                download.hidden = false;
+            }
+        }
         const viewer = document.createElement(file.type === 'application/pdf' ? 'iframe' : 'img');
         viewer.src = applicationObjectUrl;
         viewer.title = displayName;
@@ -1407,7 +1429,7 @@ document.addEventListener('click', event => {
     const link = event.target.closest('.scenario-application-link');
     if (!link) return;
     event.preventDefault();
-    openApplicationFolder(link.dataset.addressId, link.dataset.number, link.dataset.fallbackUrl || '');
+    openApplicationFolder(link.dataset.addressId, link.dataset.number, link.dataset.fallbackUrl || '', link.dataset.briefing === 'true');
 });
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('applicationZoomBtn')?.addEventListener('click', toggleApplicationImageZoom);

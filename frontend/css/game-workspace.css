@@ -229,7 +229,8 @@ html:root body.game-container .application-overlay { z-index: 2500; background: 
 html:root body.game-container .application-window { width: min(1100px,100%); height: min(900px,100%); background: var(--work-panel); color: var(--work-text); border: 1px solid #715847; border-radius: 14px; box-shadow: 0 30px 100px #0008; animation: workspace-dialog-in .22s ease-out; }
 html:root body.game-container .application-header { min-height: 68px; padding: 12px 20px; border-color: var(--work-border); gap: 14px; }
 html:root body.game-container .application-header strong { font: 600 17px/1.3 'Source Sans Pro','Segoe UI',sans-serif; }
-html:root body.game-container .application-header button { border: 1px solid var(--work-border); background: var(--work-input); color: var(--work-text); border-radius: 8px; min-height: 40px; padding: 6px 12px; font-size: 13px; }
+html:root body.game-container .application-header button, html:root body.game-container .application-header .application-download { border: 1px solid var(--work-border); background: var(--work-input); color: var(--work-text); border-radius: 8px; min-height: 40px; padding: 6px 12px; font-size: 13px; }
+.application-download { text-decoration: none; align-content: center; }
 html:root body.game-container .application-files { padding: 24px; }
 html:root body.game-container .application-file { border: 1px solid var(--work-border); background: var(--work-input); color: var(--work-text); min-height: 70px; padding: 18px; border-radius: 9px; font-size: 16px; }
 html:root body.game-container .application-file i { color: var(--work-accent); }
@@ -356,7 +357,7 @@ html:root body.desktop-workspace.board-open :is(.board-timer,.board-tools) { fle
     html:root body.game-container .application-window { height: 100%; border-radius: 10px; }
     html:root body.game-container .application-header { padding: 12px; gap: 8px; }
     html:root body.game-container .application-header strong { font-size: 15px; overflow-wrap: anywhere; }
-    html:root body.game-container .application-header button { font-size: 12px; padding: 5px 8px; }
+    html:root body.game-container .application-header button, html:root body.game-container .application-header .application-download { font-size: 12px; padding: 5px 8px; }
     html:root body.game-container .application-files { padding: 16px; }
 }
 @media (max-width: 380px) {
