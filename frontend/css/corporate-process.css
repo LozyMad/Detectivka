@@ -1,5 +1,7 @@
 /* Raster dossier artwork; copy stays in the document for accessibility. */
-.team-process { padding: 30px 0 80px; overflow: hidden; }
+.team-process { position: relative; isolation: isolate; padding: 30px 0 80px; overflow: hidden; }
+/* The empty backdrop fills the viewport; the dossier artwork keeps its original layout. */
+.team-process::before { content: ''; position: absolute; z-index: -1; inset: 30px 0 80px; background: url('../assets/landing/corporate-process-backdrop-v1.webp') center top / cover no-repeat; mask-image: linear-gradient(transparent, #000 3%, #000 95%, transparent); }
 .team-process-scene { position: relative; isolation: isolate; aspect-ratio: 1308 / 1202; }
 .team-process-head { position: absolute; z-index: 2; inset: 0; }
 .team-process .section-heading { position: absolute; top: 5.2%; left: 5.6%; width: 51%; margin: 0; }
@@ -10,7 +12,7 @@
 .team-process-photo figcaption { margin-top: 8px; color: #4f3c2b; text-align: center; font: italic 12px/1.35 Georgia, serif; }
 .team-process-route { position: absolute; inset: 0; }
 .team-process-art { position: absolute; z-index: -1; inset: 0; pointer-events: none; }
-.team-process-art img { display: block; width: 100%; height: 100%; object-fit: fill; mask-image: linear-gradient(transparent, #000 3%, #000 95%, transparent); }
+.team-process-art img { display: block; width: 100%; height: 100%; object-fit: fill; mask-image: linear-gradient(transparent, #000 3%, #000 95%, transparent), linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-composite: intersect; }
 .team-process-threads { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .team-process-threads .thread-lines path { fill: none; stroke: #b95430; stroke-width: 1.8; stroke-linecap: round; filter: drop-shadow(0 1px 1px #160a05); }
 .team-process-watch { position: absolute; top: 9%; right: .5%; width: 15.4%; aspect-ratio: 1122 / 1402; pointer-events: none; filter: drop-shadow(3px 9px 8px #0009); }
@@ -38,6 +40,7 @@
 @media (max-width: 760px) {
   .team-process-threads { display: none; }
   .team-process { padding: 30px 0 52px; }
+  .team-process::before { bottom: 52px; mask-image: linear-gradient(transparent, #000 3%, #000 93%, transparent); }
   .team-process-scene { width: min(100%, 600px); aspect-ratio: auto; }
   .team-process-head { position: relative; display: grid; gap: 32px; padding: 10px 26px 20px; }
   .team-process .section-heading { position: static; width: auto; }
@@ -46,7 +49,7 @@
   .team-process-photo figcaption { margin-top: 8px; font-size: 12px; }
   .team-process-route { position: relative; aspect-ratio: 887 / 1774; }
   .team-process-watch { top: .25%; right: 7%; width: 24%; }
-  .team-process-art img { mask-image: linear-gradient(transparent, #000 3%, #000 93%, transparent); }
+  .team-process-art img { mask-image: linear-gradient(transparent, #000 3%, #000 93%, transparent), linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
   .team-process-duration { top: 5.3%; left: 10%; width: 53%; font-size: clamp(12px, 3.3vw, 16px); text-align: left; line-height: 1.6; }
   .team-process-steps li:nth-child(n) { left: 15.3%; width: 74.5%; height: 14.4%; padding: 10px 16px 6px; }
   .team-process-steps li:nth-child(1) { top: 15.8%; }

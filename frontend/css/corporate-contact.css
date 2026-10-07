@@ -1,10 +1,9 @@
-/* Contact composition: a dark dossier sheet and a small photo collage. */
-.corporate-contact { position: relative; isolation: isolate; padding: 100px 0 58px; background: #1c1714; }
-.corporate-contact::before { content: ''; position: absolute; z-index: -1; inset: 0; background: url('../assets/landing/corporate-paper-grain.svg') repeat; opacity: .18; pointer-events: none; }
-.corporate-contact::after { content: ''; position: absolute; inset: -1px 0 auto; height: 34px; background: var(--background); clip-path: polygon(0 0, 100% 0, 100% 39%, 97% 50%, 94% 45%, 91% 62%, 88% 54%, 85% 72%, 82% 61%, 79% 75%, 76% 66%, 73% 80%, 70% 68%, 67% 87%, 64% 75%, 61% 89%, 58% 70%, 55% 82%, 52% 72%, 49% 89%, 46% 76%, 43% 87%, 40% 70%, 37% 80%, 34% 63%, 31% 74%, 28% 55%, 25% 66%, 22% 52%, 19% 61%, 16% 46%, 13% 56%, 10% 36%, 7% 47%, 4% 30%, 0 42%); pointer-events: none; }
+/* Highlight the form with a warm card and a soft glow on the shared page background. */
+.corporate-contact { position: relative; isolation: isolate; padding: 88px 0 72px; background: var(--background); }
+.corporate-contact::before { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(ellipse 48% 44% at 27% 50%, #b94e241a, transparent 100%); pointer-events: none; }
 .corporate-contact .contact-layout { max-width: 1040px; grid-template-columns: 1fr 1fr; gap: 90px; align-items: center; }
-.corporate-contact .enquiry-panel { position: relative; isolation: isolate; padding: 36px; border: 1px solid #aa8c6b33; border-radius: 28px 7px 7px 7px; background: #100d0b; box-shadow: 0 20px 38px #0004, 8px 9px 0 -2px #100d0b66; }
-.corporate-contact .enquiry-panel::before { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; background: url('../assets/landing/corporate-paper-grain.svg') repeat; opacity: .08; pointer-events: none; }
+.corporate-contact .enquiry-panel { position: relative; padding: 36px; border: 1px solid #c4956f40; border-radius: 20px; background: linear-gradient(145deg, #231a15, #16110e 72%); box-shadow: 0 18px 48px #0004, inset 0 1px 0 #f3e8d80a; transition: border-color .2s ease, box-shadow .2s ease; }
+.corporate-contact .enquiry-panel:focus-within { border-color: #d6a07170; box-shadow: 0 18px 48px #0004, 0 0 32px #b94e2412, inset 0 1px 0 #f3e8d80a; }
 .enquiry-intro { margin-bottom: 30px; }
 .enquiry-intro .product-eyebrow { margin-bottom: 14px; font-size: 10px; }
 .corporate-page .enquiry-intro h2 { margin: 0; font-size: 34px; line-height: 1.18; letter-spacing: -.045em; }
@@ -15,7 +14,7 @@
 .corporate-contact .enquiry-fields .enquiry-field-title { display: flex; flex-wrap: wrap; gap: 4px 7px; align-items: baseline; color: #ddd0c2; font-size: 12px; font-weight: 600; }
 .enquiry-field-title small { color: #a8988b; font-size: 10px; font-weight: 400; }
 .corporate-contact .enquiry-fields input,
-.corporate-contact .enquiry-fields select { min-height: 48px; padding: 11px 15px; border: 1px solid #a88c7159; border-radius: 28px; background: #15110e; font-size: 14px; transition: border-color .2s, background .2s; }
+.corporate-contact .enquiry-fields select { min-height: 48px; padding: 11px 15px; border: 1px solid #a88c7159; border-radius: 28px; background: #0c0908a6; font-size: 14px; transition: border-color .2s, background .2s; }
 .corporate-contact .enquiry-fields select { padding-right: 12px; }
 .corporate-contact .enquiry-fields input::placeholder { color: #9c8e82; }
 .corporate-contact .enquiry-fields input:hover,
@@ -69,6 +68,7 @@
 }
 @media (max-width: 700px) {
   .corporate-contact { padding: 66px 0 38px; }
+  .corporate-contact::before { background: radial-gradient(ellipse 90% 24% at 50% 25%, #b94e241a, transparent 100%); }
   .corporate-contact .contact-layout { width: min(500px, calc(100% - 36px)); grid-template-columns: 1fr; gap: 48px; }
   .corporate-contact .enquiry-panel { padding: 28px 22px; }
   .corporate-page .enquiry-intro h2 { font-size: 28px; }
