@@ -11,8 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
   <link rel="preload" as="image" href="/assets/landing/noir-hero-v3.opt.webp">
   <link rel="stylesheet" href="/css/landing.css?v=7">
-  <link rel="stylesheet" href="/css/landing-product.css?v=18">
-  <script src="/js/landing-board-demo.js?v=8" defer></script>
+  <link rel="stylesheet" href="/css/landing-product.css?v=22">
+  <script src="/js/landing-board-demo.js?v=11" defer></script>
 </head>
 <body class="friends-page">
   <a class="skip-link" href="#main">К содержанию</a>
@@ -67,12 +67,13 @@
           <article class="case-card" aria-labelledby="silence-case-title">
             <div class="case-card-cover">
               <img src="/assets/landing/silence-case-cover-v1.webp" alt="Досье и запечатанное письмо у окна ночного города" width="1536" height="1024" loading="lazy">
+              <p class="case-card-duration"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>120<span class="sr-only"> минут</span></span></p>
               <p class="case-card-difficulty">Сложность: 3 из 5 <span class="difficulty-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></p>
             </div>
             <div class="case-card-body">
               <p class="case-card-kind">Полное расследование</p>
               <h3 id="silence-case-title">Ставка на молчание</h3>
-              <p class="case-card-description">120 минут, чтобы разобраться в материалах, проверить версии и ответить на вопросы расследования.</p>
+              <p class="case-card-description">Журналистка Вероника Гронская найдена мёртвой. Милиция уверена: это самоубийство. Её расследование осталось незавершённым. Что она узнала — и кто помешал ей об этом рассказать?</p>
               <div class="case-card-footer"><p class="case-card-price">2 000 ₽ <span>за команду · онлайн</span></p><button class="button case-card-action" type="button" disabled>Начать игру</button></div>
             </div>
           </article>
@@ -100,9 +101,9 @@
           </div>
           <div class="board-demo-frame"><div class="board-demo-canvas">
             <svg class="board-demo-threads" data-board-item="3" viewBox="0 0 1000 360" preserveAspectRatio="none" aria-hidden="true"><path d="M 180 72 Q 350 110 500 96"></path><path d="M 500 96 Q 660 120 820 72"></path></svg>
-            <article class="board-demo-note" data-board-item="1"><h3>Дом свидетеля</h3><small>Посещённое место</small><p>«После восьми был дома. Никуда не выходил».</p></article>
-            <article class="board-demo-note" data-board-item="2"><h3>Алиби под вопросом</h3><small>Версия команды</small><p>В девять его машину видели у вокзала. Но был ли он сам за рулём?</p></article>
-            <article class="board-demo-note" data-board-item="3"><h3>Проверить вокзал</h3><small>Следующий шаг</small><p>Поговорить с дежурным. Сверить время приезда и описание водителя.</p></article>
+            <article class="board-demo-note" data-board-item="1"><h3>Дом свидетеля</h3><small>Посещённое место</small><p class="board-demo-full-copy">«После восьми был дома. Никуда не выходил».</p><p class="board-demo-compact-copy">Говорит, что весь вечер был дома.</p></article>
+            <article class="board-demo-note" data-board-item="2"><h3>Алиби под вопросом</h3><small>Версия команды</small><p class="board-demo-full-copy">В девять его машину видели у вокзала. Но был ли он сам за рулём?</p><p class="board-demo-compact-copy">Его машину видели у вокзала.</p></article>
+            <article class="board-demo-note" data-board-item="3"><h3>Проверить вокзал</h3><small>Следующий шаг</small><p class="board-demo-full-copy">Поговорить с дежурным. Сверить время приезда и описание водителя.</p><p class="board-demo-compact-copy">Кто был за рулём?</p></article>
           </div></div>
         </figure>
       </div>

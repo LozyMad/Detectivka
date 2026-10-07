@@ -49,9 +49,9 @@ document.querySelectorAll('[data-board-demo]').forEach(demo => {
       return { x: rect.left - bounds.left, y: rect.top - bounds.top };
     });
     const paths = [...threads.querySelectorAll('path')];
-    const stacked = notes[1].offsetTop - notes[0].offsetTop > notes[0].offsetHeight / 2;
     paths.forEach((path, index) => {
       const a = anchors[index], b = anchors[index + 1];
+      const stacked = notes[index + 1].offsetTop - notes[index].offsetTop > notes[index].offsetHeight / 2;
       if (stacked) {
         // Route through the paper's transparent side margin, clear of its text.
         const pair = notes.slice(index, index + 2).map(note => note.getBoundingClientRect());
