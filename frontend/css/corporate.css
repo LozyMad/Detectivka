@@ -15,7 +15,6 @@
 .team-hero h1 em { color: #e9b188; font: italic 1em/1.05 Georgia, serif; letter-spacing: -.055em; }
 .team-hero-description { max-width: 500px; color: #dccbbb; font-size: 17px; line-height: 1.75; }
 .team-hero-actions { display: flex; flex-wrap: wrap; gap: 18px 24px; align-items: center; margin-top: 28px; }
-.team-hero-note { max-width: 450px; margin-top: 20px; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .team-hero-visual { position: relative; margin: 0; min-width: 0; }
 .team-hero-visual img { width: 100%; height: 560px; object-fit: cover; object-position: 74% 50%; border: 1px solid #d6b69a36; border-radius: 140px 14px 14px 14px; }
 .team-hero-visual figcaption { margin-top: 12px; color: #a99687; font-size: 11px; text-align: right; }

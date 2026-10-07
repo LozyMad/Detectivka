@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex">
     <title>Детектум - Вход в игру</title>
-    <script src="js/theme.js?v=2"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/style.css?v=7" rel="stylesheet">
@@ -65,15 +64,12 @@
             margin-top: 1rem;
         }
     </style>
-    <link href="css/design-system.css?v=5" rel="stylesheet">
-    <link href="css/dark-interface.css?v=2" rel="stylesheet">
+    <link href="css/design-system.css?v=6" rel="stylesheet">
+    <link href="css/dark-interface.css?v=3" rel="stylesheet">
 </head>
 <body class="game-login-body">
     <button class="btn btn-outline-light back-btn back-link" onclick="goBack()">
         <i class="fas fa-arrow-left me-2"></i>Назад
-    </button>
-    <button class="btn btn-outline-light theme-toggle theme-toggle-login" type="button" data-theme-toggle aria-label="Тёмная тема">
-        <i class="fas fa-moon" data-theme-icon aria-hidden="true"></i><span data-theme-label>Тёмная тема</span>
     </button>
     
     <div class="container auth-container fade-in-noir">
@@ -88,12 +84,13 @@
                         <p class="text-muted auth-subtitle">Присоединиться к игровой комнате</p>
                     </div>
                     
+                    <div id="message" class="mt-3" aria-live="polite"></div>
                     <form id="gameLoginForm">
                         <div class="mb-3">
                             <label for="roomId" class="form-label">
                                 <i class="fas fa-door-open me-2"></i>ID комнаты
                             </label>
-                            <input type="number" class="form-control form-control-lg" id="roomId" 
+                            <input type="number" class="form-control form-control-lg" id="roomId" data-no-persist
                                    placeholder="Введите номер комнаты" required>
                         </div>
                         
@@ -101,7 +98,7 @@
                             <label for="roomUsername" class="form-label">
                                 <i class="fas fa-user me-2"></i>Логин игрока
                             </label>
-                            <input type="text" class="form-control form-control-lg" id="roomUsername" 
+                            <input type="text" class="form-control form-control-lg" id="roomUsername" data-no-persist
                                    placeholder="Ваш игровой логин" required>
                         </div>
                         
@@ -117,8 +114,6 @@
                             <i class="fas fa-play me-2"></i>Начать игру
                         </button>
                     </form>
-                    
-                    <div id="message" class="mt-3"></div>
                     
                     <div class="help-text">
                         <h6 class="mb-2">
@@ -142,7 +137,8 @@
         </div>
     </div>
 
-    <script src="js/game-auth.js"></script>
+    <script src="js/game-session.js?v=1"></script>
+    <script src="js/game-auth.js?v=2"></script>
     <script src="js/persist-inputs.js"></script>
     <script src="js/no-copy.js?v=1"></script>
     <script>
@@ -150,15 +146,6 @@
             window.location.href = '/login';
         }
         
-        // Проверяем, не авторизован ли игрок уже
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('token');
-            const roomUser = JSON.parse(localStorage.getItem('roomUser') || 'null');
-            
-            if (token && roomUser) {
-                window.location.href = '/game';
-            }
-        });
     </script>
 </body>
 </html>

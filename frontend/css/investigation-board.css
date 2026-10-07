@@ -207,7 +207,7 @@ body.board-open #board {
 /* A small, bounded overview boost keeps the text proportional to the paper. */
 .investigation-note .board-note-title { font-size: var(--board-title-size, 18px); }
 .investigation-note .board-note-comment { font-size: var(--board-comment-size, 14px); margin-top: calc(9px * var(--board-zoom, 1)); }
-/* Printed paper keeps its own ink in both site themes (including global small styles). */
+/* Printed paper keeps its own ink against the dark interface (including global small styles). */
 .investigation-note .board-note-title, .investigation-note .board-note-comment { color: var(--note-ink) !important; }
 .investigation-note .board-note-address { color: var(--note-secondary-ink) !important; }
 .board-note-dialog .board-note-address { color: #403424 !important; }
@@ -341,7 +341,7 @@ body.board-desktop-header .board-tools { flex-wrap: nowrap; margin: 0; gap: 9px;
 #boardTimerHost #roomTimer { margin: 0 !important; }
 #boardTimerHost .badge { min-width: 96px; padding: 9px 12px; font-size: .85rem !important; color: #f7f3e9 !important; }
 #boardTimerHost .badge.bg-warning { color: #241a0b !important; }
-html.theme-dark #boardTimerHost #timerDisplay.bg-warning { color: #f1d795 !important; }
+html:root #boardTimerHost #timerDisplay.bg-warning { color: #f1d795 !important; }
 .board-account { position: relative; }
 .board-account summary {
   display: grid;

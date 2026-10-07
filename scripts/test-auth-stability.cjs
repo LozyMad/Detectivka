@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { roomSessionFixture } = require('./test-helpers/room-session-fixture.cjs');
 
 function fixture(findById) {
   const module = { exports: {} };
@@ -17,6 +18,47 @@ function fixture(findById) {
   });
   return { middleware: module.exports, callback: () => verifyCallback };
 }
+
+test('real HTTP: room creation, room login and test-room login produce tokens accepted by trips', async t => {
+  const f = roomSessionFixture();
+  const server = await new Promise(resolve => { const listening = f.app.listen(0, '127.0.0.1', () => resolve(listening)); });
+  t.after(() => new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const post = (path, body, token) => fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
+  const staff = await (await post('/api/auth/login', { username: f.admin.username, password: 'fixture-password' })).json();
+  for (const is_test of [false, true]) {
+    const creation = await post('/api/rooms', { name: 'New fixture room', scenario_id: 12, duration_seconds: 7200, is_test }, staff.token);
+    assert.equal(creation.status, 201);
+    const { room } = await creation.json();
+    const response = is_test ? await post(`/api/rooms/${room.id}/test-login`, {}, staff.token)
+      : await post('/api/auth/room-login', { room_id: room.id, username: 'Шляпники', password: 'fixture-password' });
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    const session = await fetch(base + '/api/auth/session', { headers: { Authorization: `Bearer ${data.token}` } });
+    assert.equal(session.status, 200);
+    assert.equal((await session.json()).room_user.room_id, room.id);
+    assert.equal(session.headers.get('Cache-Control'), 'no-store');
+    const trip = await post('/api/game/visit', { district: 'Ц', house_number: '31', apartment: '4' }, data.token);
+    assert.equal(trip.status, 200);
+    assert.equal((await trip.json()).success, true);
+    assert.equal(f.attempts.at(-1).room_id, room.id);
+    assert.equal(f.attempts.at(-1).user_id, room.id + 1);
+  }
+  assert.equal(f.attempts.length, 2);
+  const payload = { room_user_id: 15, room_id: 14, username: 'Шляпники', scenario_id: 12 };
+  const rejected = [
+    [f.jwt.sign(payload, f.secret, { expiresIn: -1 }), 'AUTH_TOKEN_EXPIRED'],
+    [f.jwt.sign(payload, 'different-test-secret', { expiresIn: '24h' }), 'AUTH_TOKEN_INVALID'],
+    ['malformed-fixture-token', 'AUTH_TOKEN_INVALID']
+  ];
+  for (const [token, code] of rejected) {
+    const trip = await post('/api/game/visit', { district: 'Ц', house_number: '31', apartment: '4' }, token);
+    assert.equal(trip.status, 403);
+    assert.equal((await trip.json()).code, code);
+  }
+  assert.equal(f.attempts.length, 2, 'rejected tokens never record or consume a trip');
+});
 
 for (const name of ['authenticateToken', 'authenticateTokenQuery']) {
   function start(findById) {

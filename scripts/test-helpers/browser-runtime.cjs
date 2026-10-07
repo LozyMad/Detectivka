@@ -70,11 +70,14 @@ function browser(fetchImpl = () => new Response('{}')) {
   const document = new Target();
   Object.assign(document, { hidden: false, getElementById: element, body: element('body'), querySelector: () => null, querySelectorAll: () => [] });
   const window = new Target();
+  window.location = { href: '', pathname: '/game', search: '' };
   const values = new Map([
     ['token', 'fixture-token'], ['room', JSON.stringify({ id: 14, scenario_id: 12 })],
     ['roomUser', JSON.stringify({ id: 15, room_id: 14, username: 'Fixture' })]
   ]);
-  const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
+  const makeStorage = entries => ({ getItem: key => entries.get(key) ?? null,
+    setItem: (key, value) => entries.set(key, String(value)), removeItem: key => entries.delete(key) });
+  const storage = makeStorage(values), tabStorage = makeStorage(new Map());
   class FakeDate extends Date {
     constructor(...args) { super(...(args.length ? args : [clock.now])); }
     static now() { return clock.now; }
@@ -86,8 +89,8 @@ function browser(fetchImpl = () => new Response('{}')) {
   }
   const math = Object.create(Math); math.random = () => 0;
   const sandbox = {
-    document, window, navigator: { onLine: true }, localStorage: storage, sessionStorage: storage,
-    Headers, Response, Request, AbortController, ReadableStream, URL, Date: FakeDate, Math: math,
+    document, window, navigator: { onLine: true }, localStorage: storage, sessionStorage: tabStorage,
+    Headers, Response, Request, AbortController, AbortSignal, ReadableStream, URL, URLSearchParams, atob, Date: FakeDate, Math: math,
     performance: { now: () => clock.now },
     EventSource: Source, ResizeObserver: class { observe() {} },
     setTimeout: (fn, delay) => clock.set(fn, delay), clearTimeout: id => clock.jobs.delete(id),

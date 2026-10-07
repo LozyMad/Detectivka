@@ -6,9 +6,9 @@ body.game-container > .container.mt-3 { margin-top: 0 !important; }
 /* Existing controls share one fixed bottom bar on phones and touch tablets. */
 body.game-container.has-bottom-nav { padding-bottom: var(--player-bottom-nav-height, 64px); }
 body.has-bottom-nav #playerBottomNav {
-    --bottom-nav-surface: #f4eddf;
-    --bottom-nav-text: #6b6355;
-    --bottom-nav-active: #806224;
+    --bottom-nav-surface: #191f1c;
+    --bottom-nav-text: #a7ada7;
+    --bottom-nav-active: #e3bf70;
     display: block;
     position: fixed;
     z-index: 1030;
@@ -21,11 +21,6 @@ body.has-bottom-nav #playerBottomNav {
     box-shadow: 0 -4px 18px #00000014;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-}
-html.theme-dark body.has-bottom-nav #playerBottomNav {
-    --bottom-nav-surface: #191f1c;
-    --bottom-nav-text: #a7ada7;
-    --bottom-nav-active: #e3bf70;
 }
 body.board-open #playerBottomNav { z-index: 2300; }
 #playerBottomNav #playerNavTabs { display: block !important; width: 100%; margin: 0 !important; }
@@ -84,7 +79,7 @@ body.game-container #questions, body.game-container #addressbook { padding-top: 
     padding: 0 0 3rem;
     color: var(--board-text);
 }
-html.theme-dark #game { --board-ink: #191e1d; --trip-neutral: #292f2c; }
+html:root #game { --board-ink: #191e1d; --trip-neutral: #292f2c; }
 #game::before {
     content: '';
     position: absolute;
@@ -146,13 +141,13 @@ html.theme-dark #game { --board-ink: #191e1d; --trip-neutral: #292f2c; }
 #game .location-search-card .form-label { color: #34332d !important; margin-bottom: .32rem; font-size: .88rem; font-weight: 600; }
 #game .location-search-card .form-control, #game .location-search-card .form-select { min-height: 42px; color: #292923 !important; background: rgba(255, 252, 245, .72) !important; border: 1px solid #c9bca7 !important; }
 #game .location-search-card .form-control::placeholder { color: #80786d !important; opacity: 1; }
-html.theme-dark body.game-container #game .location-search-card .form-control:focus,
-html.theme-dark body.game-container #game .location-search-card .form-select:focus {
+html:root body.game-container #game .location-search-card .form-control:focus,
+html:root body.game-container #game .location-search-card .form-select:focus {
     background: #fffdf8 !important;
     color: #292923 !important;
 }
-html.theme-dark body.game-container #game #districtSelect { color-scheme: light; }
-html.theme-dark body.game-container #game #districtSelect option {
+html:root body.game-container #game #districtSelect { color-scheme: dark; }
+html:root body.game-container #game #districtSelect option {
     background: #fffdf8 !important;
     color: #292923 !important;
 }
@@ -275,152 +270,21 @@ body.game-container .notes-status { margin: .4rem 0 0; color: #aaa394; font-size
     #game #tripSearch { width: 100%; }
 }
 @media (max-width: 767.98px) {
-    html.theme-dark body.game-container .player-mobile-toolbar {
+    html:root body.game-container .player-mobile-toolbar {
         --toolbar-surface: #292e2b;
         --toolbar-tab: #363d38;
         --toolbar-tab-border: #707366;
         --toolbar-text: #f0eadc;
     }
-    html.theme-dark body.game-container .player-mobile-toolbar .btn-group .btn.active {
+    html:root body.game-container .player-mobile-toolbar .btn-group .btn.active {
         background: #d2ad5d !important;
         border-color: #d2ad5d !important;
         color: #20241f !important;
     }
-    html.theme-dark body.game-container .player-mobile-toolbar .trips-badge {
+    html:root body.game-container .player-mobile-toolbar .trips-badge {
         background: #463c28 !important;
         border-color: #a48b52 !important;
         color: #f1d795 !important;
     }
 }
 @media (prefers-reduced-motion: reduce) { #game .trip-item.success.is-fresh { animation: none; background: #375543 !important; } #game .trip-toggle i { transition: none; } }
-
-/* Light player theme: quiet paper surfaces over one continuous case-board texture. */
-html:not(.theme-dark) body.game-container {
-    --light-canvas: #e7dfcd;
-    --light-surface: #f2ecde;
-    --light-surface-secondary: #ddd5c4;
-    --light-input: #fbf7ee;
-    --light-text: #242720;
-    --light-muted: #60594d;
-    --light-border: #b6a98f;
-    --light-gold: #b99732;
-    --light-shadow: 0 6px 17px rgba(76, 58, 35, .10);
-    --light-paper-texture:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.62' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E"),
-        radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, .08) 25%, rgba(114, 90, 57, .07) 100%);
-    background: var(--light-paper-texture), #e7dfcd !important;
-}
-html:not(.theme-dark) #game {
-    --board-text: var(--light-text);
-}
-html:not(.theme-dark) #game::before {
-    content: none;
-}
-html:not(.theme-dark) #game .case-banner {
-    border-bottom-color: #586251;
-    background: #252c27;
-}
-html:not(.theme-dark) #game .case-banner::after {
-    background: linear-gradient(90deg, rgba(37, 44, 39, .97) 0%, rgba(37, 44, 39, .81) 42%, rgba(37, 44, 39, .17) 100%);
-}
-html:not(.theme-dark) #game .location-search-card {
-    background: var(--light-surface) !important;
-    border-color: var(--light-border) !important;
-    box-shadow: var(--light-shadow) !important;
-    color: var(--light-text);
-}
-html:not(.theme-dark) #game .location-search-card h2,
-html:not(.theme-dark) #game .location-search-card .form-label { color: var(--light-text) !important; }
-html:not(.theme-dark) #game .location-search-card .form-control,
-html:not(.theme-dark) #game .location-search-card .form-select,
-html:not(.theme-dark) #game #tripSearch,
-html:not(.theme-dark) body.game-container #playerNotesText {
-    background: var(--light-input) !important;
-    color: var(--light-text) !important;
-    border-color: var(--light-border) !important;
-}
-html:not(.theme-dark) #game :is(.location-search-card .form-control, #tripSearch, #playerNotesText)::placeholder {
-    color: var(--light-muted) !important;
-    opacity: 1;
-}
-html:not(.theme-dark) body.game-container #playerNotesText::placeholder { color: var(--light-muted) !important; opacity: 1; }
-html:not(.theme-dark) #game #districtSelect {
-    background-color: var(--light-input) !important;
-    border-color: var(--light-border) !important;
-    color: var(--light-text) !important;
-}
-html:not(.theme-dark) #game #goBtn {
-    background-color: var(--light-gold) !important;
-    border-color: var(--light-gold) !important;
-    color: #171a1c !important;
-}
-html:not(.theme-dark) #game #goBtn:hover { background-color: #a98523 !important; border-color: #a98523 !important; }
-html:not(.theme-dark) #game .trip-history-heading h2 { color: var(--light-text) !important; }
-html:not(.theme-dark) #game .trip-history-heading h2 i { color: #806523; }
-html:not(.theme-dark) #game .trip-empty { color: var(--light-muted); border-color: var(--light-border); }
-html:not(.theme-dark) #game .trip-item {
-    background: #e5dfd0 !important;
-    border-color: #b8af9b !important;
-    border-left-color: #9e854a !important;
-    color: var(--light-text) !important;
-    box-shadow: 0 3px 10px rgba(76, 58, 35, .07);
-}
-html:not(.theme-dark) #game .trip-item.success {
-    background: #d8d8c9 !important;
-    border-color: #a9b09c !important;
-    border-left-color: #617a60 !important;
-}
-html:not(.theme-dark) #game .trip-item.failure {
-    background: #dec5c2 !important;
-    border-color: #bd9892 !important;
-    border-left-color: #874b49 !important;
-    color: #542c2b !important;
-}
-html:not(.theme-dark) #game .trip-item.success.is-fresh { position: relative; isolation: isolate; animation: none; }
-html:not(.theme-dark) #game .trip-item.success.is-fresh::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    background: #78a07b;
-    pointer-events: none;
-    animation: found-trip-light 9s ease-out both;
-}
-@keyframes found-trip-light { 0%, 43% { opacity: .65; } 100% { opacity: 0; } }
-html:not(.theme-dark) #game .trip-info,
-html:not(.theme-dark) #game .trip-description { color: var(--light-text) !important; }
-html:not(.theme-dark) #game .trip-item.failure :is(.trip-info, .trip-description) { color: #542c2b !important; }
-html:not(.theme-dark) #game .trip-time { color: #5a5148; }
-html:not(.theme-dark) #game .trip-status { color: #38543e; font-weight: 600; }
-html:not(.theme-dark) #game .trip-item.failure .trip-status { color: #6b3432; }
-html:not(.theme-dark) #game .trip-icon { color: #806523; }
-html:not(.theme-dark) #game .trip-item.failure .trip-icon { color: #7d4543; }
-html:not(.theme-dark) #game .trip-toggle { color: #71591e; }
-html:not(.theme-dark) #game .trip-choice-btn { color: #604913 !important; border-color: #a58c5e !important; }
-html:not(.theme-dark) body.game-container .dossier-sidebar {
-    background: var(--light-surface-secondary);
-    border-color: var(--light-border);
-    box-shadow: var(--light-shadow);
-    color: var(--light-text);
-}
-html:not(.theme-dark) body.game-container .dossier-sidebar h2 { color: #59451d !important; }
-html:not(.theme-dark) body.game-container .latest-location { border-bottom-color: #b4a990; }
-html:not(.theme-dark) body.game-container .received-application { background: #f6f0e3; color: #5c471f; border-color: #b4a990; }
-html:not(.theme-dark) body.game-container .received-applications-list { color: #6f6658; }
-html:not(.theme-dark) body.game-container .received-application:hover { background: #eadbb9; }
-html:not(.theme-dark) body.game-container .received-application small { color: #6f6658; }
-html:not(.theme-dark) #game .trip-application-button { color: #624714; }
-html:not(.theme-dark) #game .trip-app-badge { color: #624714; }
-html:not(.theme-dark) body.game-container .latest-location-content,
-html:not(.theme-dark) body.game-container .latest-location-address strong { color: var(--light-text); }
-html:not(.theme-dark) body.game-container .latest-location-address small,
-html:not(.theme-dark) body.game-container .notes-status { color: var(--light-muted); }
-html:not(.theme-dark) body.game-container .latest-location-address i { color: #806523; }
-html:not(.theme-dark) #game :is(input, select, textarea, button):focus-visible {
-    outline-color: #9b741e !important;
-    box-shadow: 0 0 0 3px rgba(185, 151, 50, .22) !important;
-}
-@media (prefers-reduced-motion: reduce) {
-    html:not(.theme-dark) #game .trip-item.success.is-fresh::after { animation: none; opacity: .45; }
-}

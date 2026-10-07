@@ -6,12 +6,30 @@ const json = value => new Response(JSON.stringify(value), { headers: { 'Content-
 const state = { state: 'running', remaining: 120, room: { id: 14, scenario_id: 12 }, scenario_name: 'Fixture' };
 function game(fetchImpl) {
   const b = browser(fetchImpl);
+  b.load('frontend/js/game-session.js');
   b.load('frontend/js/game.js');
   b.run('updateTripHistory = () => {};'); // Rendering is covered by the existing board tests.
   return b;
 }
 const healthy = call => json(call.url.endsWith('/state') ? state : call.url.endsWith('/attempts') ?
   { attempts: [], choices_included: true } : { addresses: [] });
+
+test('desktop workspace is available without a theme flag, including an old saved light preference', () => {
+  const b = game(healthy);
+  let wide = true, tall = true, touch = false;
+  b.window.matchMedia = query => ({ matches: query.includes('min-width: 1280px') ? wide && tall : touch });
+  assert.equal(b.run('isDesktopWorkspace()'), true, 'new visitors get the desktop workspace');
+  b.sandbox.localStorage.setItem('detectum-theme', 'light');
+  assert.equal(b.run('isDesktopWorkspace()'), true, 'the old preference cannot disable the workspace');
+  touch = true;
+  assert.equal(b.run('isDesktopWorkspace()'), false, 'touch devices retain the tablet layout');
+  touch = false;
+  wide = false;
+  assert.equal(b.run('isDesktopWorkspace()'), false, 'narrow windows retain responsive navigation');
+  wide = true;
+  tall = false;
+  assert.equal(b.run('isDesktopWorkspace()'), false, 'short landscape windows retain responsive navigation');
+});
 
 test('selecting a directory address fills the route without recording a visit', () => {
   const b = game(healthy);
@@ -297,4 +315,51 @@ test('HTTP errors do not invent trips, while a recorded missing address still co
   assert.equal(b.run('tripHistory[0].id'), 18);
   assert.equal(b.run('tripHistory[0].success'), false);
   assert.equal(b.element('houseNumber').value, '');
+});
+
+test('an admin login in another tab cannot replace the player token used for a trip', async () => {
+  const b = game(() => json({ success: true, attempt_id: 19, location: { apartment: '4' } }));
+  b.sandbox.localStorage.setItem('token', 'other-tab-admin-token');
+  b.sandbox.localStorage.setItem('user', JSON.stringify({ id: 99, is_admin: true }));
+  b.sandbox.localStorage.removeItem('roomUser');
+  b.element('districtSelect').value = 'Ц';
+  b.element('houseNumber').value = '31';
+  b.element('apartmentNumber').value = '4';
+  b.run("roomState = { state: 'running' }; refreshAvailableApplications = () => {}; ");
+  await b.run('visitLocation()');
+  assert.equal(b.calls[0].options.headers.Authorization, 'Bearer fixture-token');
+  assert.equal(b.run("JSON.parse(gameStorage.getItem('roomUser')).id"), 15);
+  assert.equal(b.run('tripCount'), 1);
+  assert.equal(b.sandbox.localStorage.getItem('token'), 'other-tab-admin-token');
+});
+
+test('a rejected player token stops the session, preserves the route and never repeats the trip', async () => {
+  const b = game(call => call.options.method === 'POST'
+    ? new Response(JSON.stringify({ error: 'Invalid token' }), { status: 403 }) : healthy(call));
+  b.element('districtSelect').value = 'Ц';
+  b.element('houseNumber').value = '31';
+  b.element('apartmentNumber').value = '4';
+  b.run("roomState = { state: 'running' }; tripCount = 7; tripHistory = [{ id: 1 }]; backgroundReady = true; updateBackgroundState();");
+  await b.clock.advance(0);
+  b.run('tripCount = 7; tripHistory = [{ id: 1 }];');
+  await b.run('visitLocation()');
+  await b.clock.advance(120000);
+  assert.equal(b.run("gameStorage.getItem('token')"), null);
+  assert.equal(b.window.location.href, '/game-login?session=expired');
+  assert.equal(b.run('tripCount'), 7);
+  assert.equal(b.run('tripHistory[0].id'), 1);
+  assert.equal(b.element('houseNumber').value, '31');
+  assert.equal(b.element('apartmentNumber').value, '4');
+  assert.equal(b.calls.filter(call => call.options.method === 'POST').length, 1);
+  assert.equal(b.sources.filter(source => !source.closed).length, 0);
+  assert.equal(b.clock.jobs.size, 0);
+  assert.equal(b.alerts.length, 0, 'the login page explains the problem instead of a raw alert');
+});
+
+test('an authentication rejection during history loading cannot leave a seemingly working session', async () => {
+  const b = game(() => new Response(JSON.stringify({ error: 'Invalid token', code: 'AUTH_TOKEN_EXPIRED' }), { status: 403 }));
+  assert.equal(await b.run('loadTripHistory()'), false);
+  assert.equal(b.window.location.href, '/game-login?session=expired');
+  assert.equal(b.run("gameStorage.getItem('token')"), null);
+  assert.equal(b.run('backgroundAllowed()'), false);
 });

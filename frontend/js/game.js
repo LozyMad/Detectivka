@@ -1,4 +1,4 @@
-const gameStorage = sessionStorage.getItem('testRoomSession') === '1' ? sessionStorage : localStorage;
+const gameStorage = window.gameSession.storage;
 const API_BASE = '/api';
 let selectedDistrict = null;
 let roomState = null;
@@ -38,6 +38,22 @@ let arrangePlayerNavigation = () => {};
 let activePlayerPane = 'game';
 let applicationReturnFocus = null;
 let applicationReturnAddress = null;
+let playerRouteReady = false;
+window.gameSession.onExpired = () => {
+    savePlayerRoute();
+    backgroundReady = false;
+    updateBackgroundState();
+    window.gameNetwork.cancelReads();
+    window.location.href = window.gameSession.isTest ? '/admin?test-session=expired' : '/game-login?session=expired';
+};
+
+function savePlayerRoute() {
+    const route = { district: document.getElementById('districtSelect')?.value || '',
+        house: document.getElementById('houseNumber')?.value || '',
+        apartment: document.getElementById('apartmentNumber')?.value || '' };
+    if (playerRouteReady || route.district || route.house || route.apartment) window.gameSession.saveRoute(route);
+}
+
 function syncWorkspaceRail() {
     const toggle = document.getElementById('workspaceRailToggle');
     if (toggle) {
@@ -48,8 +64,7 @@ function syncWorkspaceRail() {
 }
 
 function isDesktopWorkspace() {
-    return document.documentElement.classList.contains('theme-dark') &&
-        window.matchMedia('(min-width: 1280px) and (min-height: 501px)').matches &&
+    return window.matchMedia('(min-width: 1280px) and (min-height: 501px)').matches &&
         !window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 }
 
@@ -105,7 +120,6 @@ function setupMobileGameLayout() {
     const utilities = document.querySelector('.dossier-utilities');
     const journal = document.querySelector('.dossier-main');
     const applicationsTab = document.getElementById('applications-tab');
-    const applicationsPane = document.getElementById('applications');
     const mobileDossier = document.getElementById('mobileDossierHost');
     const workspaceNav = document.getElementById('workspaceNavHost');
     if (!toolbar || !bottomNav || !collapse || !tabs || !stats || !sidebar) return;
@@ -125,15 +139,9 @@ function setupMobileGameLayout() {
     const narrowLandscape = window.matchMedia('(max-width: 740px)');
     const workspaceSize = window.matchMedia('(min-width: 1280px) and (min-height: 501px)');
     const arrange = () => {
-        const dark = document.documentElement.classList.contains('theme-dark');
         const workspace = isDesktopWorkspace();
         syncWorkspacePanes();
-        if (applicationsTab) applicationsTab.hidden = !(phone.matches || dark);
-        // Return to the game when a phone becomes a tablet/desktop layout.
-        if (!phone.matches && !dark && applicationsPane?.classList.contains('active')) {
-            document.getElementById('game-tab').click();
-            return;
-        }
+        if (applicationsTab) applicationsTab.hidden = false;
         // Move the existing controls so timers, active tabs and click handlers stay in sync.
         if (controls && controlsHome) controlsHome.append(controls);
         statHome.prepend(stats);
@@ -187,7 +195,6 @@ function setupMobileGameLayout() {
         else media.addListener(arrange);
     }
     new ResizeObserver(updateBottomNavHeight).observe(bottomNav);
-    new MutationObserver(arrange).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     document.querySelector('.workspace-brand')?.addEventListener('click', event => {
         event.preventDefault();
         document.getElementById('game-tab').click();
@@ -365,8 +372,8 @@ window.addEventListener('pageshow', () => { pageSuspended = false; updateBackgro
 
 // Initialize game
 document.addEventListener('DOMContentLoaded', () => {
+    if (!checkAuth()) return;
     setupMobileGameLayout();
-    checkAuth();
     restoreCollapsedTrips();
     // Start the banner request while room state and trip history are loading.
     try {
@@ -374,11 +381,20 @@ document.addEventListener('DOMContentLoaded', () => {
         setScenarioBanner(room?.scenario_id);
     } catch (_) {}
     setupDistrictSelect();
+    const route = window.gameSession.restoreRoute();
+    if (route) {
+        document.getElementById('districtSelect').value = route.district;
+        document.getElementById('houseNumber').value = route.house;
+        document.getElementById('apartmentNumber').value = route.apartment;
+    }
+    playerRouteReady = true;
     for (const id of ['districtSelect', 'houseNumber', 'apartmentNumber']) {
         document.getElementById(id)?.addEventListener('input', () => {
+            savePlayerRoute();
             const destination = document.getElementById('selectedDestination');
             if (destination) destination.hidden = true;
         });
+        document.getElementById(id)?.addEventListener('change', savePlayerRoute);
     }
     loadTripHistory();
     loadScenarioInfo();
@@ -407,6 +423,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkAuth() {
+    if (window.gameSession.testRequested && !window.gameSession.isTest) {
+        window.location.href = '/admin?test-session=expired';
+        return false;
+    }
     const token = gameStorage.getItem('token');
     const user = JSON.parse(gameStorage.getItem('user') || '{}');
     const roomUser = JSON.parse(gameStorage.getItem('roomUser') || 'null');
@@ -415,11 +435,16 @@ function checkAuth() {
     
     if (!token || (!user.id && !roomUser?.id)) {
         console.log('Auth failed, redirecting to home');
-        window.location.href = '/login';
-        return;
+        window.location.href = '/game-login';
+        return false;
+    }
+    if (window.gameSession.hasExpiredToken()) {
+        window.gameSession.invalidate();
+        return false;
     }
     
     document.getElementById('usernameDisplay').textContent = (roomUser ? roomUser.username : user.username);
+    return true;
 }
 
 function setupDistrictSelect() {
@@ -431,7 +456,7 @@ function setupDistrictSelect() {
 }
 
 async function visitLocation() {
-    if (visitInFlight) return;
+    if (visitInFlight || window.gameSession.expired) return;
     if (roomState?.state === 'paused') {
         showRoomPausedPopup();
         return;
@@ -488,6 +513,7 @@ async function visitLocation() {
         });
         
         const data = await response.json();
+        if (window.gameSession.expired) return;
 
         if (response.status === 403 && data.error === 'Game is paused') {
             await refreshRoomState();
@@ -529,6 +555,7 @@ async function visitLocation() {
             
             document.getElementById('houseNumber').value = '';
             if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
+            window.gameSession.clearRoute();
             const destination = document.getElementById('selectedDestination');
             if (destination) destination.hidden = true;
             
@@ -555,10 +582,12 @@ async function visitLocation() {
             updateTripHistory();
             document.getElementById('houseNumber').value = '';
             if (document.getElementById('apartmentNumber')) document.getElementById('apartmentNumber').value = '';
+            window.gameSession.clearRoute();
             const destination = document.getElementById('selectedDestination');
             if (destination) destination.hidden = true;
         }
     } catch (error) {
+        if (window.gameSession.expired) return;
         console.error('Error visiting location:', error);
         tripHistoryVersion++;
         alert('Ответ на поездку не получен. Проверьте историю перед повторной попыткой: поездка могла сохраниться. Введённый адрес сохранён.');
@@ -1063,12 +1092,8 @@ function logout() {
     backgroundReady = false;
     updateBackgroundState();
     window.gameNetwork.cancelReads();
-    gameStorage.removeItem('token');
-    gameStorage.removeItem('user');
-    gameStorage.removeItem('roomUser');
-    gameStorage.removeItem('room');
-    if (gameStorage === sessionStorage) {
-        gameStorage.removeItem('testRoomSession');
+    window.gameSession.clear();
+    if (window.gameSession.isTest) {
         window.location.href = '/admin';
     } else {
         window.location.href = '/login';

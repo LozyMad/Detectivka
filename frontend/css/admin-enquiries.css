@@ -21,9 +21,9 @@
 .enquiries-contacts { min-width: 140px; overflow-wrap: anywhere; }
 .enquiries-contacts a { display: block; color: var(--noir-gold); text-decoration: none; }
 .enquiries-status { display: inline-block; padding: 4px 9px; border: 1px solid #85858570; border-radius: 20px; font-size: 12px; white-space: nowrap; }
-.enquiries-status[data-status="new"] { background: #97662825; color: #76500f; }
-.enquiries-status[data-status="in_progress"] { background: #37638525; color: #215473; }
-.enquiries-status[data-status="agreed"] { background: #37755725; color: #285c3b; }
+.enquiries-status[data-status="new"] { background: #97662825; color: #edc982; }
+.enquiries-status[data-status="in_progress"] { background: #37638525; color: #a7cbea; }
+.enquiries-status[data-status="agreed"] { background: #37755725; color: #a8dfbd; }
 .enquiries-status[data-status="closed"] { color: var(--noir-silver); }
 .enquiries-table tr.is-selected > td { background: #b873331c; }
 .enquiries-pagination { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px; border-top: 1px solid #b9947540; }
@@ -46,7 +46,3 @@
   .enquiries-filters { grid-template-columns: 1fr; gap: 12px; }
   .enquiries-detail { padding: 20px; }
 }
-html.theme-dark .enquiries-status[data-status="new"] { color: #edc982; }
-html.theme-dark .enquiries-status[data-status="in_progress"] { color: #a7cbea; }
-html.theme-dark .enquiries-status[data-status="agreed"] { color: #a8dfbd; }
-html:not(.theme-dark) .enquiries-contacts a { color: #74551d; }

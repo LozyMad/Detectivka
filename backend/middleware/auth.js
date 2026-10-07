@@ -9,12 +9,12 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
+    return res.status(401).json({ error: 'Access token required', code: 'AUTH_REQUIRED' });
   }
 
   jwt.verify(token, JWT_SECRET, async (err, payload) => {
     if (err) {
-      return res.status(403).json({ error: 'Invalid token' });
+      return res.status(403).json({ error: 'Invalid token', code: err.name === 'TokenExpiredError' ? 'AUTH_TOKEN_EXPIRED' : 'AUTH_TOKEN_INVALID' });
     }
 
     try {
@@ -22,7 +22,7 @@ const authenticateToken = (req, res, next) => {
       if (payload.id) {
         const userData = await User.findById(payload.id);
         if (!userData) {
-          return res.status(403).json({ error: 'User not found' });
+          return res.status(403).json({ error: 'User not found', code: 'AUTH_IDENTITY_MISSING' });
         }
         req.user = userData;
         return next();
@@ -34,7 +34,7 @@ const authenticateToken = (req, res, next) => {
         return next();
       }
 
-      return res.status(403).json({ error: 'Invalid token payload' });
+      return res.status(403).json({ error: 'Invalid token payload', code: 'AUTH_TOKEN_INVALID' });
     } catch (error) {
       // jwt.verify does not consume a promise returned by its callback.
       // Forward database failures to Express instead of an unhandled rejection.
@@ -48,18 +48,18 @@ const authenticateTokenQuery = (req, res, next) => {
   const token = req.query && req.query.token;
 
   if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
+    return res.status(401).json({ error: 'Access token required', code: 'AUTH_REQUIRED' });
   }
 
   jwt.verify(token, JWT_SECRET, async (err, payload) => {
     if (err) {
-      return res.status(403).json({ error: 'Invalid token' });
+      return res.status(403).json({ error: 'Invalid token', code: err.name === 'TokenExpiredError' ? 'AUTH_TOKEN_EXPIRED' : 'AUTH_TOKEN_INVALID' });
     }
     try {
       req.tokenExpiresAt = Number.isFinite(payload.exp) ? payload.exp * 1000 : null;
       if (payload.id) {
         const userData = await User.findById(payload.id);
-        if (!userData) return res.status(403).json({ error: 'User not found' });
+        if (!userData) return res.status(403).json({ error: 'User not found', code: 'AUTH_IDENTITY_MISSING' });
         req.user = userData;
         return next();
       }
@@ -67,7 +67,7 @@ const authenticateTokenQuery = (req, res, next) => {
         req.roomUser = { id: payload.room_user_id, room_id: payload.room_id, username: payload.username, scenario_id: payload.scenario_id };
         return next();
       }
-      return res.status(403).json({ error: 'Invalid token payload' });
+      return res.status(403).json({ error: 'Invalid token payload', code: 'AUTH_TOKEN_INVALID' });
     } catch (error) {
       return next(error);
     }

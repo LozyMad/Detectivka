@@ -25,9 +25,11 @@
         if (job.settled) throw abortError();
         const response = await fetch(job.url, { ...job.options, signal: job.controller.signal });
         const body = await response.arrayBuffer();
-        return new Response([204, 205, 304].includes(response.status) ? null : body, {
+        const buffered = new Response([204, 205, 304].includes(response.status) ? null : body, {
           status: response.status, statusText: response.statusText, headers: response.headers
         });
+        await window.gameSession?.checkResponse(buffered, job.options);
+        return buffered;
       }).then(response => finish(job, null, response), error => finish(job, error));
     }
   }
