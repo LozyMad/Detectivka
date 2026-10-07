@@ -18,6 +18,9 @@
 .team-process-threads .thread-lines path { fill: none; stroke: #b95430; stroke-width: 1.8; stroke-linecap: round; filter: drop-shadow(0 1px 1px #160a05); }
 .team-process-watch { position: absolute; top: 9%; right: .5%; width: 15.4%; aspect-ratio: 1122 / 1402; pointer-events: none; filter: drop-shadow(3px 9px 8px #0009); }
 .team-process-watch img { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
+/* Tone down the brass outside the dial; retain the original enamel and face overlay. */
+.team-process-watch::after { content: ''; position: absolute; inset: 0; background: url('../assets/landing/detectum-stopwatch-case-v5.webp') center / 100% 100% no-repeat; filter: saturate(.55) brightness(.82) contrast(.92); mask-image: radial-gradient(ellipse 39% 31.2% at 50.5% 61%, transparent 97%, #000 100%); }
+.team-process-watch .process-watch-face { z-index: 1; }
 .team-process-duration { position: absolute; top: 24.5%; left: 59%; width: 24%; margin: 0; color: #f0dfc5; font-size: clamp(13px, 1.13vw, 16px); font-weight: 600; line-height: 1.65; text-align: center; text-shadow: 0 1px 5px #000, 0 2px 12px #000; }
 .team-process-duration strong { color: #f4e7cf; font-weight: 800; }
 .team-process-steps { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
