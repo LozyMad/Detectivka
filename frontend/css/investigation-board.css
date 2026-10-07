@@ -123,7 +123,12 @@ body.board-open #board {
 .board-canvas {
   position: relative;
   /* The cork shares board coordinates with the attached notes, pins and threads. */
-  background: #4d392b url('../assets/board/dark-cork-surface-v5.webp') 0 0 / calc(768px * var(--board-zoom, 1)) calc(512px * var(--board-zoom, 1)) repeat;
+  /* Soften the grain with the texture's mean color, preserving its brown tone. */
+  background-color: #5b331c;
+  background-image: linear-gradient(#5b331ca6, #5b331ca6), url('../assets/board/dark-cork-surface-v5.webp');
+  background-position: 0 0;
+  background-size: auto, calc(768px * var(--board-zoom, 1)) calc(512px * var(--board-zoom, 1));
+  background-repeat: no-repeat, repeat;
 }
 .board-threads, .board-notes, .board-fasteners { position: absolute; inset: 0; }
 .board-notes { z-index: 2; pointer-events: none; }
