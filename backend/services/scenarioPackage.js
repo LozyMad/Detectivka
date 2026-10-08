@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
-const { zipSync, unzipSync } = require('fflate');
+const { zipSync, unzipSync } = require('../vendor/fflate/index.cjs');
 const Scenario = require('../models/scenario');
 const Address = require('../models/address');
 const Question = require('../models/question');

@@ -6,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { createRequire } = require('node:module');
 const backendRequire = createRequire(path.resolve('backend/package.json'));
-const { zipSync } = backendRequire('fflate');
+const { zipSync } = backendRequire('./vendor/fflate/index.cjs');
 const pdf = Buffer.from('%PDF-1.4\nУлика\n%%EOF');
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9kAAAAASUVORK5CYII=', 'base64');
 
@@ -26,6 +26,7 @@ function fixture(t) {
       __dirname: path.join(root, path.basename(path.dirname(file))), process: { env: { DB_TYPE: 'sqlite' } },
       require: name => {
         if (name === '../config/database') return { db };
+        if (name.endsWith('.cjs')) return backendRequire(path.resolve(path.dirname(file), name));
         if (name.startsWith('.')) return load(path.resolve(path.dirname(file), name + '.js'));
         return backendRequire(name);
       }
