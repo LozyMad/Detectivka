@@ -199,7 +199,7 @@ const deleteScenario = async (req, res) => {
       // For PostgreSQL, we could drop the schema, but it's safer to leave it
       console.log(`Scenario ${id} deleted, schema preserved`);
     } else {
-      scenarioDbConfig.deleteScenarioDb(id);
+      await scenarioDbConfig.deleteScenarioDb(id);
     }
     res.json({ message: 'Scenario deleted successfully' });
   } catch (error) {

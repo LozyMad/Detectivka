@@ -11,11 +11,11 @@ if (DB_TYPE === 'postgresql') {
   const { db } = require('../config/database');
 
   Question = {
-    create: ({ scenario_id, question_text }) => {
+    create: ({ scenario_id, question_text, question_order = 1, is_active = true }) => {
         return new Promise((resolve, reject) => {
             db.run(
-                `INSERT INTO questions (scenario_id, question_text) VALUES (?, ?)`,
-                [scenario_id, question_text],
+                `INSERT INTO questions (scenario_id, question_text, question_order, is_active) VALUES (?, ?, ?, ?)`,
+                [scenario_id, question_text, question_order, is_active ? 1 : 0],
                 function(err) {
                     if (err) return reject(err);
                     resolve({ id: this.lastID, scenario_id, question_text });
@@ -24,10 +24,10 @@ if (DB_TYPE === 'postgresql') {
         });
     },
 
-    getByScenario: (scenario_id) => {
+    getByScenario: (scenario_id, includeInactive = false) => {
         return new Promise((resolve, reject) => {
             db.all(
-                `SELECT * FROM questions WHERE scenario_id = ? ORDER BY created_at ASC`,
+                `SELECT * FROM questions WHERE scenario_id = ? ${includeInactive ? '' : 'AND is_active = 1'} ORDER BY question_order, created_at, id`,
                 [scenario_id],
                 (err, rows) => (err ? reject(err) : resolve(rows))
             );

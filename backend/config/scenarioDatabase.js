@@ -100,16 +100,17 @@ function createScenarioDb(scenarioId) {
   return db;
 }
 
-function deleteScenarioDb(scenarioId) {
+async function deleteScenarioDb(scenarioId) {
+  if (!Number.isSafeInteger(Number(scenarioId)) || Number(scenarioId) < 1) throw new Error('Invalid scenario ID');
+  scenarioId = Number(scenarioId);
   const dbPath = getScenarioDbPath(scenarioId);
-  if (scenarioIdToDb.has(scenarioId)) {
-    try {
-      scenarioIdToDb.get(scenarioId).close();
-    } catch (_) {}
-    scenarioIdToDb.delete(scenarioId);
+  for (const [key, db] of scenarioIdToDb) {
+    if (Number(key) !== scenarioId) continue;
+    await new Promise((resolve, reject) => db.close(error => error ? reject(error) : resolve()));
+    scenarioIdToDb.delete(key);
   }
   if (fs.existsSync(dbPath)) {
-    fs.unlinkSync(dbPath);
+    await fs.promises.rm(dbPath, { force: true });
   }
 }
 

@@ -147,14 +147,14 @@ const Address = {
         return result.rows[0];
     },
 
-    getChoices: async (scenario_id, address_id) => {
+    getChoices: async (scenario_id, address_id, includeInactive = false) => {
         console.log(`[DEBUG] AddressPostgreSQL.getChoices: Getting choices for scenario ${scenario_id}, address ${address_id}`);
         
         const result = await queryScenario(
             scenario_id,
             `SELECT * FROM scenario_${scenario_id}.address_choices 
-             WHERE address_id = $1 AND is_active = true 
-             ORDER BY choice_order`,
+             WHERE address_id = $1 ${includeInactive ? '' : 'AND is_active = true'}
+             ORDER BY choice_order, id`,
             [address_id]
         );
         

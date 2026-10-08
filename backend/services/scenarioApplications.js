@@ -157,4 +157,4 @@ async function copyScenario(sourceId, targetId, addressIdMap) {
 }
 
 module.exports = { list, get, save, getFile, remove, removeAddress, removeScenario, copyScenario, positiveId,
-  getBriefing, saveBriefing, getBriefingFile, removeBriefing };
+  getBriefing, saveBriefing, getBriefingFile, removeBriefing, detectType, decodeFilename };

@@ -13,11 +13,11 @@ const Question = {
         return result.rows[0];
     },
 
-    getByScenario: async (scenario_id) => {
+    getByScenario: async (scenario_id, includeInactive = false) => {
         const result = await query(
             `SELECT * FROM questions 
-             WHERE scenario_id = $1 AND is_active = true 
-             ORDER BY question_order`,
+             WHERE scenario_id = $1 ${includeInactive ? '' : 'AND is_active = true'}
+             ORDER BY question_order, id`,
             [scenario_id]
         );
         

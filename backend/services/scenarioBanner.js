@@ -51,4 +51,4 @@ async function deleteBanner(id) {
   }
 }
 
-module.exports = { getBannerFile, saveBanner, deleteBanner };
+module.exports = { getBannerFile, saveBanner, deleteBanner, detectExtension };

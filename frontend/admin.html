@@ -1190,7 +1190,7 @@
                         </div>
                         <div class="card-body">
                             <p class="text-muted mb-3">
-                                Скачивается таблица Excel (.xlsx) с двумя листами: <strong>Поездки</strong> (Район, Номер дома, Информация по адресу) и <strong>Вопросы</strong> (Номер вопроса, Вопрос).
+                                Скачивается единый ZIP-пакет: описание сценария, обложка, адреса, вопросы, выборы, все приложения и брифинг, интернет-кафе и их страницы. Внутри также есть таблица Excel.
                             </p>
                             <div class="mb-3">
                                 <label for="exportScenarioSelect" class="form-label">Сценарий для экспорта</label>
@@ -1199,7 +1199,7 @@
                                 </select>
                             </div>
                             <button class="btn btn-success" onclick="exportScenarios()">
-                                <i class="fas fa-download me-2"></i>Скачать таблицу
+                                <i class="fas fa-download me-2"></i>Скачать сценарий целиком
                             </button>
                         </div>
                     </div>
@@ -1210,12 +1210,17 @@
                         </div>
                         <div class="card-body">
                             <p class="text-muted mb-3">
-                                Загрузите файл .xlsx с листами <strong>Поездки</strong> и <strong>Вопросы</strong>. Имя сценария берётся из имени файла (без расширения).
+                                Загрузите ZIP-пакет или выберите его распакованную папку — все материалы и связи восстановятся автоматически. Старые таблицы Excel тоже поддерживаются. Новый сценарий создаётся неактивным. Максимальный размер пакета — 250 МБ.
                             </p>
                             <form id="importForm" enctype="multipart/form-data" onsubmit="event.preventDefault(); importScenarios();">
                                 <div class="mb-3">
-                                    <label for="backupFile" class="form-label">Файл сценария (.xlsx)</label>
-                                    <input type="file" class="form-control" id="backupFile" accept=".xlsx,.xls" required>
+                                    <label for="backupFile" class="form-label">Пакет сценария (.zip) или таблица Excel</label>
+                                    <input type="file" class="form-control" id="backupFile" accept=".zip,.xlsx,.xls" onchange="document.getElementById('backupFolder').value = '';">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="backupFolder" class="form-label">Или папка распакованного сценария</label>
+                                    <input type="file" class="form-control" id="backupFolder" webkitdirectory directory multiple onchange="document.getElementById('backupFile').value = '';">
+                                    <div class="form-text">Выберите папку с файлом scenario.json и всеми вложенными материалами.</div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-upload me-2"></i>Импортировать сценарий
@@ -1691,7 +1696,7 @@
     <script src="js/game-network.js?v=1"></script>
     <script src="js/admin.js?v=12"></script>
     <script src="js/admin-enquiries.js?v=2"></script>
-    <script src="js/backup.js?v=2"></script>
+    <script src="js/backup.js?v=3"></script>
     <script src="js/choices.js?v=2"></script>
     <script src="js/internet-cafe-admin.js?v=2"></script>
     <script src="js/persist-inputs.js"></script>

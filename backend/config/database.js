@@ -175,6 +175,10 @@ const init = async () => {
         FOREIGN KEY(created_by) REFERENCES users(id)
       )`);
 
+      // Portable scenario packages preserve question order and inactive questions.
+      db.run(`ALTER TABLE questions ADD COLUMN question_order INTEGER NOT NULL DEFAULT 1`, () => {});
+      db.run(`ALTER TABLE questions ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1`, () => {});
+
       // Add missing columns to existing tables if they don't exist
       db.run(`ALTER TABLE users ADD COLUMN admin_level TEXT DEFAULT 'user'`, (err) => {
         // Ignore error if column already exists

@@ -160,7 +160,7 @@ if (DB_TYPE === 'postgresql') {
         });
     },
 
-    getChoices: (scenario_id, address_id) => {
+    getChoices: (scenario_id, address_id, includeInactive = false) => {
         return new Promise(async (resolve, reject) => {
             const db = getScenarioDb(scenario_id);
             
@@ -168,8 +168,8 @@ if (DB_TYPE === 'postgresql') {
             
             db.all(
                 `SELECT * FROM address_choices 
-                 WHERE address_id = ? AND is_active = 1 
-                 ORDER BY choice_order`,
+                 WHERE address_id = ? ${includeInactive ? '' : 'AND is_active = 1'}
+                 ORDER BY choice_order, id`,
                 [address_id],
                 (err, rows) => {
                     if (err) reject(err);

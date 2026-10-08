@@ -2,6 +2,8 @@ const XLSX = require('xlsx');
 const Scenario = require('../models/scenario');
 const Question = require('../models/question');
 const Address = require('../models/address');
+const scenarioPackage = require('../services/scenarioPackage');
+const { decodeFilename } = require('../services/scenarioApplications');
 
 const SHEET_TRIPS = 'Поездки';
 const SHEET_QUESTIONS = 'Вопросы';
@@ -25,11 +27,11 @@ function preserveMultiline(value) {
 }
 
 const backupController = {
-  // Экспорт одного сценария: XLSX с листами «Поездки», «Вопросы» и «Выборы».
+  // Полный ZIP-пакет по умолчанию; format=xlsx сохраняет экспорт таблицы.
   exportScenarios: async (req, res) => {
     try {
-      const scenarioId = req.query.scenario_id ? parseInt(req.query.scenario_id, 10) : null;
-      if (!scenarioId || Number.isNaN(scenarioId)) {
+      const scenarioId = Number(req.query?.scenario_id);
+      if (!Number.isSafeInteger(scenarioId) || scenarioId < 1) {
         if (typeof res.status === 'function') {
           return res.status(400).json({
             success: false,
@@ -99,16 +101,20 @@ const backupController = {
 
       const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
       const safeName = (scenario.name || 'scenario').replace(/[^\w\s-]/g, '').trim() || 'scenario';
-      const filename = `${safeName}.xlsx`;
+      const fullPackage = req.query?.format !== 'xlsx';
+      const filename = `${safeName}.${fullPackage ? 'zip' : 'xlsx'}`;
+      const download = fullPackage ? await scenarioPackage.exportPackage(scenario, buf) : buf;
 
       if (typeof res.setHeader !== 'function') return;
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename.replace(/"/g, '')}"`);
-      res.send(buf);
+      res.setHeader('Content-Type', fullPackage ? 'application/zip' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Cache-Control', 'no-store');
+      const originalFilename = `${scenario.name || 'scenario'}.${fullPackage ? 'zip' : 'xlsx'}`;
+      res.setHeader('Content-Disposition', `attachment; filename="${filename.replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(originalFilename)}`);
+      res.send(download);
     } catch (error) {
       console.error('Export error:', error);
       if (res.status && typeof res.status === 'function') {
-        res.status(500).json({
+        res.status(error.status || 500).json({
           success: false,
           error: 'Ошибка экспорта сценария',
           details: error.message
@@ -129,6 +135,10 @@ const backupController = {
         });
       }
 
+      if (/\.zip$/i.test(req.file.originalname)) {
+        return res.json(await scenarioPackage.importPackage(scenarioPackage.readArchive(req.file.buffer), req.user?.id || null));
+      }
+
       const buf = req.file.buffer;
       const wb = XLSX.read(buf, { type: 'buffer', cellText: false, cellHTML: false });
       const sheetTrips = wb.Sheets[SHEET_TRIPS];
@@ -142,7 +152,7 @@ const backupController = {
         });
       }
 
-      const scenarioName = (req.file.originalname || 'Импорт')
+      const scenarioName = decodeFilename(req.file.originalname || 'Импорт')
         .replace(/\.(xlsx|xls)$/i, '')
         .trim() || 'Импорт';
 
@@ -251,11 +261,21 @@ const backupController = {
       });
     } catch (error) {
       console.error('Import error:', error);
-      res.status(500).json({
+      res.status(error.status || 500).json({
         success: false,
-        error: 'Ошибка импорта сценария',
+        error: error.status === 400 ? error.message : 'Ошибка импорта сценария',
         details: error.message
       });
+    }
+  },
+
+  importFolder: async (req, res) => {
+    try {
+      const entries = scenarioPackage.readFolder(req.files, req.body.paths);
+      res.json(await scenarioPackage.importPackage(entries, req.user?.id || null));
+    } catch (error) {
+      console.error('Import folder error:', error);
+      res.status(error.status || 500).json({ success: false, error: error.status === 400 ? error.message : 'Ошибка импорта папки сценария' });
     }
   }
 };
