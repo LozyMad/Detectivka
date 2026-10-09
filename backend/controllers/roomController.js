@@ -107,8 +107,12 @@ const addRoomUser = async (req, res) => {
     const room = await Room.getById(room_id);
     if (!room) return res.status(404).json({ error: 'Room not found' });
     if (room.is_test) return res.status(400).json({ error: 'Test room players enter from the admin panel' });
-    const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+    const { password } = req.body || {};
+    const username = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
+    if (!username || typeof password !== 'string' || !password) return res.status(400).json({ error: 'Введите название команды и пароль' });
+    const matches = await RoomUser.findByCredentials(username, password);
+    if (matches.length) return res.status(409).json({ code: 'TEAM_CREDENTIALS_IN_USE',
+      error: 'Такие название команды и пароль уже используются. Задайте другой пароль или название команды.' });
     const record = await RoomUser.add({ room_id, username, password });
     res.status(201).json({ user: record });
   } catch (error) {

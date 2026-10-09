@@ -2911,7 +2911,7 @@ async function nuclearReset() {
 async function handleAddRoomUser(e) {
     e.preventDefault();
     const room_id = document.getElementById('roomSelectForUsers').value;
-    const username = document.getElementById('roomUserLogin').value;
+    const username = document.getElementById('roomUserLogin').value.trim();
     const password = document.getElementById('roomUserPassword').value;
     if (!room_id) return showMessage('Выберите комнату', 'warning');
     try {
@@ -2922,14 +2922,14 @@ async function handleAddRoomUser(e) {
             body: JSON.stringify({ username, password })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Ошибка добавления игрока');
-        showMessage('Игрок добавлен', 'success');
+        if (!res.ok) throw new Error(data.error || 'Ошибка добавления команды');
+        showMessage('Команда добавлена', 'success');
         (e.target).reset();
         // Обновляем список игроков после добавления
         loadRoomUsers(room_id);
     } catch (err) {
         console.error(err);
-        showMessage(err.message || 'Ошибка добавления игрока', 'danger');
+        showMessage(err.message || 'Ошибка добавления команды', 'danger');
     }
 }
 

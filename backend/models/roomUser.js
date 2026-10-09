@@ -47,6 +47,21 @@ if (DB_TYPE === 'postgresql') {
       });
     },
 
+    findByCredentials: async (username, password) => {
+      const rows = await new Promise((resolve, reject) => {
+        db.all(
+          `SELECT u.id, u.room_id, u.username, u.password FROM room_users u
+           JOIN rooms r ON r.id = u.room_id WHERE u.username = ? AND r.is_test = 0`,
+          [username], (error, rows) => error ? reject(error) : resolve(rows)
+        );
+      });
+      const matches = [];
+      for (const row of rows) {
+        if (await bcrypt.compare(password, row.password)) matches.push({ id: row.id, room_id: row.room_id, username: row.username });
+      }
+      return matches;
+    },
+
     verifyCredentials: (room_id, username, password) => {
       return new Promise((resolve, reject) => {
         db.get(`SELECT * FROM room_users WHERE room_id = ? AND username = ?`, [room_id, username], (err, row) => {

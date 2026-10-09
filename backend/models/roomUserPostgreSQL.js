@@ -42,6 +42,18 @@ const RoomUser = {
     return result.rows[0] || { deletedId: room_user_id };
   },
 
+  findByCredentials: async (username, password) => {
+    const result = await query(
+      `SELECT u.id, u.room_id, u.username, u.password FROM room_users u
+       JOIN rooms r ON r.id = u.room_id WHERE u.username = $1 AND r.is_test = FALSE`, [username]
+    );
+    const matches = [];
+    for (const row of result.rows) {
+      if (await bcrypt.compare(password, row.password)) matches.push({ id: row.id, room_id: row.room_id, username: row.username });
+    }
+    return matches;
+  },
+
   verifyCredentials: async (room_id, username, password) => {
     const result = await query(
       `SELECT * FROM room_users WHERE room_id = $1 AND username = $2`,

@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageDiv = document.getElementById('message');
     const session = window.gameSession;
     const savedPlayer = JSON.parse(session.storage.getItem('roomUser') || 'null');
-    if (savedPlayer?.room_id) document.getElementById('roomId').value = savedPlayer.room_id;
     if (savedPlayer?.username) document.getElementById('roomUsername').value = savedPlayer.username;
     const sessionNotice = 'Сессия игры недействительна или истекла. Войдите в комнату снова. История поездок сохранена.';
     session.onExpired = () => showMessage(sessionNotice, 'error', true);
@@ -13,8 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     gameLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const roomId = document.getElementById('roomId').value;
-        const username = document.getElementById('roomUsername').value;
+        const username = document.getElementById('roomUsername').value.trim();
         const password = document.getElementById('roomPassword').value;
         
         // Показываем индикатор загрузки
@@ -30,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ 
-                    room_id: parseInt(roomId), 
                     username, 
                     password 
                 })
@@ -48,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.href = '/game';
                 }, 1000);
             } else {
-                showMessage(data.error || 'Ошибка входа в комнату', 'error');
+                showMessage(data.error || 'Ошибка входа в игру', 'error');
             }
         } catch (error) {
             console.error('Ошибка:', error);

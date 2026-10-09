@@ -12,7 +12,7 @@
     "lint": "eslint . --ext .js",
     "format": "prettier --write .",
     "test:pg": "node test-postgresql.js",
-    "test:stability": "node --test scripts/test-network-stability.cjs scripts/test-game-stability.cjs scripts/test-board-stability.cjs scripts/test-server-stability.cjs scripts/test-admin-stability.cjs scripts/test-auth-stability.cjs scripts/test-player-session.cjs scripts/test-scenario-briefing.cjs scripts/test-scenario-package.cjs && node scripts/test-board-gestures.cjs",
+    "test:stability": "node --test scripts/test-network-stability.cjs scripts/test-game-stability.cjs scripts/test-board-stability.cjs scripts/test-server-stability.cjs scripts/test-admin-stability.cjs scripts/test-auth-stability.cjs scripts/test-player-session.cjs scripts/test-team-login.cjs scripts/test-scenario-briefing.cjs scripts/test-scenario-package.cjs && node scripts/test-board-gestures.cjs",
     "migrate:pg": "node migrate-to-postgresql.js",
     "test:scenario-package": "node --test scripts/test-scenario-package.cjs"
   },

@@ -44,8 +44,9 @@ test('successful room login retains the admin login and clears a stale test-room
   b.element('gameLoginForm').querySelector = () => b.element('submit');
   b.element('message').querySelector = () => null;
   b.load('frontend/js/game-auth.js'); b.document.emit('DOMContentLoaded');
-  b.element('roomId').value = '20'; b.element('roomUsername').value = 'Player 20'; b.element('roomPassword').value = 'fixture-password';
+  b.element('roomUsername').value = 'Player 20'; b.element('roomPassword').value = 'fixture-password';
   await [...b.element('gameLoginForm').events.get('submit')][0]({ preventDefault() {} });
+  assert.deepEqual(JSON.parse(b.calls.find(call => call.url === '/api/auth/room-login').options.body), { username: 'Player 20', password: 'fixture-password' });
   assert.equal(session.storage.getItem('token'), 'room-20-token');
   assert.equal(b.sandbox.localStorage.getItem('token'), 'admin-token');
   assert.equal(JSON.parse(b.sandbox.localStorage.getItem('user')).id, 99);
@@ -102,12 +103,11 @@ test('login page verifies a saved token on the server before returning to the ga
   assert.equal(b.window.location.href, '/game');
 });
 
-test('invalid saved credentials keep the login form open with the room and player filled in', async () => {
+test('invalid saved credentials keep the login form open with the team filled in', async () => {
   const { b, session } = loginPage(() => json({ error: 'Invalid token', code: 'AUTH_TOKEN_INVALID' }, 403));
   await flush();
   assert.equal(b.window.location.href, '');
   assert.equal(session.storage.getItem('token'), null);
-  assert.equal(b.element('roomId').value, 14);
   assert.equal(b.element('roomUsername').value, 'Fixture');
   assert.match(b.element('message').innerHTML, /Войдите в комнату снова/);
 });
