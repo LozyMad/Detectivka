@@ -44,3 +44,22 @@ jobs:
             fi
             exit 1
           fi
+
+      - name: Verify the updated address book after restart
+        env:
+          DEPLOY_SECRET: ${{ secrets.DETEKTUM }}
+        run: |
+          for ATTEMPT in 1 2 3 4 5 6; do
+            sleep 10
+            RESP=$(curl -s -w "\n%{http_code}" -X POST https://detektum.ru/api/deploy \
+              -H "X-Deploy-Secret: $DEPLOY_SECRET" -H "Content-Type: application/json" \
+              --data '{"verifyOnly":true}' --connect-timeout 10 --max-time 20) || true
+            BODY=$(echo "$RESP" | head -n -1)
+            CODE=$(echo "$RESP" | tail -n 1)
+            echo "Verification $ATTEMPT: HTTP $CODE $BODY"
+            if [ "$CODE" = "200" ] && echo "$BODY" | jq -e '.ok == true and .address_book.ready == true' > /dev/null; then
+              exit 0
+            fi
+          done
+          echo "::error::Address book migration was not confirmed after restart."
+          exit 1

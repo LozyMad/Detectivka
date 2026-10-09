@@ -1,0 +1,102 @@
+{
+  "revision": "2026-10-09-address-book-5",
+  "source": "Адресная книга (5).xlsx",
+  "changes": [
+    {
+      "before": {
+        "district": "Ю",
+        "house_number": "23",
+        "apartment": "2",
+        "name": "Бортник Горан",
+        "category": "Частные лица"
+      },
+      "after": {
+        "district": "Ю",
+        "house_number": "65",
+        "apartment": "2",
+        "name": "Бортник Горан",
+        "category": "Частные лица"
+      }
+    },
+    {
+      "before": {
+        "district": "Ю",
+        "house_number": "23",
+        "apartment": "2",
+        "name": "Бортник Клара",
+        "category": "Частные лица"
+      },
+      "after": {
+        "district": "Ю",
+        "house_number": "65",
+        "apartment": "2",
+        "name": "Бортник Клара",
+        "category": "Частные лица"
+      }
+    },
+    {
+      "before": {
+        "district": "П",
+        "house_number": "25",
+        "apartment": "3",
+        "name": "Гурек Роман",
+        "category": "Частные лица"
+      },
+      "after": {
+        "district": "Ц",
+        "house_number": "25",
+        "apartment": "3",
+        "name": "Гурек Роман",
+        "category": "Частные лица"
+      }
+    },
+    {
+      "before": {
+        "district": "В",
+        "house_number": "52",
+        "apartment": "",
+        "name": "Магазин радиотоваров «Контакт»",
+        "category": "Торговля и услуги"
+      },
+      "after": {
+        "district": "В",
+        "house_number": "52",
+        "apartment": "",
+        "name": "Игровые автоматы «Фортуна»",
+        "category": "Торговля и услуги"
+      }
+    },
+    {
+      "before": {
+        "district": "СВ",
+        "house_number": "77",
+        "apartment": "",
+        "name": "Мастерская «Гараж»",
+        "category": "Торговля и услуги"
+      },
+      "after": {
+        "district": "СВ",
+        "house_number": "77",
+        "apartment": "",
+        "name": "Игровые автоматы «Игросервис»",
+        "category": "Торговля и услуги"
+      }
+    },
+    {
+      "before": {
+        "district": "В",
+        "house_number": "56",
+        "apartment": "",
+        "name": "Бильярдная «Маяк»",
+        "category": "Культура и отдых"
+      },
+      "after": {
+        "district": "В",
+        "house_number": "56",
+        "apartment": "",
+        "name": "Бильярдная «Треугольник»",
+        "category": "Культура и отдых"
+      }
+    }
+  ]
+}

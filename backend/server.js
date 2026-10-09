@@ -73,18 +73,29 @@ app.post('/api/deploy', express.raw({ type: 'application/json' }), (req, res) =>
   if (!DEPLOY_SECRET) {
     return res.status(501).json({ ok: false, error: 'Deploy not configured' });
   }
+  const handleAuthorizedDeploy = () => {
+    let body = {};
+    try { body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString('utf8') || '{}') : (req.body || {}); }
+    catch (_) { return res.status(400).json({ error: 'Invalid deployment request' }); }
+    if (body.verifyOnly === true) {
+      return require('./services/addressBookRevision').getAddressBookStatus()
+        .then(status => res.status(status.ready ? 200 : 503).json({ ok: status.ready, address_book: status }))
+        .catch(error => { console.error('[Deploy] verification:', error); res.status(503).json({ ok: false, error: 'Deployment verification failed' }); });
+    }
+    return runDeploy(res);
+  };
   const sig = req.headers['x-hub-signature-256'];
   if (sig && req.body && Buffer.isBuffer(req.body)) {
     const hmac = crypto.createHmac('sha256', DEPLOY_SECRET).update(req.body).digest('hex');
     if (hmac === sig.replace('sha256=', '')) {
-      return runDeploy(res);
+      return handleAuthorizedDeploy();
     }
   }
   const raw = req.headers['x-deploy-secret'] || (req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
   const secret = (raw && String(raw).trim()) || '';
   const expected = (DEPLOY_SECRET && String(DEPLOY_SECRET).trim()) || '';
   if (secret && expected && secret === expected) {
-    return runDeploy(res);
+    return handleAuthorizedDeploy();
   }
   // Диагностика без раскрытия секрета: длины помогают понять лишний символ (например 49 vs 48)
   console.log('[Deploy] 403: received length=', secret.length, 'expected length=', expected.length);
@@ -213,6 +224,7 @@ app.use((err, req, res, next) => {
 
 // Initialize database and start server
 database.init().then(async () => {
+  await require('./services/addressBookRevision').updateAddressBook();
   // РАДИКАЛЬНАЯ инициализация вариантов выбора для ВСЕХ адресов
   try {
     const { initializeAllChoices } = require('./scripts/init_all_choices');

@@ -2101,14 +2101,14 @@
   },
   {
     "district": "Ю",
-    "house_number": "23",
+    "house_number": "65",
     "apartment": "2",
     "name": "Бортник Горан",
     "category": "Частные лица"
   },
   {
     "district": "Ю",
-    "house_number": "23",
+    "house_number": "65",
     "apartment": "2",
     "name": "Бортник Клара",
     "category": "Частные лица"
@@ -4284,7 +4284,7 @@
     "category": "Частные лица"
   },
   {
-    "district": "П",
+    "district": "Ц",
     "house_number": "25",
     "apartment": "3",
     "name": "Гурек Роман",
@@ -5204,7 +5204,7 @@
     "district": "В",
     "house_number": "52",
     "apartment": "",
-    "name": "Магазин радиотоваров «Контакт»",
+    "name": "Игровые автоматы «Фортуна»",
     "category": "Торговля и услуги"
   },
   {
@@ -5393,7 +5393,7 @@
     "district": "СВ",
     "house_number": "77",
     "apartment": "",
-    "name": "Мастерская «Гараж»",
+    "name": "Игровые автоматы «Игросервис»",
     "category": "Торговля и услуги"
   },
   {
@@ -6086,7 +6086,7 @@
     "district": "В",
     "house_number": "56",
     "apartment": "",
-    "name": "Бильярдная «Маяк»",
+    "name": "Бильярдная «Треугольник»",
     "category": "Культура и отдых"
   },
   {
@@ -6851,5 +6851,26 @@
     "apartment": "",
     "name": "Полигон бытовых отходов",
     "category": "Промышленные и коммунальные объекты"
+  },
+  {
+    "district": "П",
+    "house_number": "60",
+    "apartment": "",
+    "name": "Бар «Суета»",
+    "category": "Культура и отдых"
+  },
+  {
+    "district": "П",
+    "house_number": "80",
+    "apartment": "",
+    "name": "Железнодорожная станция «Пригород»",
+    "category": "Муниципальные и государственные учреждения"
+  },
+  {
+    "district": "Ц",
+    "house_number": "38",
+    "apartment": "",
+    "name": "Интернет-кафе «Облако»",
+    "category": "Культура и отдых"
   }
 ]
