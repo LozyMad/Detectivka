@@ -73,6 +73,7 @@ const updateQuestion = async (req, res) => {
 const deleteQuestion = async (req, res) => {
     try {
         const { id } = req.params;
+        if(await require('../services/playerRuntime').cabinet.scoring.questionInOpenRoom(id))return res.status(409).json({error:'Вопрос используется в незавершённой комнате. Сначала завершите её.'});
         const result = await Question.delete(id);
         res.json({ 
             message: 'Question deleted successfully',

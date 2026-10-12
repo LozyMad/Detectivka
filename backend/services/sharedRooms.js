@@ -6,17 +6,18 @@ const now=()=>new Date().toISOString();
 function createSharedRooms({query,transaction,postgres=false,roomSync,remainingSeconds}) {
   const one=async(q,sql,params=[]) => (await q(sql,params)).rows[0];
   let finalize=async()=>{};
+  let scoring=null;
   async function init(){
     try {await query(`ALTER TABLE rooms ADD COLUMN is_shared ${postgres?'BOOLEAN NOT NULL DEFAULT FALSE':'INTEGER NOT NULL DEFAULT 0'}`);}catch(e){if(e.code!=='42701'&&!String(e.message).includes('duplicate column'))throw e;}
     await query(`CREATE TABLE IF NOT EXISTS shared_rooms (room_id INTEGER PRIMARY KEY REFERENCES rooms(id),room_user_id INTEGER NOT NULL REFERENCES room_users(id),invite_token TEXT UNIQUE NOT NULL,owner_account_id TEXT REFERENCES player_accounts(id),admin_id INTEGER,notes TEXT NOT NULL DEFAULT '',notes_revision INTEGER NOT NULL DEFAULT 0,answers_submitted INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL)`);
     await query(`CREATE TABLE IF NOT EXISTS shared_answer_drafts (room_id INTEGER NOT NULL REFERENCES rooms(id),question_id INTEGER NOT NULL REFERENCES questions(id),answer_text TEXT NOT NULL DEFAULT '',revision INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(room_id,question_id))`);
   }
-  async function provision(q,room,ownerAccountId=null,adminId=null){
+  async function provision(q,room,ownerAccountId=null,adminId=null,productId=null){
     const old=await one(q,'SELECT * FROM shared_rooms WHERE room_id=$1',[room.id]);if(old)return old;
     const player=await one(q,'INSERT INTO room_users (room_id,username,password) VALUES ($1,$2,$3) RETURNING id',[room.id,room.name,await bcrypt.hash(crypto.randomBytes(32).toString('hex'),10)]);
     const record={room_id:room.id,room_user_id:player.id,invite_token:crypto.randomBytes(32).toString('base64url'),owner_account_id:ownerAccountId,admin_id:adminId,created_at:now()};
     await q('INSERT INTO shared_rooms (room_id,room_user_id,invite_token,owner_account_id,admin_id,created_at) VALUES ($1,$2,$3,$4,$5,$6)',Object.values(record));
-    await q('UPDATE rooms SET is_shared=TRUE,halfway_paused=TRUE WHERE id=$1',[room.id]);return record;
+    await q('UPDATE rooms SET is_shared=TRUE,halfway_paused=TRUE WHERE id=$1',[room.id]);if(scoring)await scoring.capture(q,room.id,productId);return record;
   }
   async function adminInvite(roomId,admin){
     return transaction(async q=>{
@@ -54,7 +55,7 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
     if(!identity?.room_id||!identity?.id)fail(403,'Войдите в комнату по приглашению');
     const shared=await one(q,'SELECT * FROM shared_rooms WHERE room_id=$1 AND room_user_id=$2',[identity.room_id,identity.id]);if(!shared)fail(403,'Нет доступа к общей комнате');return shared;
   }
-  async function activeQuestions(room,q=query){return (await q('SELECT id,question_text FROM questions WHERE scenario_id=$1 AND is_active=TRUE ORDER BY question_order,id',[room.scenario_id])).rows;}
+  async function activeQuestions(room,q=query){const frozen=await scoring?.frozenQuestions(room,q);if(frozen)return frozen;return (await q('SELECT id,question_text FROM questions WHERE scenario_id=$1 AND is_active=TRUE ORDER BY question_order,id',[room.scenario_id])).rows;}
   async function snapshot(identity){
     const link=await authorize(identity);const room=await roomSync(link.room_id);if(!room)fail(404,'Комната не найдена');
     if(room.state==='finished'){await finalize(room.id);fail(403,'Игра в этой комнате завершена. Повторный вход закрыт.',{code:'ROOM_FINISHED'});}
@@ -63,7 +64,7 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
     const answers=(await query('SELECT question_id,answer_text FROM question_answers WHERE room_user_id=$1 ORDER BY id',[link.room_user_id])).rows;
     const saved=new Map(answers.map(a=>[Number(a.question_id),a.answer_text]));
     const result=room.state==='finished'?await one(query,'SELECT g.score,g.result_status,p.solution FROM player_runs g LEFT JOIN player_products p ON p.id=g.product_id WHERE g.room_id=$1 AND g.is_owner=1',[room.id]):null;
-    return {result:result||null,room:{id:room.id,name:room.name,state:room.state,duration_seconds:room.duration_seconds,remaining:remainingSeconds(room)},notes:link.notes,notes_revision:link.notes_revision,answers_submitted:!!link.answers_submitted,can_finish:!!link.answers_submitted&&['running','paused'].includes(room.state),questions:questions.map(question=>{const draft=drafts.find(d=>Number(d.question_id)===Number(question.id));return {...question,answer_text:link.answers_submitted?(saved.get(Number(question.id))||''):(draft?.answer_text||''),revision:draft?.revision||0};})};
+    return {scoring:await scoring?.conditions(room.id)||null,result:result||null,room:{id:room.id,name:room.name,state:room.state,duration_seconds:room.duration_seconds,remaining:remainingSeconds(room)},notes:link.notes,notes_revision:link.notes_revision,answers_submitted:!!link.answers_submitted,can_finish:!!link.answers_submitted&&['running','paused'].includes(room.state),questions:questions.map(question=>{const draft=drafts.find(d=>Number(d.question_id)===Number(question.id));return {...question,answer_text:link.answers_submitted?(saved.get(Number(question.id))||''):(draft?.answer_text||''),revision:draft?.revision||0};})};
   }
   async function lock(q,identity){
     await q('UPDATE rooms SET name=name WHERE id=$1',[identity.room_id]);const link=await authorize(identity,q);const room=await one(q,'SELECT * FROM rooms WHERE id=$1',[identity.room_id]);if(!room)fail(404,'Комната не найдена');if(room.state==='finished')fail(403,'Игра в этой комнате завершена. Повторный вход закрыт.',{code:'ROOM_FINISHED'});return {link,room};
@@ -86,6 +87,6 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
       await q('UPDATE shared_rooms SET answers_submitted=1 WHERE room_id=$1',[room.id]);return {submitted:true};
     });
   }
-  return {init,provision,adminInvite,join,identity,authorize,activeQuestions,snapshot,saveNotes,saveDraft,submitAnswers,setFinalizer(fn){finalize=fn;}};
+  return {init,provision,adminInvite,join,identity,authorize,activeQuestions,snapshot,saveNotes,saveDraft,submitAnswers,setFinalizer(fn){finalize=fn;},setScoring(service){scoring=service;}};
 }
 module.exports={createSharedRooms};

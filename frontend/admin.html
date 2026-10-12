@@ -8,6 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/style.css?v=7" rel="stylesheet">
     <link href="css/admin-players.css?v=1" rel="stylesheet">
+    <link href="css/player-scoring.css?v=1" rel="stylesheet">
     <style>
         /* Лондонский нуар - Основные цвета */
         :root {
@@ -558,7 +559,7 @@
             <div class="col-md-9 col-lg-10 content-area main-content">
                 <section id="playerManagement-tab" class="tab-content player-admin" style="display:none" data-no-persist aria-labelledby="playerManagementTitle">
  <div class="pa-heading"><div><span class="pa-eyebrow">Игроки и совместные расследования</span><h3 id="playerManagementTitle">Самостоятельные игры</h3><p>Доступы к делам, попытки и управление общими комнатами.</p></div><button type="button" class="btn btn-outline-primary" id="paRefresh">Обновить</button></div>
- <div class="pa-nav" role="group" aria-label="Разделы самостоятельных игр"><button class="btn btn-primary" data-pa-view="players">Игроки</button><button class="btn btn-outline-primary" data-pa-view="rooms">Общие комнаты</button><button class="btn btn-outline-primary" data-pa-view="journal">Журнал действий</button><a class="btn btn-outline-secondary" href="/player-reviews.html">Проверка результатов</a></div>
+ <div class="pa-nav" role="group" aria-label="Разделы самостоятельных игр"><button class="btn btn-primary" data-pa-view="players">Игроки</button><button class="btn btn-outline-primary" data-pa-view="rooms">Общие комнаты</button><button class="btn btn-outline-primary" data-pa-view="settings">Формула и критерии</button><button class="btn btn-outline-primary" data-pa-view="journal">Журнал действий</button><a class="btn btn-outline-secondary" href="/player-reviews.html">Проверка результатов</a></div>
  <div class="pa-filters"><label>Поиск<input id="paSearch" class="form-control" type="search" maxlength="160" placeholder="Имя или email игрока" autocomplete="off"></label><label id="paStateWrap" hidden>Статус<select id="paState" class="form-select"><option value="">Все статусы</option><option value="pending">Ожидает старта</option><option value="running">Идёт игра</option><option value="paused">На паузе</option><option value="finished">Завершена</option></select></label><button type="button" id="paCreate" class="btn btn-primary" hidden>Создать комнату</button></div>
  <p id="paError" role="alert" class="pa-error" hidden></p><p id="paNotice" role="status" class="pa-notice" hidden></p>
  <div class="pa-layout"><div class="pa-list"><p id="paCount" class="pa-muted"></p><div id="paList" aria-live="polite"></div><div class="pa-pager"><button class="btn btn-sm btn-outline-primary" id="paPrev">Назад</button><span id="paPage"></span><button class="btn btn-sm btn-outline-primary" id="paNext">Далее</button></div></div><aside id="paDetail" class="pa-detail" aria-label="Карточка игрока или комнаты"><div class="pa-empty">Выберите игрока или комнату, чтобы увидеть подробности и доступные действия.</div></aside></div>
@@ -1705,7 +1706,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/game-network.js?v=1"></script>
     <script src="js/admin.js?v=closed2"></script>
-    <script src="js/admin-players.js?v=2"></script>
+    <script src="js/admin-players.js?v=3"></script>
     <script src="js/admin-enquiries.js?v=2"></script>
     <script src="js/backup.js?v=3"></script>
     <script src="js/choices.js?v=2"></script>

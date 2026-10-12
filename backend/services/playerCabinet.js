@@ -6,7 +6,6 @@ const uuid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 const fail = (status, message, code) => { const error = new Error(message); error.status = status; error.code=code; throw error; };
-const normalizeAnswer = value => String(value || '').toLocaleLowerCase('ru').replace(/ё/g, 'е').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 const emailValue = value => typeof value === 'string' ? value.trim().toLowerCase() : '';
 function validPassword(value) { if (typeof value !== 'string' || value.length < 8 || value.length > 72) fail(400, 'Пароль должен содержать от 8 до 72 символов'); if (Buffer.byteLength(value,'utf8') > 72) fail(400, 'Пароль слишком длинный: используйте не больше 72 байт'); }
 function validName(value) { if (typeof value !== 'string' || value.trim().length < 2 || value.trim().length > 40) fail(400, 'Имя должно содержать от 2 до 40 символов'); return value.trim(); }
@@ -15,6 +14,7 @@ const publicAccount = account => ({ id: account.id, username: account.username, 
 
 function createPlayerCabinet({ query, transaction, localMode = false, postgres = false, roomSync, remainingSeconds, findTeams }) {
   const shared = require('./sharedRooms').createSharedRooms({query,transaction,postgres,roomSync,remainingSeconds});
+  const scoring=require('./playerScoring').createPlayerScoring({query,transaction,roomSync});
   const one = async (q, sql, values = []) => (await q(sql, values)).rows[0];
   const insertSession = async (q, accountId) => {
     const token = crypto.randomBytes(32).toString('base64url');
@@ -37,6 +37,7 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
     for (const sql of statements) await query(sql);
     await shared.init();
     await admin.init();
+    await scoring.init();
   }
   async function register(body) {
     const username = validName(body.username); const email = validEmail(body.email); validPassword(body.password);
@@ -115,11 +116,11 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
   }
   async function catalog(accountId = '') {
     if (accountId) await settleAccount(accountId);
-    const rows = (await query(`SELECT p.id,p.scenario_id,p.title,p.description,p.cover,p.price,p.duration_seconds,p.difficulty,p.max_attempts,
+    const rows = (await query(`SELECT p.id,p.scenario_id,p.title,p.description,p.cover,p.price,p.duration_seconds,p.difficulty,p.max_attempts,COALESCE(f.max_fee,2000) AS max_fee,COALESCE(f.standard_trips,20) AS standard_trips,
       CASE WHEN p.price=0 OR e.account_id IS NOT NULL THEN 1 ELSE 0 END AS owned,
       (SELECT COUNT(*) FROM player_attempts g WHERE g.account_id=$1 AND g.product_id=p.id) AS attempts_used,
       COALESCE((SELECT SUM(c.amount) FROM player_attempt_credits c WHERE c.account_id=$1 AND c.product_id=p.id),0) AS extra_attempts
-      FROM player_products p LEFT JOIN player_entitlements e ON e.product_id=p.id AND e.account_id=$1 WHERE p.published=1 ORDER BY p.price,p.title`,[accountId])).rows;
+      FROM player_products p LEFT JOIN player_entitlements e ON e.product_id=p.id AND e.account_id=$1 LEFT JOIN scenario_scoring_settings f ON f.scenario_id=p.scenario_id WHERE p.published=1 ORDER BY p.price,p.title`,[accountId])).rows;
     return rows.map(p=>({...p,base_attempts:Number(p.max_attempts),max_attempts:Number(p.max_attempts)+Number(p.extra_attempts),owned:!!p.owned,attempts_used:Number(p.attempts_used),attempts_left:Math.max(0,Number(p.max_attempts)+Number(p.extra_attempts)-Number(p.attempts_used))}));
   }
   async function bundles() {
@@ -173,7 +174,7 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
       if(count>=Number(product.max_attempts)+extra)fail(409,'Все попытки по этому делу использованы');
       const scenario=await one(q,'SELECT created_by FROM scenarios WHERE id=$1',[product.scenario_id]);if(!scenario)fail(409,'Сценарий больше не доступен');
       const room=await one(q,`INSERT INTO rooms (name,scenario_id,created_by,duration_seconds,is_test,state,halfway_paused) VALUES ($1,$2,$3,$4,FALSE,'pending',TRUE) RETURNING id`,[teamName,product.scenario_id,scenario.created_by,product.duration_seconds||7200]);
-      const link=await shared.provision(q,{...room,name:teamName},accountId);
+      const link=await shared.provision(q,{...room,name:teamName},accountId,null,product.id);
       const run={id:uuid(),account_id:accountId,product_id:product.id,room_id:room.id,room_user_id:link.room_user_id,attempt_number:count+1,is_owner:1,request_key:requestKey,created_at:now()};
       await q('INSERT INTO player_runs (id,account_id,product_id,room_id,room_user_id,attempt_number,is_owner,request_key,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',Object.values(run));return run;
     });
@@ -207,24 +208,16 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
     return {token,room:{id:room.id,name:room.name,scenario_id:room.scenario_id,duration_seconds:room.duration_seconds,is_test:false},user:{...user,room_id:room.id},cabinet_run:{id:run.id,is_owner:!!run.is_owner}};
   }
   function elapsed(room) { if(room.state==='pending')return 0;const remaining=remainingSeconds(room);return Math.max(0,Math.min(Number(room.duration_seconds),Number(room.duration_seconds)-Number(remaining))); }
-  async function scoreRun(q,run) {
-    const product=await one(q,'SELECT rubric FROM player_products WHERE id=$1',[run.product_id]);
-    const rubric=product?.rubric?JSON.parse(product.rubric):null;
-    if(!rubric || !rubric.length)return {score:null,result_status:'pending_review'};
-    const answers=(await q('SELECT question_id,answer_text FROM question_answers WHERE room_user_id=$1 ORDER BY id',[run.room_user_id])).rows;
-    const latest=new Map(answers.map(a=>[Number(a.question_id),normalizeAnswer(a.answer_text)]));
-    const correct=rubric.filter(rule=>rule.answers.map(normalizeAnswer).includes(latest.get(Number(rule.question_id)))).length;
-    return {score:Math.round(correct/rubric.length*2000),result_status:'graded'};
-  }
   async function finalizeRoom(roomId, existingQuery=null, elapsedValue=null){
-    if(!existingQuery){const pending=(await query(`SELECT g.id FROM player_runs g JOIN rooms r ON r.id=g.room_id LEFT JOIN player_attempts a ON a.run_id=g.id WHERE g.room_id=$1 AND g.is_owner=1 AND r.state='finished' AND r.game_start_time IS NOT NULL AND (a.run_id IS NULL OR g.result_status IS NULL)`,[roomId])).rows;if(!pending.length)return;}
+    if(!existingQuery){const pending=(await query(`SELECT g.id FROM player_runs g JOIN rooms r ON r.id=g.room_id LEFT JOIN player_attempts a ON a.run_id=g.id WHERE g.room_id=$1 AND g.is_owner=1 AND r.state='finished' AND r.game_start_time IS NOT NULL AND (a.run_id IS NULL OR g.result_status IS NULL)`,[roomId])).rows;if(!pending.length&&!await scoring.needsFinalize(roomId))return;}
     const work=async q=>{
       await q('UPDATE rooms SET name=name WHERE id=$1',[roomId]);
       const room=await one(q,'SELECT * FROM rooms WHERE id=$1',[roomId]);if(!room||room.state!=='finished'||!room.game_start_time)return;
+      const grade=await scoring.complete(q,roomId);
       const runs=(await q('SELECT * FROM player_runs WHERE room_id=$1 AND is_owner=1',[roomId])).rows;
       for(const run of runs){
         if(run.product_id)await q('INSERT INTO player_attempts (run_id,account_id,product_id,completed_at) VALUES ($1,$2,$3,$4) ON CONFLICT(run_id) DO NOTHING',[run.id,run.account_id,run.product_id,now()]);
-        if(!run.result_status){const grade=await scoreRun(q,run);await q('UPDATE player_runs SET score=$1,result_status=$2,elapsed_seconds=$3 WHERE room_id=$4 AND room_user_id=$5 AND result_status IS NULL',[grade.score,grade.result_status,elapsedValue??room.duration_seconds,roomId,run.room_user_id]);}
+        if(!run.result_status){await q('UPDATE player_runs SET score=$1,result_status=$2,elapsed_seconds=$3 WHERE room_id=$4 AND room_user_id=$5 AND result_status IS NULL',[grade.score,grade.result_status,elapsedValue??room.duration_seconds,roomId,run.room_user_id]);}
       }
     };
     return existingQuery?work(existingQuery):transaction(work);
@@ -278,20 +271,21 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
       const link=await one(query,'SELECT invite_token,answers_submitted FROM shared_rooms WHERE room_id=$1',[run.room_id]);
       if(link){run.shared=true;if(room.state!=='finished')run.invite_path='/room#'+link.invite_token;run.can_finish=!!link.answers_submitted&&['running','paused'].includes(room.state);}
       if(room.state!=='finished')run.elapsed_seconds=elapsed(room);
-      run.remaining_seconds=remainingSeconds(room);run.is_owner=!!run.is_owner;
+      run.remaining_seconds=remainingSeconds(room);run.is_owner=!!run.is_owner;run.scoring=await scoring.publicSummary(room.id);
       if(!run.title){const scenario=await one(query,'SELECT name FROM scenarios WHERE id=$1',[run.scenario_id]);run.title=scenario?.name||'Расследование';}
-    }return rows;
+    }const ranked=await scoring.firstRuns(accountId);for(const run of rows)run.ranked=ranked.has(run.id);return rows;
   }
   async function profile(accountId){
     const games=await history(accountId);const products=await catalog(accountId);
-    const ratingSql=`SELECT a.id,COALESCE(SUM(best.score),0) AS rating FROM player_accounts a LEFT JOIN (SELECT g.account_id,g.product_id,MAX(g.score) AS score FROM player_runs g JOIN player_products p ON p.id=g.product_id JOIN rooms r ON r.id=g.room_id WHERE p.price>0 AND r.state='finished' AND g.is_owner=1 GROUP BY g.account_id,g.product_id) best ON best.account_id=a.id GROUP BY a.id`;
-    const rankings=(await query(ratingSql)).rows;const rating=Number(rankings.find(r=>r.id===accountId)?.rating||0);
+    const rankings=await scoring.rankings();const rating=Number(rankings.find(r=>r.id===accountId)?.rating||0);
     return {games,products,bundles:await bundles(),orders:(await query('SELECT id,title,amount,status,created_at FROM player_orders WHERE account_id=$1 ORDER BY created_at DESC',[accountId])).rows,
-      stats:{played:games.filter(g=>g.state==='finished').length,purchased:products.filter(p=>p.owned&&p.price>0).length,rating,rank:rating>0?1+rankings.filter(r=>Number(r.rating)>rating).length:null,total_players:rankings.length},local_mode:localMode};
+      stats:{played:games.filter(g=>g.state==='finished'&&g.game_start_time).length,purchased:products.filter(p=>p.owned&&p.price>0).length,rating,rank:rating>0?1+rankings.filter(r=>Number(r.rating)>rating).length:null,total_players:rankings.length},local_mode:localMode};
   }
-  async function result(accountId,id){let run=await ownRun(accountId,id);await roomSync(run.room_id);await finalizeRoom(run.room_id);run=await ownRun(accountId,id);if(run.state!=='finished')fail(409,'Разбор доступен после завершения');const product=await one(query,'SELECT solution FROM player_products WHERE id=$1',[run.product_id]);return {run,solution:product?.solution||null,rating_rule:'Рейтинг дела — до 2000 баллов за правильные ответы. Демо не входит в общий рейтинг. Для платных дел учитывается лучший результат по каждому делу.'};}
-  const admin=require('./playerAdmin').createPlayerAdmin({query,transaction,roomSync,remainingSeconds,finalizeRoom});
+  async function result(accountId,id){let run=await ownRun(accountId,id);await roomSync(run.room_id);await finalizeRoom(run.room_id);run=await ownRun(accountId,id);if(run.state!=='finished')fail(409,'Разбор доступен после завершения');if(!run.game_start_time)return {run,cancelled:true,scoring:null,ranked:false,solution:null,rating_rule:'Комната закрыта до запуска. Попытка не использована.'};const product=await one(query,'SELECT solution FROM player_products WHERE id=$1',[run.product_id]);return {run,scoring:await scoring.publicSummary(run.room_id),ranked:(await scoring.firstRuns(accountId)).has(run.id),solution:product?.solution||null,rating_rule:'Гонорар учитывает качество ответов и поездки. В общий рейтинг входит только первое завершённое прохождение каждого платного дела: до 2000 рейтинговых баллов за дело. Демо и повторные прохождения не меняют рейтинг.'};}
+  const admin=require('./playerAdmin').createPlayerAdmin({query,transaction,roomSync,remainingSeconds,finalizeRoom,scoring});
+  scoring.setFinalizer(finalizeRoom);
+  shared.setScoring(scoring);
   shared.setFinalizer(finalizeRoom);
-  return {admin,shared,finalizeRoom,init,register,login,authenticate,logout,updateAccount,requestReset,resetPassword,catalog,bundles,purchase,start,join,enter,control,history,profile,result};
+  return {scoring,admin,shared,finalizeRoom,init,register,login,authenticate,logout,updateAccount,requestReset,resetPassword,catalog,bundles,purchase,start,join,enter,control,history,profile,result};
 }
 module.exports={createPlayerCabinet,SESSION_MS};

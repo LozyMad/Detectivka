@@ -1,7 +1,6 @@
 const express = require('express');
 const {cabinet,localMode,SESSION_MS} = require('../services/playerRuntime');
 const {authenticateToken,adminRequired} = require('../middleware/auth');
-const database = require('../config/database');
 const router = express.Router();
 const COOKIE = 'detectum_account';
 const attempts = new Map();
@@ -37,18 +36,8 @@ router.post('/login',throttle,wrap(async(req,res)=>authResult(res,await cabinet.
 router.post('/logout',wrap(async(req,res)=>{await cabinet.logout(token(req));clearSession(res);res.json({ok:true});}));
 router.post('/forgot-password',throttle,localOnly,wrap(async(req,res)=>res.json(await cabinet.requestReset(req.body||{}))));
 router.post('/reset-password',throttle,wrap(async(req,res)=>{const result=await cabinet.resetPassword(req.body||{});clearSession(res);res.json(result);}));
-router.get('/admin/reviews',authenticateToken,adminRequired,wrap(async(req,res)=>{
-  const query=`SELECT g.id,g.room_id,g.room_user_id,p.title,a.username,r.created_by FROM player_runs g JOIN rooms r ON r.id=g.room_id JOIN player_accounts a ON a.id=g.account_id LEFT JOIN player_products p ON p.id=g.product_id WHERE g.is_owner=1 AND g.result_status='pending_review'`;
-  const rows=(await database.query(query)).rows;res.json({reviews:rows.filter(r=>req.user.admin_level==='super_admin'||Number(r.created_by)===Number(req.user.id))});
-}));
-router.post('/admin/reviews/:id',authenticateToken,adminRequired,wrap(async(req,res)=>{
-  const score=req.body?.score;if(!Number.isInteger(score)||score<0||score>2000)return res.status(400).json({error:'Оценка должна быть целым числом от 0 до 2000'});
-  const run=(await database.query('SELECT g.*,r.created_by,r.state FROM player_runs g JOIN rooms r ON r.id=g.room_id WHERE g.id=$1',[req.params.id])).rows[0];
-  if(!run||!run.is_owner)return res.status(404).json({error:'Игра не найдена'});
-  if(req.user.admin_level!=='super_admin'&&Number(run.created_by)!==Number(req.user.id))return res.status(403).json({error:'Нет доступа к этой игре'});
-  if(run.state!=='finished')return res.status(409).json({error:'Сначала завершите игру'});
-  await database.query("UPDATE player_runs SET score=$1,result_status='graded' WHERE room_id=$2 AND room_user_id=$3",[score,run.room_id,run.room_user_id]);res.json({ok:true});
-}));
+router.get('/admin/reviews',authenticateToken,adminRequired,wrap(async(req,res)=>res.json({reviews:(await cabinet.scoring.reviews(req.user,req.query)).items})));
+router.post('/admin/reviews/:id',authenticateToken,adminRequired,(req,res)=>res.status(400).json({error:'Обновите страницу проверки: теперь нужно оценить каждый ответ от 0 до 5 и опубликовать гонорар.'}));
 router.post('/invite/join',throttle,wrap(async(req,res)=>{
   let account=null;try{account=await cabinet.authenticate(token(req));}catch(error){if(error.status!==401)throw error;}
   res.json(await cabinet.shared.join(req.body?.invite_token,account));

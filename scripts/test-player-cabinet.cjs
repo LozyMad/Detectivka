@@ -13,6 +13,7 @@ async function fixture(t,localMode=true){
  `CREATE TABLE scenarios (id INTEGER PRIMARY KEY,name TEXT,created_by INTEGER)`,
  `CREATE TABLE rooms (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,scenario_id INTEGER,created_by INTEGER,duration_seconds INTEGER,is_test BOOLEAN,state TEXT,game_start_time TEXT,game_end_time TEXT,halfway_paused BOOLEAN,paused_at TEXT)`,
  `CREATE TABLE room_users (id INTEGER PRIMARY KEY AUTOINCREMENT,room_id INTEGER,username TEXT,password TEXT,UNIQUE(room_id,username))`,
+ `CREATE TABLE visit_attempts (id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER,room_id INTEGER,scenario_id INTEGER,found BOOLEAN)`,
  `CREATE TABLE questions (id INTEGER PRIMARY KEY,scenario_id INTEGER,question_text TEXT,question_order INTEGER,is_active BOOLEAN)`,
  `CREATE TABLE question_answers (id INTEGER PRIMARY KEY AUTOINCREMENT,question_id INTEGER,room_user_id INTEGER,answer_text TEXT)`])await query(sql);
  const roomSync=async id=>{let room=(await query('SELECT * FROM rooms WHERE id=$1',[id])).rows[0];if(room?.state==='running'&&new Date(room.game_end_time)<=new Date()){await query("UPDATE rooms SET state='finished' WHERE id=$1",[id]);room={...room,state:'finished'};}return room;};
@@ -26,7 +27,7 @@ async function fixture(t,localMode=true){
  const registration=(email='detective@example.test')=>({username:'Детектив',email,password:'secret-password',confirm_password:'secret-password',accept_terms:true});
  const account=await store.register(registration());
  const start=(extra={})=>store.start(account.account.id,{product_id:'demo',team_name:'Команда',team_password:'team-secret',request_key:randomUUID(),...extra});
- const begin=async extra=>{const run=await start(extra);await store.control(account.account.id,run.id,'start');return run;};
+ const begin=async extra=>{const run=await start(extra);await store.control(account.account.id,run.id,'start');await query('INSERT INTO visit_attempts (user_id,room_id,scenario_id,found) VALUES ($1,$2,$3,TRUE)',[run.room_user_id,run.room_id,run.product_id==='demo'?1:2]);return run;};
  const finish=async run=>{await store.shared.submitAnswers({id:run.room_user_id,room_id:run.room_id},{answers:[{question_id:run.product_id==='demo'?1:2,text:'An answer',revision:0}]});return store.control(account.account.id,run.id,'finish',{confirmed:true});};
  return {query,store,account,registration,start,begin,finish,roomSync};
 }
@@ -46,7 +47,7 @@ test('invite joins without an account and never grants creator controls',async t
 test('demo grading uses stored answers and finish never changes a finalized score',async t=>{const f=await fixture(t);const run=await f.begin();await rejected(f.store.result(f.account.account.id,run.id),409);await f.store.shared.submitAnswers({id:run.room_user_id,room_id:run.room_id},{answers:[{question_id:1,text:'Анна, Лебедева!',revision:0}]});await f.store.control(f.account.account.id,run.id,'finish',{confirmed:true});const result=await f.store.result(f.account.account.id,run.id);assert.equal(result.run.score,2000);assert.equal(result.solution,'Solution');await f.store.control(f.account.account.id,run.id,'finish',{confirmed:true});const profile=await f.store.profile(f.account.account.id);assert.equal(profile.stats.played,1);assert.equal(profile.stats.rating,0);await rejected(f.store.control(f.account.account.id,run.id,'resume'),409);});
 test('server enforces three attempts after separate completed games',async t=>{const f=await fixture(t);for(let i=0;i<3;i++){const run=await f.begin({team_password:'team-secret-'+i});assert.equal(run.attempt_number,i+1);await f.finish(run);}await rejected(f.begin({team_password:'fourth-password'}),409);assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_left,0);});
 test('expired timer finalizes history and preserves its result on later reads',async t=>{const f=await fixture(t);const run=await f.begin();await f.query("UPDATE rooms SET game_end_time='2000-01-01' WHERE id=$1",[run.room_id]);const history=await f.store.history(f.account.account.id);assert.equal(history[0].state,'finished');assert.equal(history[0].score,0);assert.equal(history[0].elapsed_seconds,7200);assert.equal((await f.store.history(f.account.account.id))[0].score,0);});
-test('overall rating uses best paid attempt instead of summing replays',async t=>{const f=await fixture(t);await f.store.purchase(f.account.account.id,{product_id:'paid',confirm_local:true,request_key:randomUUID()});for(const [i,score]of [1200,800].entries()){const run=await f.begin({product_id:'paid',team_password:'paid-password-'+i});await f.finish(run);assert.equal((await f.store.result(f.account.account.id,run.id)).run.result_status,'pending_review');await f.query("UPDATE player_runs SET score=$1,result_status='graded' WHERE id=$2",[score,run.id]);}const profile=await f.store.profile(f.account.account.id);assert.equal(profile.stats.rating,1200);assert.equal(profile.stats.rank,1);});
+test('overall rating uses the first paid completion even when a replay scores higher',async t=>{const f=await fixture(t);await f.store.purchase(f.account.account.id,{product_id:'paid',confirm_local:true,request_key:randomUUID()});for(const [i,score]of [800,1200].entries()){const run=await f.begin({product_id:'paid',team_password:'paid-password-'+i});await f.finish(run);assert.equal((await f.store.result(f.account.account.id,run.id)).run.result_status,'pending_review');await f.query("UPDATE player_runs SET score=$1,result_status='graded' WHERE id=$2",[score,run.id]);}const profile=await f.store.profile(f.account.account.id);assert.equal(profile.stats.rating,800);assert.equal(profile.stats.rank,1);});
 
 function answerController(room) {
  const module={exports:{}};const requests=[],created=[];
@@ -160,4 +161,62 @@ test('finished shared rooms reject owner entry, invitation, guest identity and o
 test('an expired room is closed before invitation or account entry can mint another JWT',async t=>{
  const f=await fixture(t);const run=await f.begin();const identity=await f.store.enter(f.account.account.id,run.id);await f.query("UPDATE rooms SET game_end_time='2000-01-01' WHERE id=$1",[run.room_id]);
  await rejected(f.store.shared.join(identity.shared_access.invite_path.split('#')[1]),403);await rejected(f.store.enter(f.account.account.id,run.id),403);assert.equal((await f.query('SELECT * FROM player_attempts')).rows.length,1);
+});
+
+const scoringBody=extra=>({revision:0,reason:'Проверка формулы',request_key:randomUUID(),...extra});
+const paidStart=async f=>{await f.store.admin.grant(chief,f.account.account.id,adminBody({action:'grant_access',product_id:'paid'}));return f.begin({product_id:'paid'});};
+test('scoring settings, criteria and questions are frozen at room creation',async t=>{
+ const f=await fixture(t);const body=scoringBody({max_fee:3000,standard_trips:10,criteria:[{question_id:2,text:'Первоначальный критерий'}]});await f.store.scoring.saveSettings(chief,2,body);await f.store.scoring.saveSettings(chief,2,body);
+ const run=await paidStart(f);await f.store.scoring.saveSettings(chief,2,scoringBody({revision:1,max_fee:5000,standard_trips:30,criteria:[{question_id:2,text:'Новый критерий'}]}));await f.query("UPDATE questions SET question_text='Изменённый вопрос',is_active=FALSE WHERE id=2");
+ const conditions=await f.store.scoring.publicSummary(run.room_id);assert.equal(conditions.max_fee,3000);assert.equal(conditions.standard_trips,10);assert.equal((await f.store.shared.snapshot({id:run.room_user_id,room_id:run.room_id})).questions[0].question_text,'Why?');assert.equal(await f.store.scoring.questionInOpenRoom(2),true);
+ await f.finish(run);const review=await f.store.scoring.review(chief,run.room_id);assert.equal(review.questions[0].criteria,'Первоначальный критерий');assert.equal(review.questions[0].question_text,'Why?');assert.equal(await f.store.scoring.questionInOpenRoom(2),false);
+});
+test('draft review stays private; incomplete publication rolls back and complete publication is idempotent',async t=>{
+ const f=await fixture(t);await f.query("INSERT INTO questions VALUES (3,2,'Second?',2,TRUE)");const run=await paidStart(f);
+ await f.store.shared.submitAnswers({id:run.room_user_id,room_id:run.room_id},{answers:[{question_id:2,text:'First answer',revision:0},{question_id:3,text:'Second answer',revision:0}]});await f.store.control(f.account.account.id,run.id,'finish',{confirmed:true});
+ await f.store.scoring.saveReview(chief,run.room_id,scoringBody({publish:false,grades:[{question_id:2,grade:3,comment:'Черновая оценка'}]}));const draft=await f.store.result(f.account.account.id,run.id);assert.equal(draft.scoring.fee,null);assert.equal(draft.scoring.points,null);assert.deepEqual(draft.scoring.grades,[]);
+ await rejected(f.store.scoring.saveReview(chief,run.room_id,scoringBody({revision:1,publish:true,grades:[{question_id:2,grade:4,comment:'Changed'}]})),400);assert.equal((await f.store.scoring.review(chief,run.room_id)).questions[0].grade,3);
+ const publish=scoringBody({revision:1,publish:true,grades:[{question_id:2,grade:4,comment:'Хорошо'},{question_id:3,grade:5,comment:'Полный ответ'}]});const a=await f.store.scoring.saveReview(chief,run.room_id,publish),b=await f.store.scoring.saveReview(chief,run.room_id,publish);assert.deepEqual(a,b);assert.equal(a.calculation.fee,1620);
+ const result=await f.store.result(f.account.account.id,run.id);assert.equal(result.run.score,1620);assert.equal(result.scoring.points,9);assert.equal(result.scoring.grades[1].comment,'Полный ответ');assert.equal((await f.store.scoring.review(chief,run.room_id)).revision,2);
+ await f.store.scoring.saveReview(chief,run.room_id,scoringBody({revision:2,publish:false,grades:[{question_id:2,grade:0,comment:'Новая черновая оценка'}]}));assert.equal((await f.store.result(f.account.account.id,run.id)).scoring.fee,1620);assert.equal((await f.store.result(f.account.account.id,run.id)).scoring.grades[0].grade,4);await f.query('DELETE FROM question_answers WHERE room_user_id=$1',[run.room_user_id]);assert.equal((await f.store.scoring.review(chief,run.room_id)).questions[0].answer_text,'First answer');assert.equal((await f.store.result(f.account.account.id,run.id)).scoring.grades[0].answer_text,'First answer');
+});
+test('fee counts accepted successful, unsuccessful and repeated team trips and freezes the count at finish',async t=>{
+ const f=await fixture(t);const run=await paidStart(f);for(let i=0;i<39;i++)await f.query('INSERT INTO visit_attempts (user_id,room_id,scenario_id,found) VALUES ($1,$2,2,$3)',[run.room_user_id,run.room_id,i%2]);await f.query('INSERT INTO visit_attempts (user_id,room_id,scenario_id,found) VALUES ($1,$2,2,TRUE)',[999,run.room_id]);await f.finish(run);
+ const pub=scoringBody({publish:true,grades:[{question_id:2,grade:4,comment:''}]});const scored=await f.store.scoring.saveReview(chief,run.room_id,pub);assert.equal(scored.calculation.trips,40);assert.equal(scored.calculation.fee,905);
+ await f.query('INSERT INTO visit_attempts (user_id,room_id,scenario_id,found) VALUES ($1,$2,2,TRUE)',[run.room_user_id,run.room_id]);assert.equal((await f.store.scoring.publicSummary(run.room_id)).trips,40);
+});
+test('missing answers require zero and zero-trip investigations earn zero even with correct answers',async t=>{
+ const f=await fixture(t);const run=await paidStart(f);await f.query('DELETE FROM visit_attempts');await f.store.admin.control(chief,run.room_id,adminBody({action:'finish',confirmed:true}));await rejected(f.store.scoring.saveReview(chief,run.room_id,scoringBody({publish:true,grades:[{question_id:2,grade:5,comment:''}]})),400);
+ const zero=await f.store.scoring.saveReview(chief,run.room_id,scoringBody({publish:true,grades:[{question_id:2,grade:0,comment:''}]}));assert.equal(zero.calculation.fee,0);
+ const f2=await fixture(t);const perfect=await f2.begin();await f2.query('DELETE FROM visit_attempts');await f2.store.shared.submitAnswers({id:perfect.room_user_id,room_id:perfect.room_id},{answers:[{question_id:1,text:'Анна Лебедева',revision:0}]});await f2.store.control(f2.account.account.id,perfect.id,'finish',{confirmed:true});const result=await f2.store.result(f2.account.account.id,perfect.id);assert.equal(result.scoring.points,5);assert.equal(result.scoring.fee,0);
+});
+test('scoring rejects stale revisions, wrong question grades, fractional grades and unauthorized organizers',async t=>{
+ const f=await fixture(t);const run=await paidStart(f);await f.finish(run);const body=scoringBody({publish:true,grades:[{question_id:2,grade:5,comment:''}]});
+ await rejected(f.store.scoring.review(outsider,run.room_id),404);await rejected(f.store.scoring.saveReview(outsider,run.room_id,body),404);await rejected(f.store.scoring.settings(outsider,2),404);
+ for(const grade of [-1,6,2.5,'5'])await rejected(f.store.scoring.saveReview(chief,run.room_id,{...body,grades:[{question_id:2,grade,comment:''}]}),400);
+ await rejected(f.store.scoring.saveReview(chief,run.room_id,{...body,grades:[{question_id:1,grade:5,comment:''}]}),400);await f.store.scoring.saveReview(organizer,run.room_id,body);
+ await rejected(f.store.scoring.saveReview(chief,run.room_id,scoringBody({publish:false,grades:[{question_id:2,grade:4,comment:''}]})),409);
+});
+test('a higher replay fee cannot change first-completion ranking and corrected first grades can',async t=>{
+ const f=await fixture(t);await f.store.admin.grant(chief,f.account.account.id,adminBody({action:'grant_access',product_id:'paid'}));let first;
+ for(const grade of [3,5]){const run=await f.begin({product_id:'paid'});await f.finish(run);await f.store.scoring.saveReview(chief,run.room_id,scoringBody({publish:true,grades:[{question_id:2,grade,comment:''}]}));if(!first)first=run;}
+ assert.equal((await f.store.profile(f.account.account.id)).stats.rating,720);const history=await f.store.history(f.account.account.id);assert.equal(history.find(g=>g.id===first.id).ranked,true);assert.equal(history.find(g=>g.id!==first.id).ranked,false);
+ await f.store.scoring.saveReview(chief,first.room_id,scoringBody({revision:1,publish:true,grades:[{question_id:2,grade:4,comment:'Исправление оценки'}]}));assert.equal((await f.store.profile(f.account.account.id)).stats.rating,1280);
+});
+test('migration preserves already published legacy results instead of regrading old rooms',async t=>{
+ const f=await fixture(t);const run=await f.begin();await f.finish(run);await f.query("UPDATE player_runs SET score=1375,result_status='graded' WHERE id=$1",[run.id]);await f.query('DELETE FROM player_answer_grades WHERE room_id=$1',[run.room_id]);await f.query('DELETE FROM player_room_scoring WHERE room_id=$1',[run.room_id]);await f.store.init();
+ const result=await f.store.result(f.account.account.id,run.id);assert.equal(result.run.score,1375);assert.equal(result.scoring.fee,1375);assert.equal(result.scoring.legacy,true);
+});
+
+test('admin-created shared rooms can be reviewed and paid a fee without a buyer account',async t=>{
+ const f=await fixture(t);const room=(await f.query("INSERT INTO rooms (name,scenario_id,created_by,duration_seconds,is_test,state,halfway_paused) VALUES ('Комната организатора',1,1,7200,FALSE,'pending',TRUE) RETURNING id")).rows[0];
+ const link=await f.store.shared.provision(f.query,{...room,name:'Комната организатора'},null,1);await f.store.admin.control(chief,room.id,adminBody({action:'start'}));await f.query('INSERT INTO visit_attempts (room_id,user_id,scenario_id,found) VALUES ($1,$2,1,TRUE)',[room.id,link.room_user_id]);
+ await f.store.shared.submitAnswers({id:link.room_user_id,room_id:room.id},{answers:[{question_id:1,text:'Ответ организованной команды',revision:0}]});await f.store.admin.control(chief,room.id,adminBody({action:'finish',confirmed:true}));
+ assert.ok((await f.store.scoring.reviews(chief)).items.some(r=>r.room_id===room.id));await f.store.scoring.saveReview(chief,room.id,scoringBody({publish:true,grades:[{question_id:1,grade:5,comment:'Полный ответ'}]}));assert.equal((await f.store.admin.room(chief,room.id)).scoring.fee,2000);assert.equal((await f.store.profile(f.account.account.id)).stats.rating,0);
+});
+test('a room closed before start never consumes the first eligible completion or enters review',async t=>{
+ const f=await fixture(t);await f.store.admin.grant(chief,f.account.account.id,adminBody({action:'grant_access',product_id:'paid'}));const cancelled=await f.start({product_id:'paid'});await f.query("UPDATE rooms SET state='finished' WHERE id=$1",[cancelled.room_id]);
+ assert.equal((await f.store.result(f.account.account.id,cancelled.id)).cancelled,true);await rejected(f.store.scoring.review(chief,cancelled.room_id),409);
+ const first=await f.begin({product_id:'paid'});assert.equal(first.attempt_number,1);await f.finish(first);await f.store.scoring.saveReview(chief,first.room_id,scoringBody({publish:true,grades:[{question_id:2,grade:4,comment:''}]}));
+ const profile=await f.store.profile(f.account.account.id);assert.equal(profile.stats.rating,1280);assert.equal(profile.stats.played,1);assert.equal(profile.games.find(g=>g.id===cancelled.id).ranked,false);assert.ok(!(await f.store.scoring.reviews(chief,{status:'all'})).items.some(r=>r.room_id===cancelled.room_id));
 });

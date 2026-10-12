@@ -1,7 +1,7 @@
 'use strict';
 const fail = (status, message) => { const error = new Error(message); error.status = status; throw error; };
 const now = () => new Date().toISOString();
-function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync, remainingSeconds, finalizeRoom}) {
+function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync, remainingSeconds, finalizeRoom, scoring}) {
   // Renumber repeated parameters: SQLite binds by occurrence, PostgreSQL by number.
   const execute=(q,sql,params=[])=>{const values=[];const mapped=sql.replace(/\$(\d+)/g,(_,n)=>{values.push(params[Number(n)-1]);return '$'+values.length;});return q(mapped,values);};
   const query=(sql,params)=>execute(rawQuery,sql,params);
@@ -71,7 +71,7 @@ function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync
     const answers=new Map(rows.map(a=>[Number(a.question_id),a.answer_text]));
     const run=await one(query,'SELECT id,product_id,attempt_number,score,result_status,elapsed_seconds FROM player_runs WHERE room_id=$1 AND is_owner=1',[id]);
     const scenario=await one(query,'SELECT name FROM scenarios WHERE id=$1',[r.scenario_id]);
-    return {room:{...r,title:scenario?.name,remaining_seconds:remainingSeconds(r)},owner,run:run||null,invite_path:r.state==='finished'?null:'/room#'+link.invite_token,notes:link.notes,answers_submitted:!!link.answers_submitted,questions:questions.map(q=>({...q,answer_text:answers.get(Number(q.id))||''})),journal:await journal(admin,{room_id:id})};
+    return {scoring:await scoring.publicSummary(id),room:{...r,title:scenario?.name,remaining_seconds:remainingSeconds(r)},owner,run:run||null,invite_path:r.state==='finished'?null:'/room#'+link.invite_token,notes:link.notes,answers_submitted:!!link.answers_submitted,questions:questions.map(q=>({...q,answer_text:answers.get(Number(q.id))||''})),journal:await journal(admin,{room_id:id})};
   }
   function mutation(body) {
     const reason=typeof body.reason==='string'?body.reason.trim():'';if(reason.length<3||reason.length>500)fail(400,'Укажите причину: от 3 до 500 символов');
@@ -141,7 +141,7 @@ function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync
   }
   async function journal(admin,filters={}) {
     staff(admin);
-    return (await query(`SELECT j.id,j.admin_name,j.action,j.account_id,j.room_id,j.reason,j.payload,j.created_at FROM player_admin_audit j WHERE ($2='' OR j.account_id=$2) AND ($3=0 OR j.room_id=$3) AND (${superAdmin(admin)?'1=1':'EXISTS (SELECT 1 FROM rooms r WHERE r.id=j.room_id AND r.created_by=$1)'}) ORDER BY j.created_at DESC,j.id DESC LIMIT 100`,[admin.id,filters.account_id||'',Number(filters.room_id)||0])).rows.map(j=>({...j,payload:JSON.parse(j.payload)}));
+    return (await query(`SELECT j.id,j.admin_name,j.action,j.account_id,j.room_id,j.reason,j.payload,j.created_at FROM player_admin_audit j WHERE ($2='' OR j.account_id=$2) AND ($3=0 OR j.room_id=$3) AND (${superAdmin(admin)?'1=1':"EXISTS (SELECT 1 FROM rooms r WHERE r.id=j.room_id AND r.created_by=$1) OR (j.action='scoring_settings' AND j.admin_id=$1)"}) ORDER BY j.created_at DESC,j.id DESC LIMIT 100`,[admin.id,filters.account_id||'',Number(filters.room_id)||0])).rows.map(j=>({...j,payload:JSON.parse(j.payload)}));
   }
   return {init,players,player,rooms,room,grant,control,journal};
 }
