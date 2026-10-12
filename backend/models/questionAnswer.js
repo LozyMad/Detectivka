@@ -49,6 +49,15 @@ if (DB_TYPE === 'postgresql') {
         });
     },
 
+    getByUser: (user_id, room_user_id) => new Promise((resolve, reject) => {
+        const column = room_user_id ? 'room_user_id' : 'user_id';
+        db.all(`SELECT qa.*, q.question_text, s.name AS scenario_name
+                FROM question_answers qa LEFT JOIN questions q ON q.id=qa.question_id
+                LEFT JOIN scenarios s ON s.id=q.scenario_id WHERE qa.${column}=?
+                ORDER BY qa.answered_at, qa.id`, [room_user_id || user_id],
+            (error, rows) => error ? reject(error) : resolve(rows));
+    }),
+
     getByQuestion: (question_id) => {
         return new Promise((resolve, reject) => {
             db.all(

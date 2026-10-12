@@ -104,6 +104,19 @@ const createAnswer = async (req, res) => {
             return res.status(401).json({ error: 'Authentication required' });
         }
         
+        if (req.roomUser) {
+            const { syncRoomTimer } = require('../services/roomTimer');
+            const room = await syncRoomTimer(req.roomUser.room_id);
+            if (!room) return res.status(403).json({ error: 'Room not found' });
+            const questions = await Question.getByScenario(room.scenario_id);
+            if (!questions.some(q => Number(q.id) === Number(question_id))) {
+                return res.status(403).json({ error: 'Question does not belong to this game' });
+            }
+            if (!room.is_test && room.state !== 'running') {
+                return res.status(403).json({ error: 'Answers can only be submitted while the game is running' });
+            }
+        }
+
         // Проверяем, не отвечал ли уже пользователь на этот вопрос
         const existingAnswer = await QuestionAnswer.getByQuestionAndUser(question_id, user_id, room_user_id);
         if (existingAnswer) {

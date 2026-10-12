@@ -35,7 +35,10 @@ const internetCafeRoutes = require('./routes/internetCafe');
 const applicationRoutes = require('./routes/applications');
 const enquiryRoutes = require('./routes/enquiries');
 
+const playerRoutes = require('./routes/player');
 const app = express();
+// Nginx connects over loopback; keep player rate limits separate by client IP.
+app.set('trust proxy', 'loopback');
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -169,6 +172,7 @@ app.use(express.static(path.join(__dirname, '../frontend'), {
 }));
 
 // Routes
+app.use('/api/player', playerRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/enquiries', enquiryRoutes.publicRouter);
@@ -185,6 +189,11 @@ app.use('/api/choices', choiceRoutes);
 app.use('/api/internet-cafe', internetCafeRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/nuclear', nuclearRoutes);
+
+// Player account pages share the same application shell.
+for (const route of ['/register','/account-login','/forgot-password','/reset-password','/profile','/catalog','/how-to-play']) {
+  app.get(route, (req,res) => { res.set('Cache-Control','no-store'); res.sendFile(path.join(__dirname,'../frontend/player.html')); });
+}
 
 // Serve frontend
 app.get('/corporate', (req, res) => {
@@ -225,6 +234,8 @@ app.use((err, req, res, next) => {
 // Initialize database and start server
 database.init().then(async () => {
   await require('./services/addressBookRevision').updateAddressBook();
+  await require('./services/playerRuntime').cabinet.init();
+  await require('./services/playerCatalogSeed').seedCatalog();
   // РАДИКАЛЬНАЯ инициализация вариантов выбора для ВСЕХ адресов
   try {
     const { initializeAllChoices } = require('./scripts/init_all_choices');
@@ -233,7 +244,7 @@ database.init().then(async () => {
     console.error('Failed to initialize all choices:', error);
   }
   
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, process.env.HOST || '0.0.0.0', () => {
     console.log(`Server is running on http://0.0.0.0:${PORT}`);
   });
 }).catch(err => {
