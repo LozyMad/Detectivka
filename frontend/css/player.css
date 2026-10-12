@@ -252,3 +252,8 @@ dialog::backdrop { background: #090603d9; backdrop-filter: blur(5px); }
   .guide h1 { font-size: 33px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+
+.welcome.catalog-welcome { padding-bottom: 28px; }
+.welcome.catalog-welcome h1 { max-width: 780px; margin-bottom: 0; font-size: clamp(24px, 3vw, 36px); line-height: 1.35; }
+.welcome.catalog-welcome > .button { margin-top: 24px; margin-bottom: 0; }
+.attempts-remaining { color: var(--muted); font-size: 13px; font-weight: 500; line-height: 1.5; }
