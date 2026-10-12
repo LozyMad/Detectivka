@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { roomSessionFixture } = require('./test-helpers/room-session-fixture.cjs');
 
-function fixture(findById) {
+function fixture(findById,getRoom=async()=>({state:'running'})) {
   const module = { exports: {} };
   let verifyCallback;
   vm.runInNewContext(fs.readFileSync('backend/middleware/auth.js', 'utf8'), {
@@ -13,6 +13,7 @@ function fixture(findById) {
       if (name === 'jsonwebtoken') return { verify(token, secret, callback) { verifyCallback = callback; } };
       if (name === '../models/user') return { findById };
       if (name === '../models/room') return {};
+      if (name === '../services/roomTimer') return {syncRoomTimer:getRoom};
       throw new Error(`Unexpected dependency: ${name}`);
     }
   });
@@ -61,8 +62,8 @@ test('real HTTP: room creation, room login and test-room login produce tokens ac
 });
 
 for (const name of ['authenticateToken', 'authenticateTokenQuery']) {
-  function start(findById) {
-    const f = fixture(findById);
+  function start(findById,getRoom) {
+    const f = fixture(findById,getRoom);
     const req = { headers: { authorization: 'Bearer test-token' }, query: { token: 'test-token' } };
     const forwarded = [];
     const res = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; } };
@@ -112,6 +113,15 @@ for (const name of ['authenticateToken', 'authenticateTokenQuery']) {
     assert.equal(f.forwarded.length, 0);
   });
 
+  test(`${name}: a finished room revokes an existing JWT before granting access`,async()=>{
+    const f=start(async()=>null,async()=>({state:'finished',is_test:false}));
+    await f.callback()(null,{room_user_id:15,room_id:14});
+    assert.equal(f.res.statusCode,403);assert.equal(f.res.body.code,'ROOM_FINISHED');assert.equal(f.req.roomUser,undefined);assert.equal(f.forwarded.length,0);
+  });
+  test(`${name}: room lookup failures are forwarded and never grant access`,async()=>{
+    const error=new Error('Room lookup failed');const f=start(async()=>null,async()=>{throw error;});
+    await f.callback()(null,{room_user_id:15,room_id:14});assert.equal(f.req.roomUser,undefined);assert.equal(f.forwarded[0],error);
+  });
   test(`${name}: room tokens bypass staff lookup and SSE retains expiry`, async () => {
     const f = start(async () => { throw new Error('Room token must not query staff'); });
     await f.callback()(null, { room_user_id: 15, room_id: 14, scenario_id: 12, username: 'Player', exp: 2000000000 });

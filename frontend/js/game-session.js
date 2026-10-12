@@ -95,11 +95,20 @@
                 sessionStorage.removeItem(key);
             }
         },
+        closeRoom() {
+            if (expired) return;
+            expired = true;
+            session.clear();
+            document.body.hidden = true;
+            if (session.onRoomFinished) session.onRoomFinished();
+            else window.location.replace('/room-finished');
+        },
         async checkResponse(response, options) {
             if (response.status !== 401 && response.status !== 403) return;
             const token = storage.getItem('token');
             if (!token || new Headers(options.headers).get('Authorization') !== `Bearer ${token}`) return;
             const data = await response.clone().json().catch(() => ({}));
+            if(data.code==='ROOM_FINISHED'&&storage.getItem('token')===token){session.closeRoom();return;}
             const authError = response.status === 401 || String(data.code || '').startsWith('AUTH_') ||
                 ['Invalid token', 'Invalid token payload', 'User not found', 'Access token required'].includes(data.error);
             if (authError && storage.getItem('token') === token) session.invalidate();

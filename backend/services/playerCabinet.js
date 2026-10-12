@@ -5,7 +5,7 @@ const SESSION_MS = 7 * 86400000;
 const uuid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
-const fail = (status, message) => { const error = new Error(message); error.status = status; throw error; };
+const fail = (status, message, code) => { const error = new Error(message); error.status = status; error.code=code; throw error; };
 const normalizeAnswer = value => String(value || '').toLocaleLowerCase('ru').replace(/ё/g, 'е').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 const emailValue = value => typeof value === 'string' ? value.trim().toLowerCase() : '';
 function validPassword(value) { if (typeof value !== 'string' || value.length < 8 || value.length > 72) fail(400, 'Пароль должен содержать от 8 до 72 символов'); if (Buffer.byteLength(value,'utf8') > 72) fail(400, 'Пароль слишком длинный: используйте не больше 72 байт'); }
@@ -196,6 +196,9 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
   }
   async function enter(accountId,id) {
     const run=await ownRun(accountId,id);
+    const currentRoom=await roomSync(run.room_id);
+    if(!currentRoom)fail(404,'Комната больше не существует');
+    if(!currentRoom.is_test&&currentRoom.state==='finished'){await finalizeRoom(run.room_id);fail(403,'Игра в этой комнате завершена. Повторный вход закрыт.','ROOM_FINISHED');}
     const linked=await one(query,'SELECT room_id FROM shared_rooms WHERE room_id=$1',[run.room_id]);
     if(linked){const identity=await shared.identity(run.room_id,{id:accountId});return {...identity,cabinet_run:{id:run.id,is_owner:!!run.is_owner}};}
     const room=await roomSync(run.room_id);
@@ -273,7 +276,7 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
         Object.assign(run,await one(query,'SELECT score,result_status,elapsed_seconds FROM player_runs WHERE id=$1',[run.id]));
       }
       const link=await one(query,'SELECT invite_token,answers_submitted FROM shared_rooms WHERE room_id=$1',[run.room_id]);
-      if(link){run.shared=true;run.invite_path='/room#'+link.invite_token;run.can_finish=!!link.answers_submitted&&['running','paused'].includes(room.state);}
+      if(link){run.shared=true;if(room.state!=='finished')run.invite_path='/room#'+link.invite_token;run.can_finish=!!link.answers_submitted&&['running','paused'].includes(room.state);}
       if(room.state!=='finished')run.elapsed_seconds=elapsed(room);
       run.remaining_seconds=remainingSeconds(room);run.is_owner=!!run.is_owner;
       if(!run.title){const scenario=await one(query,'SELECT name FROM scenarios WHERE id=$1',[run.scenario_id]);run.title=scenario?.name||'Расследование';}

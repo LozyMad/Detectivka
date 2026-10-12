@@ -71,7 +71,7 @@ function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync
     const answers=new Map(rows.map(a=>[Number(a.question_id),a.answer_text]));
     const run=await one(query,'SELECT id,product_id,attempt_number,score,result_status,elapsed_seconds FROM player_runs WHERE room_id=$1 AND is_owner=1',[id]);
     const scenario=await one(query,'SELECT name FROM scenarios WHERE id=$1',[r.scenario_id]);
-    return {room:{...r,title:scenario?.name,remaining_seconds:remainingSeconds(r)},owner,run:run||null,invite_path:'/room#'+link.invite_token,notes:link.notes,answers_submitted:!!link.answers_submitted,questions:questions.map(q=>({...q,answer_text:answers.get(Number(q.id))||''})),journal:await journal(admin,{room_id:id})};
+    return {room:{...r,title:scenario?.name,remaining_seconds:remainingSeconds(r)},owner,run:run||null,invite_path:r.state==='finished'?null:'/room#'+link.invite_token,notes:link.notes,answers_submitted:!!link.answers_submitted,questions:questions.map(q=>({...q,answer_text:answers.get(Number(q.id))||''})),journal:await journal(admin,{room_id:id})};
   }
   function mutation(body) {
     const reason=typeof body.reason==='string'?body.reason.trim():'';if(reason.length<3||reason.length>500)fail(400,'Укажите причину: от 3 до 500 символов');

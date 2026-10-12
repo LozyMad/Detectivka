@@ -30,6 +30,10 @@ const authenticateToken = (req, res, next) => {
 
       // Room user token
       if (payload.room_user_id && payload.room_id) {
+        const room=await require('../services/roomTimer').syncRoomTimer(payload.room_id);
+        res.setHeader?.('Cache-Control','no-store');
+        if(!room)return res.status(403).json({error:'Комната больше не существует',code:'AUTH_ROOM_MISSING'});
+        if(!room.is_test&&room.state==='finished')return res.status(403).json({error:'Игра в этой комнате завершена. Повторный вход закрыт.',code:'ROOM_FINISHED'});
         req.roomUser = { id: payload.room_user_id, room_id: payload.room_id, username: payload.username, scenario_id: payload.scenario_id };
         return next();
       }
@@ -64,6 +68,10 @@ const authenticateTokenQuery = (req, res, next) => {
         return next();
       }
       if (payload.room_user_id && payload.room_id) {
+        const room=await require('../services/roomTimer').syncRoomTimer(payload.room_id);
+        res.setHeader?.('Cache-Control','no-store');
+        if(!room)return res.status(403).json({error:'Комната больше не существует',code:'AUTH_ROOM_MISSING'});
+        if(!room.is_test&&room.state==='finished')return res.status(403).json({error:'Игра в этой комнате завершена. Повторный вход закрыт.',code:'ROOM_FINISHED'});
         req.roomUser = { id: payload.room_user_id, room_id: payload.room_id, username: payload.username, scenario_id: payload.scenario_id };
         return next();
       }

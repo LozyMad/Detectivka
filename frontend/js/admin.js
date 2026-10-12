@@ -2494,7 +2494,7 @@ function displayRooms(rooms) {
             <td class="table-actions">
                 ${r.is_test ? `<button class="btn btn-sm btn-primary me-1" onclick="enterTestRoom(${r.id})" title="Войти в тестовую комнату"><i class="fas fa-sign-in-alt me-1"></i>Войти</button>` : `
                 <div class="btn-group btn-group-sm" role="group">
-                    <button class="btn btn-outline-success" title="${r.state === 'paused' ? 'Продолжить' : 'Старт'}" onclick="${r.state === 'paused' ? 'resumeRoom' : 'startRoom'}(${r.id})" ${r.state === 'running' || (r.is_shared && r.state === 'finished') ? 'disabled' : ''}>
+                    <button class="btn btn-outline-success" title="${r.state === 'paused' ? 'Продолжить' : 'Старт'}" onclick="${r.state === 'paused' ? 'resumeRoom' : 'startRoom'}(${r.id})" ${r.state === 'running' || r.state === 'finished' ? 'disabled' : ''}>
                         <i class="fas fa-play"></i>
                     </button>
                     <button class="btn btn-outline-warning" title="Пауза" onclick="pauseRoom(${r.id})" ${r.state !== 'running' ? 'disabled' : ''}>
@@ -2504,7 +2504,7 @@ function displayRooms(rooms) {
                         <i class="fas fa-stop"></i>
                     </button>
                 </div>`}
-                ${r.is_test ? '' : `<button class="btn btn-sm btn-outline-light" onclick="copyRoomInvite(${r.id})" title="Ссылка для друзей">Ссылка</button>`}
+                ${r.is_test || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-light" onclick="copyRoomInvite(${r.id})" title="Ссылка для друзей">Ссылка</button>`}
                 ${r.is_test || r.is_shared ? '' : `<button class="btn btn-sm btn-outline-primary" onclick="viewRoomUsers(${r.id})"><i class="fas fa-users"></i></button>`}
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteRoom(${r.id})" title="Удалить комнату">
                     <i class="fas fa-trash"></i>

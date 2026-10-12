@@ -127,3 +127,14 @@ test('an expired saved token is rejected before requests, and the pending route 
   assert.equal(session.expired, false);
   assert.deepEqual(JSON.parse(JSON.stringify(session.restoreRoute())), { district: 'Ц', house: '31', apartment: '4' });
 });
+
+test('room completion clears the matching session and hides cached gameplay while keeping staff login',async()=>{
+ const b=browser(),session=load(b);session.saveLogin(login());b.window.location.replace=value=>{b.window.location.href=value;};
+ b.sandbox.localStorage.setItem('token','staff-token');b.sandbox.localStorage.setItem('user',JSON.stringify({id:99,is_admin:true}));
+ await session.checkResponse(json({code:'ROOM_FINISHED',error:'Игра завершена'},403),{headers:{Authorization:'Bearer room-20-token'}});
+ assert.equal(session.storage.getItem('token'),null);assert.equal(session.expired,true);assert.equal(b.document.body.hidden,true);assert.equal(b.window.location.href,'/room-finished');assert.equal(b.sandbox.localStorage.getItem('token'),'staff-token');
+});
+test('a completed-room response for an old token cannot close a newer active room',async()=>{
+ const b=browser(),session=load(b);const token=session.storage.getItem('token');session.saveLogin(login(30));
+ await session.checkResponse(json({code:'ROOM_FINISHED'},403),{headers:{Authorization:'Bearer '+token}});assert.equal(session.storage.getItem('token'),'room-30-token');assert.equal(session.expired,false);
+});

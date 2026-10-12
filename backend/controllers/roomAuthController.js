@@ -32,6 +32,9 @@ const roomLogin = async (req, res) => {
     }
     if (!user || !room || room.is_test) return res.status(401).json({ error: 'Неверное название команды или пароль' });
 
+    room=await require('../services/roomTimer').syncRoomTimer(room.id,room);
+    if(!room)return res.status(404).json({error:'Комната больше не существует'});
+    if(!room.is_test&&room.state==='finished')return res.status(403).json({error:'Игра в этой комнате завершена. Повторный вход закрыт.',code:'ROOM_FINISHED'});
     const token = jwt.sign(
       { room_user_id: user.id, room_id: room.id, username: user.username, scenario_id: room.scenario_id, role: 'room_user' },
       JWT_SECRET,

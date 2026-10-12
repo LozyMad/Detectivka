@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const fail = (status, message, data) => { const e=new Error(message);e.status=status;e.data=data;throw e; };
+const fail = (status, message, data) => { const e=new Error(message);e.status=status;e.data=data;e.code=data?.code;throw e; };
 const now=()=>new Date().toISOString();
 function createSharedRooms({query,transaction,postgres=false,roomSync,remainingSeconds}) {
   const one=async(q,sql,params=[]) => (await q(sql,params)).rows[0];
@@ -24,6 +24,7 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
       const room=await one(q,'SELECT * FROM rooms WHERE id=$1',[roomId]);
       if(!room)fail(404,'Комната не найдена');
       if(Number(room.created_by)!==Number(admin.id)&&admin.admin_level!=='super_admin')fail(403,'Нет доступа к комнате');
+      if(!room.is_test&&room.state==='finished')fail(409,'Игра в этой комнате завершена. Повторный вход закрыт.',{code:'ROOM_FINISHED'});
       if(room.is_test)fail(400,'В тестовых комнатах используется вход организатора');
       let link=await one(q,'SELECT * FROM shared_rooms WHERE room_id=$1',[roomId]);
       if(!link){
@@ -42,7 +43,7 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
   async function identity(roomId,account=null){
     const link=await one(query,'SELECT * FROM shared_rooms WHERE room_id=$1',[roomId]);if(!link)fail(404,'Общая комната не найдена');
     const room=await roomSync(roomId);if(!room)fail(404,'Комната больше не существует');
-    if(room.state==='finished')await finalize(roomId);
+    if(room.state==='finished'){await finalize(roomId);fail(403,'Игра в этой комнате завершена. Повторный вход закрыт.',{code:'ROOM_FINISHED'});}
     const user=await one(query,'SELECT id,username FROM room_users WHERE id=$1 AND room_id=$2',[link.room_user_id,roomId]);if(!user)fail(404,'Команда больше не существует');
     const owner=!!account&&link.owner_account_id===account.id;
     const run=owner?await one(query,'SELECT id FROM player_runs WHERE account_id=$1 AND room_id=$2',[account.id,roomId]):null;
@@ -56,7 +57,7 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
   async function activeQuestions(room,q=query){return (await q('SELECT id,question_text FROM questions WHERE scenario_id=$1 AND is_active=TRUE ORDER BY question_order,id',[room.scenario_id])).rows;}
   async function snapshot(identity){
     const link=await authorize(identity);const room=await roomSync(link.room_id);if(!room)fail(404,'Комната не найдена');
-    if(room.state==='finished')await finalize(room.id);
+    if(room.state==='finished'){await finalize(room.id);fail(403,'Игра в этой комнате завершена. Повторный вход закрыт.',{code:'ROOM_FINISHED'});}
     const questions=room.state==='pending'?[]:await activeQuestions(room);
     const drafts=(await query('SELECT question_id,answer_text,revision FROM shared_answer_drafts WHERE room_id=$1',[room.id])).rows;
     const answers=(await query('SELECT question_id,answer_text FROM question_answers WHERE room_user_id=$1 ORDER BY id',[link.room_user_id])).rows;
@@ -65,7 +66,7 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
     return {result:result||null,room:{id:room.id,name:room.name,state:room.state,duration_seconds:room.duration_seconds,remaining:remainingSeconds(room)},notes:link.notes,notes_revision:link.notes_revision,answers_submitted:!!link.answers_submitted,can_finish:!!link.answers_submitted&&['running','paused'].includes(room.state),questions:questions.map(question=>{const draft=drafts.find(d=>Number(d.question_id)===Number(question.id));return {...question,answer_text:link.answers_submitted?(saved.get(Number(question.id))||''):(draft?.answer_text||''),revision:draft?.revision||0};})};
   }
   async function lock(q,identity){
-    await q('UPDATE rooms SET name=name WHERE id=$1',[identity.room_id]);const link=await authorize(identity,q);const room=await one(q,'SELECT * FROM rooms WHERE id=$1',[identity.room_id]);if(!room)fail(404,'Комната не найдена');return {link,room};
+    await q('UPDATE rooms SET name=name WHERE id=$1',[identity.room_id]);const link=await authorize(identity,q);const room=await one(q,'SELECT * FROM rooms WHERE id=$1',[identity.room_id]);if(!room)fail(404,'Комната не найдена');if(room.state==='finished')fail(403,'Игра в этой комнате завершена. Повторный вход закрыт.',{code:'ROOM_FINISHED'});return {link,room};
   }
   async function saveNotes(identity,body){
     if(typeof body.text!=='string'||body.text.length>30000||!Number.isInteger(body.revision)||body.revision<0)fail(400,'Некорректные заметки');

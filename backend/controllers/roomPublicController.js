@@ -2,6 +2,7 @@ const { remainingSeconds, syncRoomTimer } = require('../services/roomTimer');
 
 const getRoomState = async (req, res) => {
   try {
+    res.set('Cache-Control','no-store');
     const { room_id } = req.params;
     const room = await syncRoomTimer(room_id);
     if (!room) return res.status(404).json({ error: 'Room not found' });

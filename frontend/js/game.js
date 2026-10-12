@@ -1016,6 +1016,7 @@ async function fetchRoomState() {
         const previousState = roomState?.state;
         roomState = await res.json();
         roomStateUpdatedAt = performance.now();
+        if(roomState.state==='finished'&&!roomState.room?.is_test){window.gameSession.closeRoom();return false;}
         if (roomState.state === 'paused' && previousState !== 'paused') {
             showRoomPausedPopup();
         }

@@ -191,7 +191,7 @@ const Room = {
             `UPDATE rooms 
              SET game_start_time = $1, game_end_time = $2, paused_at = NULL,
                  halfway_paused = FALSE, state = 'running'
-             WHERE id = $3 AND (state = 'pending' OR (state = 'finished' AND is_shared = FALSE)) RETURNING *`,
+             WHERE id = $3 AND state = 'pending' RETURNING *`,
             [now.toISOString(), endTime.toISOString(), roomId]
         );
 

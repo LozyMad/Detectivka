@@ -25,7 +25,7 @@ async function fixture(t, dialect) {
   // Exercise both models' parameterized SQL and credential matching against isolated tables.
   const RoomUser = load(dialect === 'sqlite' ? 'backend/models/roomUser.js' : 'backend/models/roomUserPostgreSQL.js');
   const Room = {getById: async id => (await query('SELECT * FROM rooms WHERE id=?',[id])).rows[0]};
-  Object.assign(dependencies, {'../models/roomUser':RoomUser,'../models/room':Room});
+  Object.assign(dependencies, {'../models/roomUser':RoomUser,'../models/room':Room,'../services/roomTimer':{syncRoomTimer:Room.getById}});
   const app = express();app.use(express.json());
   app.post('/login',load('backend/controllers/roomAuthController.js').roomLogin);
   app.post('/rooms/:room_id/users',load('backend/controllers/roomController.js').addRoomUser);
@@ -39,7 +39,7 @@ async function fixture(t, dialect) {
 
 for (const dialect of ['sqlite','postgresql']) {
   test(`${dialect}: two fields choose the correct room and issue its canonical identity`,async t=>{
-    const f=await fixture(t,dialect);await f.addRoom(1);await f.addRoom(2,0,'finished');await f.addRoom(3,1);
+    const f=await fixture(t,dialect);await f.addRoom(1);await f.addRoom(2,0,'paused');await f.addRoom(3,1);
     await f.addTeam(1,'Шляпники','first-password');const target=await f.addTeam(2,'Шляпники','second-password');
     await f.addTeam(3,'Шляпники','second-password');
     const response=await f.post('/login',{username:'  Шляпники  ',password:'second-password'});
@@ -53,6 +53,12 @@ for (const dialect of ['sqlite','postgresql']) {
     assert.equal((await f.post('/login',{username:'Шляпники',password:123})).status,400);
     const legacy=await f.post('/login',{room_id:1,username:'Шляпники',password:'first-password'});
     assert.equal(legacy.status,200);assert.equal((await legacy.json()).room.id,1);
+  });
+  test(`${dialect}: finished rooms reject both current and legacy login without issuing a token`,async t=>{
+    const f=await fixture(t,dialect);await f.addRoom(1,0,'finished');await f.addTeam(1,'Завершённая команда','finished-password');
+    for(const body of [{username:'Завершённая команда',password:'finished-password'},{room_id:1,username:'Завершённая команда',password:'finished-password'}]){
+      const r=await f.post('/login',body);assert.equal(r.status,403);const data=await r.json();assert.equal(data.code,'ROOM_FINISHED');assert.equal(data.token,undefined);
+    }
   });
   test(`${dialect}: duplicate credentials never select an arbitrary room and test rooms cannot log in`,async t=>{
     const f=await fixture(t,dialect);await f.addRoom(1);await f.addRoom(2);await f.addRoom(3,1);
