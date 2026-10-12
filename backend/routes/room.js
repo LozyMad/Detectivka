@@ -20,6 +20,10 @@ const router = express.Router();
 router.use(authenticateToken);
 router.use(adminRequired);
 
+router.post('/:room_id/invite', (req,res,next)=> {
+  require('../services/playerRuntime').cabinet.shared.adminInvite(Number(req.params.room_id),req.user)
+    .then(data=>res.json(data)).catch(error=>error.status?res.status(error.status).json({error:error.message}):next(error));
+});
 router.post('/', createRoom);
 router.get('/', listRooms);
 router.delete('/:room_id', deleteRoom);

@@ -196,7 +196,7 @@
     renderFasteners();
   }
 
-  function load() {
+  function load(onlyIfChanged = false) {
     if (loadPromise) return loadPromise;
     loadPromise = (async () => {
       if (positionDrain) await positionDrain;
@@ -204,6 +204,7 @@
       const data = await request('');
       if (!Array.isArray(data.notes) || !Array.isArray(data.links)) throw new Error('Не удалось прочитать доску. Попробуйте открыть её снова.');
       if (revision !== state.revision) return;
+      if (onlyIfChanged && JSON.stringify(state.notes) === JSON.stringify(data.notes) && JSON.stringify(state.links) === JSON.stringify(data.links)) return;
       state.notes = data.notes;
       state.links = data.links;
       render();
@@ -670,5 +671,6 @@
   }
 
   window.investigationBoard = { show, openFromTrip, hide: clearSelection };
+  window.investigationBoard.refresh = async () => { if (state.editing || state.pendingLink || state.connecting || positionDrain || pendingPositions.size || document.querySelector('.is-dragging')) return; return load(true); };
   document.addEventListener('DOMContentLoaded', init);
 })();

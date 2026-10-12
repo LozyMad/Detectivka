@@ -48,6 +48,10 @@ router.post('/admin/reviews/:id',authenticateToken,adminRequired,wrap(async(req,
   if(run.state!=='finished')return res.status(409).json({error:'Сначала завершите игру'});
   await database.query("UPDATE player_runs SET score=$1,result_status='graded' WHERE room_id=$2 AND room_user_id=$3",[score,run.room_id,run.room_user_id]);res.json({ok:true});
 }));
+router.post('/invite/join',throttle,wrap(async(req,res)=>{
+  let account=null;try{account=await cabinet.authenticate(token(req));}catch(error){if(error.status!==401)throw error;}
+  res.json(await cabinet.shared.join(req.body?.invite_token,account));
+}));
 router.use(auth);
 router.get('/session',wrap(async(req,res)=>res.json({account:req.player,local_mode:localMode})));
 router.get('/profile',wrap(async(req,res)=>res.json({account:req.player,...await cabinet.profile(req.player.id)})));
@@ -56,7 +60,7 @@ router.post('/orders',localOnly,wrap(async(req,res)=>res.status(201).json({order
 router.post('/games',wrap(async(req,res)=>{const run=await cabinet.start(req.player.id,req.body||{});res.status(201).json(await cabinet.enter(req.player.id,run.id));}));
 router.post('/games/join',throttle,wrap(async(req,res)=>{const run=await cabinet.join(req.player.id,req.body||{});res.json(await cabinet.enter(req.player.id,run.id));}));
 router.post('/games/:id/enter',wrap(async(req,res)=>res.json(await cabinet.enter(req.player.id,req.params.id))));
-router.post('/games/:id/control',wrap(async(req,res)=>res.json({game:await cabinet.control(req.player.id,req.params.id,req.body?.action)})));
+router.post('/games/:id/control',wrap(async(req,res)=>res.json({game:await cabinet.control(req.player.id,req.params.id,req.body?.action,{confirmed:req.body?.confirmed===true})})));
 router.get('/games/:id/result',wrap(async(req,res)=>res.json(await cabinet.result(req.player.id,req.params.id))));
 router.use((error,req,res,next)=>{if(res.headersSent)return next(error);const conflict=error.code==='23505'||String(error.code).startsWith('SQLITE_CONSTRAINT');if(!error.status&&!conflict)console.error('[Player cabinet]',error);res.status(error.status||(conflict?409:500)).json({error:error.status?error.message:conflict?'Эти данные уже используются':'Не удалось выполнить действие. Попробуйте ещё раз'});});
 module.exports=router;

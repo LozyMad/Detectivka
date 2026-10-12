@@ -108,6 +108,7 @@ const createAnswer = async (req, res) => {
             const { syncRoomTimer } = require('../services/roomTimer');
             const room = await syncRoomTimer(req.roomUser.room_id);
             if (!room) return res.status(403).json({ error: 'Room not found' });
+            if (room.is_shared) return res.status(409).json({ error: 'В общей комнате отправьте весь бланк командных ответов' });
             const questions = await Question.getByScenario(room.scenario_id);
             if (!questions.some(q => Number(q.id) === Number(question_id))) {
                 return res.status(403).json({ error: 'Question does not belong to this game' });

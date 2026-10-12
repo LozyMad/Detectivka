@@ -272,6 +272,7 @@ function getPlayerNotesKey() {
 }
 
 function setupPlayerNotes() {
+    if (JSON.parse(gameStorage.getItem('room') || 'null')?.shared) return;
     const field = document.getElementById('playerNotesText');
     const status = document.getElementById('playerNotesStatus');
     const key = getPlayerNotesKey();

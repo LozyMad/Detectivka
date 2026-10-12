@@ -1,0 +1,11 @@
+const express=require('express');
+const {cabinet}=require('../services/playerRuntime');
+const router=express.Router();
+router.use((req,res,next)=>{res.set('Cache-Control','no-store');next();});
+const wrap=fn=>(req,res,next)=>Promise.resolve().then(()=>fn(req,res)).catch(next);
+router.get('/state',wrap(async(req,res)=>res.json(await cabinet.shared.snapshot(req.roomUser))));
+router.patch('/notes',wrap(async(req,res)=>res.json(await cabinet.shared.saveNotes(req.roomUser,req.body||{}))));
+router.patch('/draft',wrap(async(req,res)=>res.json(await cabinet.shared.saveDraft(req.roomUser,req.body||{}))));
+router.post('/answers',wrap(async(req,res)=>res.json(await cabinet.shared.submitAnswers(req.roomUser,req.body||{}))));
+router.use((error,req,res,next)=>{if(!error.status)return next(error);res.status(error.status).json({error:error.message,...(error.data||{})});});
+module.exports=router;

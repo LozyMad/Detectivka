@@ -2,7 +2,7 @@ const { query } = require('../config/database');
 
 const Room = {
     create: async (roomData) => {
-        const { name, scenario_id, created_by, duration_seconds = 3600, is_test = false } = roomData;
+        const { name, scenario_id, created_by, duration_seconds = 7200, is_test = false } = roomData;
         
         const result = await query(
             `INSERT INTO rooms (name, scenario_id, created_by, duration_seconds, is_test, state, game_start_time)
@@ -191,7 +191,7 @@ const Room = {
             `UPDATE rooms 
              SET game_start_time = $1, game_end_time = $2, paused_at = NULL,
                  halfway_paused = FALSE, state = 'running'
-             WHERE id = $3 AND state IN ('pending', 'finished') RETURNING *`,
+             WHERE id = $3 AND (state = 'pending' OR (state = 'finished' AND is_shared = FALSE)) RETURNING *`,
             [now.toISOString(), endTime.toISOString(), roomId]
         );
 

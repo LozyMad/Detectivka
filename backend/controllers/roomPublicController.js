@@ -19,7 +19,8 @@ const getRoomState = async (req, res) => {
         paused_at: room.paused_at,
         halfway_paused: !!room.halfway_paused,
         duration_seconds: room.duration_seconds,
-        is_test: !!room.is_test
+        is_test: !!room.is_test,
+        shared: !!room.is_shared
       },
       scenario_name: room.scenario_name, // Добавляем scenario_name на верхний уровень
       state,

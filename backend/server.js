@@ -191,7 +191,7 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/nuclear', nuclearRoutes);
 
 // Player account pages share the same application shell.
-for (const route of ['/register','/account-login','/forgot-password','/reset-password','/profile','/catalog','/how-to-play']) {
+for (const route of ['/register','/account-login','/forgot-password','/reset-password','/profile','/catalog','/how-to-play','/room']) {
   app.get(route, (req,res) => { res.set('Cache-Control','no-store'); res.sendFile(path.join(__dirname,'../frontend/player.html')); });
 }
 

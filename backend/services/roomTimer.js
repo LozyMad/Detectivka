@@ -19,7 +19,7 @@ async function syncRoomTimer(roomId, room = null) {
   const halfwayMs = (Number(current.duration_seconds) || 3600) * 500;
 
   // Freeze at the exact halfway point, even if the next request arrives later.
-  if (!current.halfway_paused && now >= end - halfwayMs) {
+  if (!current.is_shared && !current.halfway_paused && now >= end - halfwayMs) {
     await Room.pauseGame(roomId, new Date(end - halfwayMs).toISOString(), true);
     return Room.getById(roomId);
   }

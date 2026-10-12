@@ -9,6 +9,7 @@ async function seedCatalog(){
   const upsert=async p=>query(`INSERT INTO player_products (id,scenario_id,title,description,cover,price,duration_seconds,difficulty,max_attempts,published,rubric,solution) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,1,$10,$11) ON CONFLICT(id) DO NOTHING`,p);
   const main=rows.find(s=>s.name==='Ставка на молчание');
   if(main)await upsert(['silence',main.id,main.name,'Журналистка Вероника Гронская найдена мёртвой. Милиция уверена: это самоубийство. Её расследование осталось незавершённым.','/assets/landing/silence-case-cover-v1.webp',2000,7200,3,3,null,null]);
+  await query("UPDATE player_products SET duration_seconds=7200 WHERE id='first-case' AND duration_seconds=1800");
   if(process.env.PLAYER_LOCAL_MODE!=='1'||process.env.NODE_ENV==='production')return;
   const author=(await query("SELECT id FROM users WHERE admin_level='super_admin' ORDER BY id")).rows[0];
   if(!author)return;
@@ -28,7 +29,7 @@ async function seedCatalog(){
   questions=await Question.getByScenario(demo.id);
   const expected=[['Илья Морозов','Морозов'],['Анна Лебедева','Лебедева'],['17','ячейка 17']];
   const rubric=texts.map((text,i)=>({question_id:questions.find(q=>q.question_text===text).id,answers:expected[i]}));
-  await upsert(['first-case',demo.id,'Первое дело: пропавший конверт','Из городского архива исчез конверт. Разберитесь, что случилось, познакомьтесь с поездками и ответами. Начните с архива по адресу Ц901, затем следуйте за уликами.','/assets/landing/detectum-upcoming-cover-v1.webp',0,1800,1,3,JSON.stringify(rubric),'Конверт забрал Илья Морозов: это подтверждают запись охраны и его признание. О пропаже сообщила Анна Лебедева; запись камеры исключает её участие. Конверт найден в ячейке 17. За каждый правильный ответ начисляется треть от 2000 баллов.']);
+  await upsert(['first-case',demo.id,'Первое дело: пропавший конверт','Из городского архива исчез конверт. Разберитесь, что случилось, познакомьтесь с поездками и ответами. Начните с архива по адресу Ц901, затем следуйте за уликами.','/assets/landing/detectum-upcoming-cover-v1.webp',0,7200,1,3,JSON.stringify(rubric),'Конверт забрал Илья Морозов: это подтверждают запись охраны и его признание. О пропаже сообщила Анна Лебедева; запись камеры исключает её участие. Конверт найден в ячейке 17. За каждый правильный ответ начисляется треть от 2000 баллов.']);
 
 }
 module.exports={seedCatalog};

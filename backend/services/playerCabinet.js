@@ -14,6 +14,7 @@ function validEmail(value) { const email = emailValue(value); if (email.length >
 const publicAccount = account => ({ id: account.id, username: account.username, email: account.email, created_at: account.created_at });
 
 function createPlayerCabinet({ query, transaction, localMode = false, postgres = false, roomSync, remainingSeconds, findTeams }) {
+  const shared = require('./sharedRooms').createSharedRooms({query,transaction,postgres,roomSync,remainingSeconds});
   const one = async (q, sql, values = []) => (await q(sql, values)).rows[0];
   const insertSession = async (q, accountId) => {
     const token = crypto.randomBytes(32).toString('base64url');
@@ -29,10 +30,12 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
       `CREATE TABLE IF NOT EXISTS player_entitlements (account_id TEXT NOT NULL REFERENCES player_accounts(id), product_id TEXT NOT NULL REFERENCES player_products(id), acquired_at TEXT NOT NULL, PRIMARY KEY(account_id, product_id))`,
       `CREATE TABLE IF NOT EXISTS player_orders (id TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES player_accounts(id), request_key TEXT UNIQUE NOT NULL, title TEXT NOT NULL, amount INTEGER NOT NULL, items TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL)`,
       `CREATE TABLE IF NOT EXISTS player_runs (id TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES player_accounts(id), product_id TEXT REFERENCES player_products(id), room_id INTEGER NOT NULL REFERENCES rooms(id), room_user_id INTEGER NOT NULL REFERENCES room_users(id), attempt_number INTEGER NOT NULL, is_owner INTEGER NOT NULL, request_key TEXT UNIQUE NOT NULL, elapsed_seconds INTEGER NOT NULL DEFAULT 0, score INTEGER, result_status TEXT, created_at TEXT NOT NULL, UNIQUE(account_id, room_id))`,
+      `CREATE TABLE IF NOT EXISTS player_attempts (run_id TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES player_accounts(id),product_id TEXT NOT NULL REFERENCES player_products(id),completed_at TEXT NOT NULL)`,
       `CREATE INDEX IF NOT EXISTS idx_player_runs_account ON player_runs(account_id)`,
       `CREATE INDEX IF NOT EXISTS idx_player_runs_room ON player_runs(room_id)`
     ];
     for (const sql of statements) await query(sql);
+    await shared.init();
   }
   async function register(body) {
     const username = validName(body.username); const email = validEmail(body.email); validPassword(body.password);
@@ -110,9 +113,10 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
     });
   }
   async function catalog(accountId = '') {
+    if (accountId) await settleAccount(accountId);
     const rows = (await query(`SELECT p.id,p.scenario_id,p.title,p.description,p.cover,p.price,p.duration_seconds,p.difficulty,p.max_attempts,
       CASE WHEN p.price=0 OR e.account_id IS NOT NULL THEN 1 ELSE 0 END AS owned,
-      (SELECT COUNT(*) FROM player_runs g WHERE g.account_id=$1 AND g.product_id=p.id AND g.is_owner=1) AS attempts_used
+      (SELECT COUNT(*) FROM player_attempts g WHERE g.account_id=$1 AND g.product_id=p.id) AS attempts_used
       FROM player_products p LEFT JOIN player_entitlements e ON e.product_id=p.id AND e.account_id=$1 WHERE p.published=1 ORDER BY p.price,p.title`,[accountId])).rows;
     return rows.map(p=>({...p,owned:!!p.owned,attempts_used:Number(p.attempts_used),attempts_left:Math.max(0,p.max_attempts-Number(p.attempts_used))}));
   }
@@ -151,32 +155,24 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
   }
   function validKey(value) { if(typeof value!=='string'|| !/^[\w-]{16,100}$/.test(value)) fail(400,'Некорректный идентификатор запроса'); return value; }
   async function start(accountId, body) {
-    const requestKey=validKey(body.request_key);const teamName=validName(body.team_name);validPassword(body.team_password);
-    const teamHash=await bcrypt.hash(body.team_password,10);
-    const previousRooms = (await query("SELECT g.room_id FROM player_runs g JOIN rooms r ON r.id=g.room_id WHERE g.account_id=$1 AND g.product_id=$2 AND g.is_owner=1 AND r.state='running'", [accountId,body.product_id])).rows;
-    for (const run of previousRooms) await roomSync(run.room_id);
+    const requestKey=validKey(body.request_key);const teamName=validName(body.team_name);
+    await settleAccount(accountId);
     return transaction(async q=>{
       await q('UPDATE player_accounts SET updated_at=$1 WHERE id=$2',[now(),accountId]);
       const previous=await one(q,'SELECT * FROM player_runs WHERE request_key=$1',[requestKey]);
-      if(previous) {if(previous.account_id!==accountId) fail(409,'Повторите создание игры');return previous;}
+      if(previous){if(previous.account_id!==accountId)fail(409,'Повторите создание комнаты');return previous;}
       const product=await one(q,'SELECT * FROM player_products WHERE id=$1 AND published=1',[body.product_id]);
-      if(!product) fail(404,'Дело не найдено');
-      if(product.price>0 && !await one(q,'SELECT account_id FROM player_entitlements WHERE account_id=$1 AND product_id=$2',[accountId,product.id])) fail(403,'Сначала добавьте дело в библиотеку');
+      if(!product)fail(404,'Дело не найдено');
+      if(product.price>0&&!await one(q,'SELECT account_id FROM player_entitlements WHERE account_id=$1 AND product_id=$2',[accountId,product.id]))fail(403,'Сначала добавьте дело в библиотеку');
       const active=await one(q,`SELECT g.id FROM player_runs g JOIN rooms r ON r.id=g.room_id WHERE g.account_id=$1 AND g.product_id=$2 AND g.is_owner=1 AND r.state<>'finished'`,[accountId,product.id]);
-      if(active) fail(409,'У вас уже есть незавершённая игра по этому делу. Продолжите её из истории');
-      const count=Number((await one(q,'SELECT COUNT(*) AS total FROM player_runs WHERE account_id=$1 AND product_id=$2 AND is_owner=1',[accountId,product.id])).total);
-      if(count>=product.max_attempts) fail(409,'Все попытки по этому делу использованы');
-      if (postgres) await q('SELECT pg_advisory_xact_lock(90701,hashtext($1))',[teamName]);
-      const existingTeams=(await q('SELECT username,password FROM room_users u JOIN rooms r ON r.id=u.room_id WHERE u.username=$1 AND r.is_test=FALSE',[teamName])).rows;
-      for(const team of existingTeams) if(await bcrypt.compare(body.team_password,team.password)) fail(409,'Эта пара названия команды и пароля уже используется. Задайте другой пароль');
-      const scenario=await one(q,'SELECT created_by FROM scenarios WHERE id=$1',[product.scenario_id]);
-      if(!scenario) fail(409,'Сценарий больше не доступен');
-      const started=now(),ends=new Date(Date.now()+product.duration_seconds*1000).toISOString();
-      const room=await one(q,`INSERT INTO rooms (name,scenario_id,created_by,duration_seconds,is_test,state,game_start_time,game_end_time,halfway_paused) VALUES ($1,$2,$3,$4,FALSE,'running',$5,$6,TRUE) RETURNING id`,[teamName,product.scenario_id,scenario.created_by,product.duration_seconds,started,ends]);
-      const player=await one(q,'INSERT INTO room_users (room_id,username,password) VALUES ($1,$2,$3) RETURNING id',[room.id,teamName,teamHash]);
-      const run={id:uuid(),account_id:accountId,product_id:product.id,room_id:room.id,room_user_id:player.id,attempt_number:count+1,is_owner:1,request_key:requestKey,created_at:started};
-      await q('INSERT INTO player_runs (id,account_id,product_id,room_id,room_user_id,attempt_number,is_owner,request_key,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',Object.values(run));
-      return run;
+      if(active)fail(409,'У вас уже есть комната по этому делу. Продолжите её из истории');
+      const count=Number((await one(q,'SELECT COUNT(*) AS total FROM player_attempts WHERE account_id=$1 AND product_id=$2',[accountId,product.id])).total);
+      if(count>=product.max_attempts)fail(409,'Все попытки по этому делу использованы');
+      const scenario=await one(q,'SELECT created_by FROM scenarios WHERE id=$1',[product.scenario_id]);if(!scenario)fail(409,'Сценарий больше не доступен');
+      const room=await one(q,`INSERT INTO rooms (name,scenario_id,created_by,duration_seconds,is_test,state,halfway_paused) VALUES ($1,$2,$3,$4,FALSE,'pending',TRUE) RETURNING id`,[teamName,product.scenario_id,scenario.created_by,product.duration_seconds||7200]);
+      const link=await shared.provision(q,{...room,name:teamName},accountId);
+      const run={id:uuid(),account_id:accountId,product_id:product.id,room_id:room.id,room_user_id:link.room_user_id,attempt_number:count+1,is_owner:1,request_key:requestKey,created_at:now()};
+      await q('INSERT INTO player_runs (id,account_id,product_id,room_id,room_user_id,attempt_number,is_owner,request_key,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',Object.values(run));return run;
     });
   }
   async function join(accountId, body) {
@@ -196,12 +192,15 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
     if(!run) fail(404,'Игра не найдена');return run;
   }
   async function enter(accountId,id) {
-    const run=await ownRun(accountId,id);const room=await roomSync(run.room_id);
+    const run=await ownRun(accountId,id);
+    const linked=await one(query,'SELECT room_id FROM shared_rooms WHERE room_id=$1',[run.room_id]);
+    if(linked){const identity=await shared.identity(run.room_id,{id:accountId});return {...identity,cabinet_run:{id:run.id,is_owner:!!run.is_owner}};}
+    const room=await roomSync(run.room_id);
     const user=await one(query,'SELECT id,username FROM room_users WHERE id=$1 AND room_id=$2',[run.room_user_id,run.room_id]);if(!user||!room)fail(404,'Команда или комната больше не существует');
     const token=jwt.sign({room_user_id:user.id,room_id:room.id,username:user.username,scenario_id:room.scenario_id,role:'room_user'},process.env.JWT_SECRET||'your-secret-key',{expiresIn:'24h'});
     return {token,room:{id:room.id,name:room.name,scenario_id:room.scenario_id,duration_seconds:room.duration_seconds,is_test:false},user:{...user,room_id:room.id},cabinet_run:{id:run.id,is_owner:!!run.is_owner}};
   }
-  function elapsed(room) { const remaining=remainingSeconds(room);return Math.max(0,Math.min(Number(room.duration_seconds),Number(room.duration_seconds)-Number(remaining))); }
+  function elapsed(room) { if(room.state==='pending')return 0;const remaining=remainingSeconds(room);return Math.max(0,Math.min(Number(room.duration_seconds),Number(room.duration_seconds)-Number(remaining))); }
   async function scoreRun(q,run) {
     const product=await one(q,'SELECT rubric FROM player_products WHERE id=$1',[run.product_id]);
     const rubric=product?.rubric?JSON.parse(product.rubric):null;
@@ -211,24 +210,52 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
     const correct=rubric.filter(rule=>rule.answers.map(normalizeAnswer).includes(latest.get(Number(rule.question_id)))).length;
     return {score:Math.round(correct/rubric.length*2000),result_status:'graded'};
   }
-  async function control(accountId,id,action) {
-    if(!['pause','resume','finish'].includes(action))fail(400,'Неизвестное действие');
+  async function finalizeRoom(roomId, existingQuery=null, elapsedValue=null){
+    if(!existingQuery){const pending=(await query(`SELECT g.id FROM player_runs g JOIN rooms r ON r.id=g.room_id LEFT JOIN player_attempts a ON a.run_id=g.id WHERE g.room_id=$1 AND g.is_owner=1 AND r.state='finished' AND r.game_start_time IS NOT NULL AND (a.run_id IS NULL OR g.result_status IS NULL)`,[roomId])).rows;if(!pending.length)return;}
+    const work=async q=>{
+      await q('UPDATE rooms SET name=name WHERE id=$1',[roomId]);
+      const room=await one(q,'SELECT * FROM rooms WHERE id=$1',[roomId]);if(!room||room.state!=='finished'||!room.game_start_time)return;
+      const runs=(await q('SELECT * FROM player_runs WHERE room_id=$1 AND is_owner=1',[roomId])).rows;
+      for(const run of runs){
+        if(run.product_id)await q('INSERT INTO player_attempts (run_id,account_id,product_id,completed_at) VALUES ($1,$2,$3,$4) ON CONFLICT(run_id) DO NOTHING',[run.id,run.account_id,run.product_id,now()]);
+        if(!run.result_status){const grade=await scoreRun(q,run);await q('UPDATE player_runs SET score=$1,result_status=$2,elapsed_seconds=$3 WHERE room_id=$4 AND room_user_id=$5 AND result_status IS NULL',[grade.score,grade.result_status,elapsedValue??room.duration_seconds,roomId,run.room_user_id]);}
+      }
+    };
+    return existingQuery?work(existingQuery):transaction(work);
+  }
+  async function settleAccount(accountId){
+    const runs=(await query('SELECT room_id FROM player_runs WHERE account_id=$1 AND is_owner=1',[accountId])).rows;
+    for(const run of runs){const room=await roomSync(run.room_id);if(room?.state==='finished')await finalizeRoom(room.id);}
+  }
+  async function control(accountId,id,action,options={}) {
+    if(!['start','pause','resume','finish'].includes(action))fail(400,'Неизвестное действие');
     const identity=await ownRun(accountId,id);if(!identity.is_owner)fail(403,'Управлять игрой может создавший её игрок');
-    const synced=await roomSync(identity.room_id);
+    await roomSync(identity.room_id);
     return transaction(async q=>{
+      await q('UPDATE rooms SET name=name WHERE id=$1',[identity.room_id]);
       const run=await ownRun(accountId,id,q);
-      if(action==='pause'){
+      if(action==='start'){
+        if(run.state!=='pending')fail(409,'Начать можно только ещё не запущенную комнату');
+        const product=await one(q,'SELECT max_attempts FROM player_products WHERE id=$1',[run.product_id]);
+        const used=Number((await one(q,'SELECT COUNT(*) AS total FROM player_attempts WHERE account_id=$1 AND product_id=$2',[accountId,run.product_id])).total);
+        if(!product||used>=product.max_attempts)fail(409,'Все попытки использованы');
+        await q(`UPDATE rooms SET state='running',game_start_time=$1,game_end_time=$2,paused_at=NULL,halfway_paused=TRUE WHERE id=$3`,[now(),new Date(Date.now()+run.duration_seconds*1000).toISOString(),run.room_id]);
+      }else if(action==='pause'){
         if(run.state!=='running')fail(409,'Поставить на паузу можно только идущую игру');
         await q(`UPDATE rooms SET state='paused',paused_at=$1 WHERE id=$2 AND state='running'`,[now(),run.room_id]);
       }else if(action==='resume'){
         if(run.state!=='paused')fail(409,'Игра сейчас не на паузе');
-        const seconds=remainingSeconds(synced);if(seconds<=0)fail(409,'Время игры истекло');
+        const seconds=remainingSeconds(run);if(seconds<=0)fail(409,'Время игры истекло');
         await q(`UPDATE rooms SET state='running',game_end_time=$1,paused_at=NULL WHERE id=$2 AND state='paused'`,[new Date(Date.now()+seconds*1000).toISOString(),run.room_id]);
       }else{
-        if(run.state==='finished')return run;
-        const duration=elapsed(synced);const result=await scoreRun(q,run);
+        if(run.state==='finished'){await finalizeRoom(run.room_id,q);return run;}
+        if(options.confirmed!==true)fail(400,'Подтвердите досрочное завершение');
+        const link=await one(q,'SELECT answers_submitted FROM shared_rooms WHERE room_id=$1',[run.room_id]);
+        if(link){if(!link.answers_submitted)fail(409,'Сначала отправьте командные ответы на вопросы');}else{const questions=await shared.activeQuestions(run,q);const answers=(await q('SELECT question_id FROM question_answers WHERE room_user_id=$1',[run.room_user_id])).rows;if(!questions.length||!questions.every(question=>answers.some(answer=>Number(answer.question_id)===Number(question.id))))fail(409,'Сначала отправьте ответы на все вопросы');}
+        if(!['running','paused'].includes(run.state))fail(409,'Игра ещё не началась');
+        const duration=elapsed(run);
         await q(`UPDATE rooms SET state='finished',game_end_time=$1,paused_at=NULL WHERE id=$2`,[now(),run.room_id]);
-        await q('UPDATE player_runs SET elapsed_seconds=$1,score=$2,result_status=$3 WHERE room_id=$4 AND room_user_id=$5',[duration,result.score,result.result_status,run.room_id,run.room_user_id]);
+        await finalizeRoom(run.room_id,q,duration);
       }
       return ownRun(accountId,id,q);
     });
@@ -237,9 +264,12 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
     const rows=(await query(`SELECT g.*,r.state,r.name AS team_name,r.scenario_id,r.duration_seconds,r.game_start_time,r.game_end_time,r.paused_at,p.title,p.max_attempts FROM player_runs g JOIN rooms r ON r.id=g.room_id LEFT JOIN player_products p ON p.id=g.product_id WHERE g.account_id=$1 ORDER BY g.created_at DESC`,[accountId])).rows;
     for(const run of rows){
       const room=await roomSync(run.room_id);run.state=room.state;
-      if(room.state==='finished'&&!run.result_status){
-        const result=await transaction(async q=>{const graded=await scoreRun(q,run);await q('UPDATE player_runs SET score=$1,result_status=$2,elapsed_seconds=$3 WHERE room_id=$4 AND room_user_id=$5 AND result_status IS NULL',[graded.score,graded.result_status,room.duration_seconds,run.room_id,run.room_user_id]);return graded;});Object.assign(run,result);run.elapsed_seconds=room.duration_seconds;
+      if(room.state==='finished'){
+        await finalizeRoom(room.id);
+        Object.assign(run,await one(query,'SELECT score,result_status,elapsed_seconds FROM player_runs WHERE id=$1',[run.id]));
       }
+      const link=await one(query,'SELECT invite_token,answers_submitted FROM shared_rooms WHERE room_id=$1',[run.room_id]);
+      if(link){run.shared=true;run.invite_path='/room#'+link.invite_token;run.can_finish=!!link.answers_submitted&&['running','paused'].includes(room.state);}
       if(room.state!=='finished')run.elapsed_seconds=elapsed(room);
       run.remaining_seconds=remainingSeconds(room);run.is_owner=!!run.is_owner;
       if(!run.title){const scenario=await one(query,'SELECT name FROM scenarios WHERE id=$1',[run.scenario_id]);run.title=scenario?.name||'Расследование';}
@@ -252,7 +282,8 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
     return {games,products,bundles:await bundles(),orders:(await query('SELECT id,title,amount,status,created_at FROM player_orders WHERE account_id=$1 ORDER BY created_at DESC',[accountId])).rows,
       stats:{played:games.filter(g=>g.state==='finished').length,purchased:products.filter(p=>p.owned&&p.price>0).length,rating,rank:rating>0?1+rankings.filter(r=>Number(r.rating)>rating).length:null,total_players:rankings.length},local_mode:localMode};
   }
-  async function result(accountId,id){const run=await ownRun(accountId,id);if(run.state!=='finished')fail(409,'Разбор доступен после завершения');const product=await one(query,'SELECT solution FROM player_products WHERE id=$1',[run.product_id]);return {run,solution:product?.solution||null,rating_rule:'Рейтинг дела — до 2000 баллов за правильные ответы. Демо не входит в общий рейтинг. Для платных дел учитывается лучший результат по каждому делу.'};}
-  return {init,register,login,authenticate,logout,updateAccount,requestReset,resetPassword,catalog,bundles,purchase,start,join,enter,control,history,profile,result};
+  async function result(accountId,id){let run=await ownRun(accountId,id);await roomSync(run.room_id);await finalizeRoom(run.room_id);run=await ownRun(accountId,id);if(run.state!=='finished')fail(409,'Разбор доступен после завершения');const product=await one(query,'SELECT solution FROM player_products WHERE id=$1',[run.product_id]);return {run,solution:product?.solution||null,rating_rule:'Рейтинг дела — до 2000 баллов за правильные ответы. Демо не входит в общий рейтинг. Для платных дел учитывается лучший результат по каждому делу.'};}
+  shared.setFinalizer(finalizeRoom);
+  return {shared,finalizeRoom,init,register,login,authenticate,logout,updateAccount,requestReset,resetPassword,catalog,bundles,purchase,start,join,enter,control,history,profile,result};
 }
 module.exports={createPlayerCabinet,SESSION_MS};

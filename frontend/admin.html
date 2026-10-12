@@ -1239,6 +1239,7 @@
                     <div class="form-section">
                         <h5 class="mb-3">Создать комнату</h5>
                         <form id="createRoomForm">
+                            <div class="form-check mb-3"><input type="checkbox" class="form-check-input" id="roomShared" checked><label class="form-check-label" for="roomShared">Общая комната — вход по ссылке без регистрации, общий прогресс команды</label></div>
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="form-label">Название комнаты</label>
@@ -1252,7 +1253,7 @@
                                 </div>
                                 <div class="col-md-4" id="roomDurationField">
                                     <label class="form-label">Длительность (мин.)</label>
-                                    <input type="number" min="1" class="form-control" id="roomDuration" value="60">
+                                    <input type="number" min="1" class="form-control" id="roomDuration" value="120">
                                 </div>
                             </div>
                             <div class="form-check mt-3">
@@ -1694,7 +1695,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/game-network.js?v=1"></script>
-    <script src="js/admin.js?v=12"></script>
+    <script src="js/admin.js?v=shared1"></script>
     <script src="js/admin-enquiries.js?v=2"></script>
     <script src="js/backup.js?v=3"></script>
     <script src="js/choices.js?v=2"></script>

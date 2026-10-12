@@ -11,7 +11,7 @@ if (DB_TYPE === 'postgresql') {
   const { db } = require('../config/database');
 
   Room = {
-  create: ({ name, scenario_id, created_by, duration_seconds = 3600, is_test = false }) => {
+  create: ({ name, scenario_id, created_by, duration_seconds = 7200, is_test = false }) => {
     return new Promise((resolve, reject) => {
       db.run(
         `INSERT INTO rooms (name, scenario_id, created_by, duration_seconds, is_test, state, game_start_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -70,7 +70,7 @@ if (DB_TYPE === 'postgresql') {
         db.run(`UPDATE rooms 
                 SET game_start_time = ?, game_end_time = ?, paused_at = NULL,
                     halfway_paused = 0, state = 'running'
-                WHERE id = ? AND state IN ('pending', 'finished')`, [now.toISOString(), endTime.toISOString(), roomId], function(updateErr) {
+                WHERE id = ? AND (state = 'pending' OR (state = 'finished' AND is_shared = FALSE))`, [now.toISOString(), endTime.toISOString(), roomId], function(updateErr) {
           if (updateErr) return reject(updateErr);
           if (!this.changes) return reject(new Error('Room cannot be started in its current state'));
           resolve({ id: roomId, game_start_time: now.toISOString(), game_end_time: endTime.toISOString(), duration_seconds: durationSeconds });

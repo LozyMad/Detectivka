@@ -54,6 +54,7 @@
         storage, isTest, testRequested: !!requestedTestRoom,
         get expired() { return expired; },
         saveLogin(data) {
+            if (data.shared_access) sessionStorage.setItem('detectum-shared-access-'+data.room.id,JSON.stringify(data.shared_access));
             const previous = localStorage.getItem('token');
             record = { token: data.token, roomUser: JSON.stringify({ ...data.user, room_id: data.room.id }),
                 room: JSON.stringify(data.room), room_id: String(data.room.id) };

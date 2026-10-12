@@ -17,6 +17,7 @@ router.get('/room/:roomId/events', authenticateTokenQuery, roomEventsStream);
 
 router.use(authenticateToken);
 
+router.use('/shared', require('./sharedGame'));
 router.use('/board', investigationBoard);
 
 router.post('/visit', visitLocation);

@@ -31,6 +31,11 @@ const createRoom = async (req, res) => {
     
     const room = await Room.create({ name, scenario_id, created_by: req.user.id, duration_seconds, is_test: is_test === true });
     
+    if (!is_test && req.body.shared_room === true) {
+      const invitation = await require('../services/playerRuntime').cabinet.shared.adminInvite(room.id, req.user);
+      room.shared = true;
+      room.invite_path = invitation.invite_path;
+    }
     // Возвращаем комнату с названием сценария
     res.status(201).json({ 
       room: {
@@ -152,6 +157,7 @@ const startRoomTimer = async (req, res) => {
     const room = await syncRoomTimer(room_id);
     if (!room) return res.status(404).json({ error: 'Room not found' });
     if (room.is_test) return res.status(400).json({ error: 'Test rooms have no timer' });
+    if (room.is_shared && room.state === 'finished') return res.status(409).json({ error: 'Завершённую общую комнату нельзя перезапустить. Создайте новую комнату.' });
     if (room.state === 'running') return res.status(400).json({ error: 'Game already running' });
     if (room.state === 'paused') return res.status(400).json({ error: 'Resume the paused game instead of starting it again' });
     
