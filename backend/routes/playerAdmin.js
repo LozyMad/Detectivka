@@ -1,0 +1,15 @@
+const express=require('express');
+const {cabinet}=require('../services/playerRuntime');
+const {authenticateToken,adminRequired}=require('../middleware/auth');
+const router=express.Router();
+router.use(authenticateToken,adminRequired);
+router.use((req,res,next)=>{res.set('Cache-Control','no-store');next();});
+const wrap=handler=>(req,res,next)=>Promise.resolve().then(()=>handler(req,res)).catch(next);
+router.get('/players',wrap(async(req,res)=>res.json(await cabinet.admin.players(req.user,req.query))));
+router.get('/players/:id',wrap(async(req,res)=>res.json(await cabinet.admin.player(req.user,req.params.id))));
+router.post('/players/:id/grants',wrap(async(req,res)=>res.json(await cabinet.admin.grant(req.user,req.params.id,req.body))));
+router.get('/rooms',wrap(async(req,res)=>res.json(await cabinet.admin.rooms(req.user,req.query))));
+router.get('/rooms/:id',wrap(async(req,res)=>res.json(await cabinet.admin.room(req.user,req.params.id))));
+router.post('/rooms/:id/control',wrap(async(req,res)=>res.json(await cabinet.admin.control(req.user,req.params.id,req.body))));
+router.get('/journal',wrap(async(req,res)=>res.json({items:await cabinet.admin.journal(req.user,req.query)})));
+module.exports=router;

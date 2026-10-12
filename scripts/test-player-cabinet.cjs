@@ -77,3 +77,73 @@ test('early finish requires shared answer submission and explicit confirmation',
 test('guests share canonical progress and edits reject stale revisions',async t=>{const f=await fixture(t);const run=await f.begin();const identity={id:run.room_user_id,room_id:run.room_id};await f.store.shared.saveNotes(identity,{text:'Общая улика',revision:0});await rejected(f.store.shared.saveNotes(identity,{text:'Stale',revision:0}),409);assert.equal((await f.store.shared.snapshot(identity)).notes,'Общая улика');await f.store.shared.saveDraft(identity,{question_id:1,text:'Анна Лебедева',revision:0});await rejected(f.store.shared.saveDraft(identity,{question_id:1,text:'Other',revision:0}),409);await rejected(f.store.shared.saveDraft(identity,{question_id:2,text:'Other',revision:0}),403);await rejected(f.store.shared.snapshot({id:run.room_user_id+100,room_id:run.room_id}),403);assert.equal((await f.store.shared.snapshot(identity)).questions[0].answer_text,'Анна Лебедева');});
 test('answer batch is atomic and submitted answers cannot be edited later',async t=>{const f=await fixture(t);const run=await f.begin();const identity={id:run.room_user_id,room_id:run.room_id};await f.store.shared.saveDraft(identity,{question_id:1,text:'Draft',revision:0});await rejected(f.store.shared.submitAnswers(identity,{answers:[{question_id:1,text:'Stale',revision:0}]}),409);assert.equal((await f.query('SELECT * FROM question_answers')).rows.length,0);await f.store.shared.submitAnswers(identity,{answers:[{question_id:1,text:'Final',revision:1}]});await rejected(f.store.shared.saveDraft(identity,{question_id:1,text:'Changed',revision:1}),409);await f.store.shared.submitAnswers(identity,{answers:[{question_id:1,text:'Repeated',revision:1}]});assert.equal((await f.query('SELECT * FROM question_answers')).rows[0].answer_text,'Final');});
 test('pending and paused rooms never consume attempts; an expired room consumes exactly once',async t=>{const f=await fixture(t);const run=await f.begin();await f.store.control(f.account.account.id,run.id,'pause');await f.query("UPDATE rooms SET game_end_time='2000-01-01',paused_at='1999-12-31T23:00:00.000Z' WHERE id=$1",[run.room_id]);assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);await f.store.control(f.account.account.id,run.id,'resume');await f.query("UPDATE rooms SET game_end_time='2000-01-01' WHERE id=$1",[run.room_id]);await Promise.all([f.store.catalog(f.account.account.id),f.store.catalog(f.account.account.id)]);assert.equal((await f.query('SELECT * FROM player_attempts')).rows.length,1);assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,1);});
+
+const chief={id:1,username:'Главный',is_admin:true,admin_level:'super_admin'};
+const organizer={id:1,username:'Организатор',is_admin:true,admin_level:'admin'};
+const outsider={id:99,username:'Чужой',is_admin:true,admin_level:'admin'};
+const adminBody=extra=>({request_key:randomUUID(),reason:'Проверка управления',...extra});
+test('admin player search is scoped and never exposes password hashes or session tokens',async t=>{
+ const f=await fixture(t);const run=await f.start();
+ const list=await f.store.admin.players(chief,{q:'DETECTIVE@EXAMPLE'});assert.equal(list.total,1);assert.equal(list.items[0].id,f.account.account.id);
+ const card=await f.store.admin.player(organizer,f.account.account.id);assert.equal(card.account.password_hash,undefined);assert.equal(card.games[0].id,run.room_id);assert.equal(card.products.length,2);
+ assert.equal((await f.store.admin.players(outsider)).total,0);await rejected(f.store.admin.player(outsider,f.account.account.id),404);
+ await rejected(f.store.admin.players({id:1,is_admin:false}),403);
+});
+test('manual access is audited and idempotent without fabricating a paid order',async t=>{
+ const f=await fixture(t);const body=adminBody({action:'grant_access',product_id:'paid'});
+ await rejected(f.store.admin.grant(organizer,f.account.account.id,body),403);
+ const [a,b]=await Promise.all([f.store.admin.grant(chief,f.account.account.id,body),f.store.admin.grant(chief,f.account.account.id,body)]);assert.deepEqual(a,b);
+ assert.equal((await f.store.catalog(f.account.account.id)).find(p=>p.id==='paid').owned,true);
+ assert.equal((await f.query('SELECT * FROM player_orders')).rows.length,0);assert.equal((await f.store.admin.journal(chief)).length,1);
+ await rejected(f.store.admin.grant(chief,f.account.account.id,{...body,reason:'Другая причина'}),409);
+ await rejected(f.store.admin.grant(chief,f.account.account.id,adminBody({action:'grant_access',product_id:'paid'})),409);
+});
+test('added attempts survive reload, preserve completed history and work in player and admin starts',async t=>{
+ const f=await fixture(t);for(let i=0;i<3;i++){const run=await f.begin();await f.finish(run);}
+ await rejected(f.start(),409);
+ const body=adminBody({action:'add_attempts',product_id:'demo',amount:2});await f.store.admin.grant(chief,f.account.account.id,body);await f.store.admin.grant(chief,f.account.account.id,body);
+ const product=(await f.store.catalog(f.account.account.id)).find(p=>p.id==='demo');assert.equal(product.attempts_used,3);assert.equal(product.attempts_left,2);assert.equal(product.max_attempts,5);
+ assert.equal((await f.query('SELECT * FROM player_attempts')).rows.length,3);
+ const fourth=await f.start();await f.store.control(f.account.account.id,fourth.id,'start');await f.finish(fourth);
+ const fifth=await f.start();await f.store.admin.control(chief,fifth.room_id,adminBody({action:'start'}));assert.equal((await f.roomSync(fifth.room_id)).state,'running');
+ assert.equal((await f.store.admin.player(chief,f.account.account.id)).products.find(p=>p.id==='demo').attempts_left,1);
+ await rejected(f.store.admin.grant(chief,f.account.account.id,adminBody({action:'add_attempts',product_id:'paid',amount:1})),409);
+});
+test('admin timer controls preserve paused time, are idempotent and record every accepted action',async t=>{
+ const f=await fixture(t);const run=await f.start();
+ const listing=await f.store.admin.rooms(organizer,{q:'Команда',state:'pending'});assert.equal(listing.items.length,1);assert.equal(listing.items[0].owner_id,f.account.account.id);
+ await f.store.admin.control(organizer,run.room_id,adminBody({action:'start'}));await f.store.admin.control(organizer,run.room_id,adminBody({action:'pause'}));
+ const before=await f.roomSync(run.room_id);const remaining=f.store.admin.room(organizer,run.room_id);assert.equal((await remaining).room.state,'paused');
+ const body=adminBody({action:'add_time',minutes:15});await f.store.admin.control(organizer,run.room_id,body);await f.store.admin.control(organizer,run.room_id,body);
+ const after=await f.roomSync(run.room_id);assert.equal(after.duration_seconds,before.duration_seconds+900);assert.equal(new Date(after.game_end_time)-new Date(before.game_end_time),900000);assert.equal(after.paused_at,before.paused_at);
+ await f.store.admin.control(organizer,run.room_id,adminBody({action:'resume'}));assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);
+ assert.equal((await f.store.admin.journal(organizer,{room_id:run.room_id})).length,4);
+});
+test('admin can force confirmed finish without answers, consuming one attempt and preventing restart',async t=>{
+ const f=await fixture(t);const run=await f.begin();const body=adminBody({action:'finish',confirmed:true});
+ await rejected(f.store.admin.control(chief,run.room_id,{...body,confirmed:false}),400);
+ await f.store.admin.control(chief,run.room_id,body);await f.store.admin.control(chief,run.room_id,body);
+ assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,1);assert.equal((await f.store.admin.room(chief,run.room_id)).run.score,0);
+ await rejected(f.store.admin.control(chief,run.room_id,adminBody({action:'start'})),409);await rejected(f.store.admin.control(chief,run.room_id,adminBody({action:'add_time',minutes:10})),409);
+ assert.equal((await f.store.admin.journal(chief,{room_id:run.room_id})).length,1);
+});
+test('organizers cannot inspect, invite or mutate another organizer room, answers or journal',async t=>{
+ const f=await fixture(t);const run=await f.begin();await f.store.shared.saveDraft({id:run.room_user_id,room_id:run.room_id},{question_id:1,text:'Private answer',revision:0});
+ await f.store.admin.control(chief,run.room_id,adminBody({action:'pause'}));
+ assert.equal((await f.store.admin.rooms(outsider)).total,0);await rejected(f.store.admin.room(outsider,run.room_id),404);
+ await rejected(f.store.admin.control(outsider,run.room_id,adminBody({action:'resume'})),404);assert.equal((await f.store.admin.journal(outsider)).length,0);
+ assert.equal((await f.store.admin.room(organizer,run.room_id)).questions[0].answer_text,'Private answer');
+});
+test('admin rejects invalid values and never records a failed grant or timer action',async t=>{
+ const f=await fixture(t);const run=await f.start();
+ for(const amount of [0,-1,11,1.5,'1'])await rejected(f.store.admin.grant(chief,f.account.account.id,adminBody({action:'add_attempts',product_id:'demo',amount})),400);
+ await rejected(f.store.admin.grant(chief,f.account.account.id,adminBody({action:'add_attempts',product_id:'demo',amount:1,reason:''})),400);
+ await rejected(f.store.admin.control(chief,run.room_id,adminBody({action:'finish',confirmed:true})),409);
+ await rejected(f.store.admin.control(chief,run.room_id,adminBody({action:'add_time',minutes:0})),400);
+ assert.equal((await f.store.admin.journal(chief)).length,0);assert.equal((await f.query('SELECT * FROM player_attempt_credits')).rows.length,0);
+});
+test('admin room filters settle expired timers and finish attempts exactly once',async t=>{
+ const f=await fixture(t);const run=await f.begin();await f.query("UPDATE rooms SET game_end_time='2000-01-01' WHERE id=$1",[run.room_id]);
+ assert.equal((await f.store.admin.rooms(chief,{state:'running'})).total,0);assert.equal((await f.store.admin.rooms(chief,{state:'finished'})).total,1);
+ assert.equal((await f.query('SELECT * FROM player_attempts')).rows.length,1);
+});

@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.adminEnquiries?.init();
     loadInitialData().catch(error => console.error('Initial admin data:', error));
     adminPageReady = true;
+    if (window.location.hash === '#player-management') switchTab('playerManagement');
     updateAdminPolling();
 });
 
@@ -637,6 +638,8 @@ function setupEventListeners() {
 }
 
 function switchTab(tabName) {
+    if (tabName === 'playerManagement') window.history?.replaceState(null, '', '#player-management');
+    else if (window.location.hash === '#player-management') window.history?.replaceState(null, '', window.location.pathname+window.location.search);
     // Проверяем, доступна ли вкладка для текущего админа
     const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup', 'enquiries'];
     if (currentUser.admin_level !== 'super_admin' && restrictedTabs.includes(tabName)) {
@@ -679,6 +682,8 @@ function switchTab(tabName) {
         });
     } else if (tabName === 'addressBook') {
         loadAddressBookSectionsAndEntries();
+    } else if (tabName === 'playerManagement') {
+        window.adminPlayers?.load();
     } else if (tabName === 'enquiries') {
         window.adminEnquiries?.load();
     }

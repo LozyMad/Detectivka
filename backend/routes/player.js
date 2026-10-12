@@ -30,6 +30,7 @@ const throttle = (req,res,next)=>{
 const localOnly = (req,res,next)=>{if(!localMode||!['localhost','127.0.0.1','::1','[::1]'].includes(req.hostname))return res.status(503).json({error:'Тестовая операция доступна только на localhost'});next();};
 const auth = (req,res,next)=>cabinet.authenticate(token(req)).then(account=>{req.player=account;next();}).catch(next);
 const authResult = async(res,result)=>{setSession(res,result.token);res.json({account:result.account});};
+router.use('/admin/manage',require('./playerAdmin'));
 router.get('/catalog',wrap(async(req,res)=>{let account;try{account=await cabinet.authenticate(token(req));}catch(error){if(error.status!==401)throw error;}res.json({products:await cabinet.catalog(account?.id),bundles:await cabinet.bundles(),local_mode:localMode});}));
 router.post('/register',throttle,wrap(async(req,res)=>{const result=await cabinet.register(req.body||{});res.status(201);await authResult(res,result);}));
 router.post('/login',throttle,wrap(async(req,res)=>authResult(res,await cabinet.login(req.body||{}))));
