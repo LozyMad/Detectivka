@@ -1,6 +1,15 @@
 .cabinet-game-controls{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;padding:8px 0;width:100%;border-top:1px solid #ffffff22;margin-top:8px}.cabinet-game-message{font-size:12px;color:#d9c596}.cabinet-game-controls .btn{font-size:12px}
 html:root body.game-container.shared-room #gameNavbar { height: auto !important; flex-wrap: wrap; }
-html:root body.game-container.shared-room #gameNavbar .cabinet-game-controls { flex-basis: 100%; position: relative; justify-content: flex-start; padding: 10px 0; }
+html:root body.game-container.shared-room #playerHeaderRow { gap: 12px; }
+#sharedGameActions:empty { display: none; }
+html:root body.game-container.shared-room #sharedGameActions { flex: 1 1 350px; min-width: 0; }
+html:root body.game-container.shared-room #sharedGameActions .cabinet-game-controls { width: auto; position: relative; justify-content: flex-start; padding: 0; margin: 0; border: 0; }
+html:root body.game-container.shared-room #playerNavControls { flex: 0 0 auto; margin-left: auto; }
+@media (max-width: 767.98px) {
+    html:root body.game-container.shared-room #sharedGameActions { flex-basis: 220px; }
+    html:root body.game-container.shared-room #sharedGameActions .btn { min-height: 36px; }
+    html:root body.game-container.shared-room #playerNavControls { align-self: flex-start; margin-top: 0 !important; }
+}
 html:root body.desktop-workspace.shared-room:not(.board-open) #gameTabContent { height: calc(100dvh - var(--shared-navbar-height, 130px)); }
 .shared-result-dialog { width: min(600px,calc(100% - 32px)); padding: 28px; border: 1px solid #806047; border-radius: 10px; background: #1a1411; color: #f3e8d8; }
 .shared-result-dialog::backdrop { background: #090603dd; }

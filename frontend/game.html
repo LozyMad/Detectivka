@@ -384,8 +384,8 @@
     <link href="css/dark-interface.css?v=3" rel="stylesheet">
     <link href="css/game-dossier.css?v=16" rel="stylesheet">
     <link href="css/investigation-board.css?v=31" rel="stylesheet">
-    <link href="css/game-workspace.css?v=17" rel="stylesheet">
-    <link rel="stylesheet" href="/css/player-game.css?v=2">
+    <link href="css/game-workspace.css?v=19" rel="stylesheet">
+    <link rel="stylesheet" href="/css/player-game.css?v=3">
 </head>
 <body class="game-container">
     <aside id="workspaceRail" class="workspace-rail" aria-label="Навигация расследования">
@@ -404,12 +404,12 @@
             </div>
             <!-- Содержимое шапки (на мобильном сворачивается) -->
             <div class="collapse navbar-collapse" id="navbarCollapse">
-                <div class="d-flex align-items-center w-100 justify-content-between flex-wrap">
-                    <!-- Левая часть: название игры и сценарий (на мобильном скрыта в первой строке) -->
+                <div class="d-flex align-items-center w-100 justify-content-between flex-wrap" id="playerHeaderRow">
+                    <!-- Логотип на планшетах и в раскрытом мобильном меню -->
                     <div class="d-none d-md-flex flex-column align-items-start" style="margin-left: 1rem;">
                         <span class="navbar-brand mb-0" style="line-height: 1;">Детектум</span>
-                        <span class="navbar-text small mt-0" id="scenarioTitle">Сценарий не определен</span>
                     </div>
+                    <div id="sharedGameActions" role="group" aria-label="Действия команды"></div>
                     <!-- Центральная часть: кнопки навигации -->
                     <div class="d-flex align-items-center" id="playerNavTabs">
                         <div class="btn-group" role="group" aria-label="Разделы игры">
@@ -459,7 +459,7 @@
                     <img id="caseBannerImage" class="case-banner-image" alt="" fetchpriority="high" decoding="async" hidden>
                     <div class="case-banner-content">
                         <i class="far fa-file-alt case-banner-icon" aria-hidden="true"></i>
-                        <div><div class="case-overline"><span class="case-live-dot" aria-hidden="true"></span> РАССЛЕДОВАНИЕ</div><h1 id="caseTitle">Дело расследуется</h1><p class="case-caption">Каждая поездка приближает к разгадке.</p></div>
+                        <div><h1 id="caseTitle">Дело расследуется</h1></div>
                     </div>
                 </section>
                 <div class="dossier-layout">
@@ -502,7 +502,7 @@
                                 </div>
                             </div>
                             <button class="btn w-100" id="goBtn" onclick="visitLocation()"><i class="fas fa-arrow-right me-2" aria-hidden="true"></i>Поехать</button>
-                            <button type="button" class="dispatch-directory" onclick="document.getElementById('addressbook-tab').click()"><i class="far fa-address-book" aria-hidden="true"></i> Открыть адресную книгу <span aria-hidden="true">↗</span></button>
+                            <button type="button" class="dispatch-directory" onclick="openPlayerAddressBook('compact')"><i class="far fa-address-book" aria-hidden="true"></i> Открыть адресную книгу <span aria-hidden="true">↗</span></button>
                         </section>
                     <aside class="dossier-sidebar" aria-label="Приложения и заметки">
                         <section class="latest-location" aria-labelledby="receivedApplicationsTitle">
@@ -752,10 +752,10 @@
     <script src="js/no-copy.js?v=1"></script>
     <script src="js/game-session.js?v=3"></script>
     <script src="js/game-network.js?v=2"></script>
-    <script src="js/game.js?v=closed-44&t=20261007&encoding=fixed"></script>
+    <script src="js/game.js?v=closed-45&t=20261014&encoding=fixed"></script>
     <script src="js/investigation-board.js?v=shared1"></script>
     <script src="js/persist-inputs.js"></script>
     <script src="/js/player-game.js?v=2"></script>
-    <script src="/js/shared-game.js?v=4"></script>
+    <script src="/js/shared-game.js?v=5"></script>
 </body>
 </html>

@@ -67,7 +67,7 @@ html:root body.game-container #playerNavStats { gap: 10px; }
 html:root body.game-container #playerNavStats .badge { background: transparent !important; border: 0 !important; color: var(--work-text) !important; font-weight: 600; line-height: 1.3; font-size: 14px !important; padding: 7px 9px !important; }
 html:root body.game-container #roomTimer .badge::before { content: '◷'; color: var(--work-accent); font-size: 18px; margin-right: 7px; vertical-align: -1px; }
 html:root body.game-container #tripCounter { color: var(--work-muted) !important; }
-html:root body.game-container #usernameDisplay { font-size: 13px; color: var(--work-muted) !important; }
+html:root body.game-container #usernameDisplay { font-size: 13px; font-weight: 600; color: var(--work-text) !important; }
 html:root body.game-container #playerNavControls > .d-flex:last-child { gap: 8px; }
 html:root body.game-container #playerNavControls .btn { padding: 8px 12px !important; border: 1px solid var(--work-border) !important; background: transparent !important; color: var(--work-muted) !important; font-size: 12px; border-radius: 8px !important; }
 html:root body.game-container #playerNavControls .btn:hover { color: var(--work-text) !important; background: var(--work-raised) !important; }
@@ -270,6 +270,11 @@ html:root body.desktop-workspace.workspace-tool-open :is(#questions,#addressbook
 html:root body.desktop-workspace.workspace-tool-open #questions .game-card { border: 0 !important; padding: 0 !important; background: transparent !important; }
 html:root body.desktop-workspace.workspace-tool-open :is(.questions-heading,.workspace-tool-header h1,.player-applications-heading h1) { font-size: 26px; }
 html:root body.desktop-workspace.workspace-tool-open #mobileDossierHost .dossier-sidebar { border: 0 !important; padding: 0; background: transparent !important; }
+/* The rail opens the whole directory; the route card keeps its compact companion panel. */
+html:root body.desktop-workspace.workspace-addressbook-full:not(.board-open) #gameTabContent { grid-template-columns: minmax(0,1fr); }
+html:root body.desktop-workspace.workspace-addressbook-full:not(.board-open) #addressbook.active { grid-column: 1; grid-row: 1; min-width: 0; height: 100%; overflow: auto; overscroll-behavior: contain; padding: 28px 32px 40px; background: var(--work-canvas); }
+html:root body.desktop-workspace.workspace-addressbook-full #addressbook .addressbook-search { max-width: 720px; }
+html:root body.desktop-workspace.workspace-addressbook-full #playerAddressBookTableBody { grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); align-items: start; }
 html:root body.desktop-workspace .workspace-rail { display: flex; flex-direction: column; position: fixed; z-index: 1500; inset: 0 auto 0 0; width: 92px; background: #17110e; border-right: 1px solid var(--work-border); padding: 19px 10px 14px; gap: 32px; overflow: hidden; transition: width .25s ease, box-shadow .25s ease; }
 html:root body.desktop-workspace .workspace-brand { display: flex; gap: 16px; align-items: center; text-decoration: none; padding: 0 14px; color: var(--work-text); white-space: nowrap; }
 html:root body.desktop-workspace .workspace-monogram { display: grid; place-items: center; flex: none; width: 43px; height: 43px; border: 1px solid #edb28c70; border-radius: 11px; color: var(--work-accent); font: 600 30px/1.2 Georgia,serif; }
@@ -345,7 +350,7 @@ html:root body.desktop-workspace.board-open :is(.board-timer,.board-tools) { fle
     html:root body.game-container .player-mobile-toolbar #playerNavStats { flex-wrap: nowrap; gap: 4px; margin: 0 !important; }
     html:root body.game-container .player-mobile-toolbar #playerNavStats .badge { font-size: 12px !important; padding: 3px 0 !important; }
     html:root body.game-container .player-mobile-toolbar #tripCounter { background: transparent !important; border: 0 !important; color: var(--work-muted) !important; }
-    html:root body.game-container .player-mobile-toolbar #usernameDisplay { color: var(--work-muted) !important; font-size: 12px !important; padding: 0 !important; }
+    html:root body.game-container .player-mobile-toolbar #usernameDisplay { color: var(--work-text) !important; font-size: 12px !important; padding: 0 !important; }
     html:root body.game-container :is(#questions,#addressbook,#applications) { padding: 20px 0 32px; }
     html:root body.game-container #questions .game-card { border: 0 !important; padding: 18px 0 !important; background: transparent !important; }
     html:root body.game-container :is(#questions,#addressbook,#applications) .player-mobile-toolbar { margin-bottom: 22px; }

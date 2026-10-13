@@ -38,6 +38,7 @@ let applicationRequestId = 0;
 let applicationController = null;
 let arrangePlayerNavigation = () => {};
 let activePlayerPane = 'game';
+let playerAddressBookView = 'full';
 let applicationReturnFocus = null;
 let applicationReturnAddress = null;
 let playerRouteReady = false;
@@ -72,7 +73,9 @@ function isDesktopWorkspace() {
 
 function syncWorkspacePanes() {
     const workspace = isDesktopWorkspace();
-    const tool = ['questions', 'addressbook', 'applications'].includes(activePlayerPane);
+    const fullAddressBook = workspace && activePlayerPane === 'addressbook' && playerAddressBookView === 'full';
+    const tool = ['questions', 'addressbook', 'applications'].includes(activePlayerPane) && !fullAddressBook;
+    document.body.classList.toggle('workspace-addressbook-full', fullAddressBook);
     document.body.classList.toggle('desktop-workspace', workspace);
     document.body.classList.toggle('workspace-tool-open', workspace && tool);
     document.body.dataset.workspacePane = activePlayerPane;
@@ -1189,10 +1192,14 @@ function setupTabSwitching() {
         });
 
         if (addressbookTab && addressbookContent) {
-            addressbookTab.addEventListener('click', (e) => {
-                e.preventDefault();
+            window.openPlayerAddressBook = (view = 'full') => {
+                playerAddressBookView = view === 'compact' ? 'compact' : 'full';
                 showPane(addressbookContent);
                 loadPlayerAddressBookSectionsAndEntries();
+            };
+            addressbookTab.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.openPlayerAddressBook('full');
             });
         }
         if (boardTab && boardContent) {
@@ -1512,7 +1519,8 @@ async function loadPlayerAddressBookSectionsAndEntries() {
                 enterpriseWrap.appendChild(btn);
             });
         }
-        if (playerAddressBookSections.private_letter_groups && playerAddressBookSections.private_letter_groups.length && !playerAddressBookFilter.letter_group) {
+        if (playerAddressBookFilter.category === (playerAddressBookSections.private_category || 'Частные лица') &&
+            playerAddressBookSections.private_letter_groups && playerAddressBookSections.private_letter_groups.length && !playerAddressBookFilter.letter_group) {
             playerAddressBookFilter.category = playerAddressBookSections.private_category || 'Частные лица';
             playerAddressBookFilter.letter_group = playerAddressBookSections.private_letter_groups[0];
         }
