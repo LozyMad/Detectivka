@@ -1454,7 +1454,7 @@ function toggleApplicationImageZoom() {
     if (!image || !button) return;
     const enlarged = image.classList.toggle('is-enlarged');
     button.setAttribute('aria-pressed', String(enlarged));
-    button.textContent = enlarged ? 'Вписать' : 'Увеличить';
+    button.textContent = enlarged ? 'Уменьшить' : 'Увеличить';
 }
 document.addEventListener('keydown', event => {
     const overlay = document.getElementById('applicationOverlay');
