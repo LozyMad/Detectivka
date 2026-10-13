@@ -1093,6 +1093,8 @@ h1, h2, h3, h4, h5, h6 {
     border: 2px solid #0054e3;
     box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
     font-family: Tahoma, 'MS Sans Serif', sans-serif;
+    color: #222;
+    color-scheme: light;
 }
 
 .ie-cafe-titlebar {
@@ -1157,8 +1159,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .ie-cafe-nav-btn {
-    font-size: 11px;
-    padding: 3px 8px;
+    color: #222;
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 94px;
+    min-height: 36px;
+    padding: 6px 12px;
     background: #ece9d8;
     border: 1px solid #aca899;
     box-shadow: inset 1px 1px 0 #fff;
@@ -1166,9 +1172,21 @@ h1, h2, h3, h4, h5, h6 {
     white-space: nowrap;
 }
 
-.ie-cafe-nav-btn:disabled {
-    opacity: 0.5;
-    cursor: default;
+#internetCafeOverlay .ie-cafe-nav-btn:disabled {
+    color: #686454;
+    background: #e5e2d4;
+    opacity: 1;
+    cursor: default !important;
+}
+
+.ie-cafe-nav-btn:not(:disabled):hover {
+    background: #fffdf1;
+    border-color: #517daa;
+}
+
+#internetCafeOverlay :is(button, input):focus-visible {
+    outline: 2px solid #0054e3 !important;
+    outline-offset: 2px;
 }
 
 .ie-cafe-address-bar {
@@ -1223,8 +1241,8 @@ h1, h2, h3, h4, h5, h6 {
     font-family: 'Times New Roman', Times, serif;
 }
 
-.ie-cafe-home h2,
-.ie-cafe-home p {
+#internetCafeOverlay .ie-cafe-home h2,
+#internetCafeOverlay .ie-cafe-home p {
     color: #222 !important;
 }
 
@@ -1234,11 +1252,13 @@ h1, h2, h3, h4, h5, h6 {
     font-family: Arial, Helvetica, sans-serif;
 }
 
-.ie-cafe-search h2 {
+#internetCafeOverlay .ie-cafe-search h2 {
     margin: 0 0 18px;
     font-size: 26px;
     font-family: Arial, Helvetica, sans-serif !important;
-    font-weight: normal !important;
+    font-weight: 600 !important;
+    letter-spacing: normal;
+    line-height: 1.3;
     text-align: center;
 }
 
@@ -1299,7 +1319,7 @@ h1, h2, h3, h4, h5, h6 {
     font-family: Tahoma, Arial, sans-serif;
 }
 
-.ie-cafe-network-error h2 {
+#internetCafeOverlay .ie-cafe-network-error h2 {
     margin-bottom: 16px;
     color: #222 !important;
     font-family: Tahoma, Arial, sans-serif !important;
@@ -1346,5 +1366,17 @@ h1, h2, h3, h4, h5, h6 {
     }
     .ie-cafe-titlebar {
         font-size: 11px;
+    }
+    .ie-cafe-nav-btn {
+        min-width: 84px;
+        min-height: 40px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    .ie-cafe-home {
+        padding: 24px 18px;
+    }
+    #internetCafeOverlay .ie-cafe-search h2 {
+        font-size: 24px;
     }
 }

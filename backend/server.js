@@ -236,6 +236,7 @@ database.init().then(async () => {
   await require('./services/addressBookRevision').updateAddressBook();
   await require('./services/playerRuntime').cabinet.init();
   await require('./services/playerCatalogSeed').seedCatalog();
+  await require('./services/borisBlogRevision').updateDefaultBorisBlogs();
   // РАДИКАЛЬНАЯ инициализация вариантов выбора для ВСЕХ адресов
   try {
     const { initializeAllChoices } = require('./scripts/init_all_choices');

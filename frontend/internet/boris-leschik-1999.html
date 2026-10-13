@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Блог Бориса Лещика</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #e8e8e8;
+    color: #000;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid #ccc;
+  }
+  .header {
+    background: #1a305f;
+    color: #fff;
+    text-align: center;
+    padding: 28px 16px 22px;
+  }
+  .header h1 {
+    font-size: 28px;
+    letter-spacing: 1px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  .header .tagline {
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: normal;
+  }
+  .nav {
+    text-align: center;
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    background: #fff;
+  }
+  .nav a {
+    color: #0000cc;
+    margin: 0 14px;
+    font-size: 14px;
+  }
+  .main {
+    display: flex;
+    padding: 20px;
+    gap: 0;
+  }
+  .post {
+    flex: 1;
+    padding-right: 24px;
+    border-right: 1px solid #ccc;
+    min-width: 0;
+  }
+  .post .cat {
+    color: #0000cc;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .post h2 {
+    font-size: 22px;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+  .post .meta {
+    color: #777;
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+  .post p {
+    margin-bottom: 14px;
+    font-size: 14px;
+  }
+  .post-footer {
+    margin-top: 18px;
+    padding-top: 10px;
+    border-top: 1px solid #ccc;
+    font-size: 12px;
+    color: #555;
+  }
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    padding-left: 20px;
+    font-size: 13px;
+  }
+  .sidebar h3 {
+    color: #0000cc;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4px;
+    margin: 0 0 10px;
+  }
+  .sidebar .block { margin-bottom: 22px; }
+  .sidebar a { color: #0000cc; display: block; margin: 4px 0; }
+  .sidebar .stat { margin: 3px 0; }
+  .footer {
+    text-align: center;
+    padding: 14px;
+    border-top: 1px solid #ccc;
+    font-size: 12px;
+    color: #555;
+  }
+  .post h2 { margin-bottom: 18px; line-height: 1.3; }
+  .post .meta { margin-bottom: 8px; color: #666; }
+  .signature { font-weight: bold; }
+  @media (max-width: 700px) {
+    .wrap { width: 100%; max-width: 100%; }
+    .header { padding: 22px 16px; }
+    .header h1 { font-size: 24px; line-height: 1.2; }
+    .nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; }
+    .nav a { margin: 0; }
+    .main { display: block; padding: 18px 16px; }
+    .post { width: 100%; padding-right: 0; border-right: 0; }
+    .post h2, .post p { overflow-wrap: anywhere; }
+    .sidebar { width: 100%; padding: 20px 0 0; margin-top: 24px; border-top: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>БЛОГ БОРИСА ЛЕЩИКА</h1>
+    <div class="tagline">Личный журнал. Мнения, которые не всем нравятся.</div>
+  </div>
+  <div class="nav">
+    <a href="#">Главная</a>
+    <a href="#">Архив</a>
+    <a href="#">О себе</a>
+    <a href="#">Гостевая</a>
+  </div>
+  <div class="main">
+    <div class="post">
+      <div class="cat">ГОРОД / ПРОИСШЕСТВИЯ</div>
+      <div class="meta"><time datetime="1999-08-17">17 августа 1999</time></div>
+      <h2>Вероника Гронская больше ничего не напишет</h2>
+      <p>Вчера вечером под поездом погибла Вероника Гронская, журналистка «Криминального вестника». Да, та самая. Автоматы, денежные выигрыши, бары, после публикаций о которых начинались проверки. Двадцать девять лет.</p>
+      <p>Завтра вы прочитаете в газетах, что она «трагически погибла». Удобные два слова: можно поставить рядом с фотографией, выразить соболезнования и перейти к прогнозу погоды.</p>
+      <p>В действительности поезд изуродовал ей голову и верхнюю часть тела. На путях осталось то, что ещё несколько часов назад было человеком, который ходил, разговаривал и, возможно, собирался утром на работу. Извините за подробности. Слово «трагически» почему-то всегда оставляет слишком аккуратную картинку.</p>
+      <p>Милиция склоняется к самоубийству. Возле тела нашли сумку, в ней — записку. Самого текста у меня нет, поэтому пересказывать чужие пересказы не буду. Но уже слышу, как наличие этой бумажки превращается в ответ на все вопросы.</p>
+      <p>Я работал с Вероникой. Дружбы между нами не было, и изображать её задним числом я не собираюсь. Ещё зимой она ничем особенно не выделялась. Писала проходные материалы, выпивала, выслушивала претензии начальства. Потом за несколько месяцев — три громких расследования. Рудковский получил автора, которым можно гордиться, а несколько владельцев заведений получили очень серьёзные неприятности.</p>
+      <p>Хорошо помню, как в редакции искали хоть что-нибудь, за что читатель зацепится взглядом. Вероника нашла. Причём сразу несколько раз подряд.</p>
+      <p>Меня интересовало, откуда у неё появились такие сведения. Кто подсказал, куда смотреть? Кто согласился говорить? Почему именно эти заведения? Это обычные вопросы к журналистской работе. Веронике я их теперь уже не задам.</p>
+      <p>Сразу для любителей приписывать мне лишнее: доказательств заказных публикаций у меня нет. Доказательств убийства — тоже. Я не утверждаю, что её привезли на рельсы. Но у женщины, которая публично лезла в чужие денежные дела, могли быть враги. Мне хотелось бы знать, успели ли их хотя бы посчитать, прежде чем заговорили о самоубийстве.</p>
+      <p>Наверняка найдутся люди, которые скажут, что я пользуюсь её смертью. Особенно в бывшей редакции. Там вообще любят обсуждать чужие нравственные качества, когда кто-то успевает написать первым.</p>
+      <p>Да, я публикую это сегодня. Да, эту запись будут читать. И если кому-нибудь известно, где Вероника была вечером шестнадцатого, напишите мне. Только то, что видели сами. Разговоров о том, какая она была на самом деле, в ближайшие дни и без нас хватит.</p>
+      <p class="signature">Борис Лещик</p>
+      <div class="post-footer">Просмотров: 12 487 | Комментариев: 37</div>
+    </div>
+    <div class="sidebar">
+      <div class="block">
+        <h3>СТАТИСТИКА</h3>
+        <div class="stat">Всего просмотров: 38 614</div>
+        <div class="stat">Сегодня: 1 293</div>
+      </div>
+      <div class="block">
+        <h3>АРХИВ</h3>
+        <a href="#">Июнь 1999</a>
+        <a href="#">Июль 1999</a>
+        <a href="#">Август 1999</a>
+      </div>
+      <div class="block">
+        <h3>ПОСЛЕДНИЕ ЗАПИСИ</h3>
+        <a href="#">Город боится правды</a>
+        <a href="#">Кому выгодна тишина?</a>
+        <a href="#">Ночные улицы</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer">© 1999 Борис Лещик. Все права на мнение защищены.</div>
+</div>
+</body>
+</html>
