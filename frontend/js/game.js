@@ -834,11 +834,11 @@ function updateTripHistory() {
                 <span class="trip-status">${trip.success ? 'Найдено' : 'Не найдено'}</span>
                 ${apps.map(app => `<button type="button" class="trip-app-badge scenario-application-link" data-address-id="${Number(trip.address_id)}" data-number="${app.number}" title="Открыть приложение ${app.number}"><i class="far fa-folder-open" aria-hidden="true"></i> №${app.number}</button>`).join('')}
                 ${trip.success && trip.address_id && trip.hasChoices ? 
-                    `<button type="button" class="btn btn-sm btn-outline-warning ms-2 trip-choice-btn" title="Развилка по выборам"
+                    `<button type="button" class="btn btn-sm btn-outline-warning ms-2 trip-choice-btn" title="Открыть развилку"
                         data-address-id="${trip.address_id}"
                         data-description="${encodeURIComponent(trip.description || '')}"
                         data-visited-location-id="${trip.visited_location_id || ''}">
-                        <i class="fas fa-code-branch"></i>
+                        Развилка <i class="fas fa-code-branch" aria-hidden="true"></i>
                     </button>` : ''
                 }
             </div>
