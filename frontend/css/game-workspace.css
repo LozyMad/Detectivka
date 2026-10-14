@@ -61,7 +61,8 @@ html:root body.game-container .workspace-count { display: inline-grid; place-ite
 html:root body.game-container > .container.mt-3 { max-width: 1600px; padding: 0 28px !important; }
 html:root body.game-container #gameNavbar { background: #17110e !important; border-bottom: 1px solid var(--work-border); padding: 14px 24px; box-shadow: none; }
 html:root body.game-container #gameNavbar > .container { max-width: none; padding: 0 !important; }
-html:root body.game-container .navbar-brand { color: var(--work-text) !important; font: 700 21px/1.2 'Playfair Display', Georgia, serif; }
+html:root body.game-container .navbar-brand { display: inline-flex; align-items: center; gap: 9px; color: var(--work-text) !important; font: 700 21px/1.2 'Playfair Display', Georgia, serif; }
+html:root body.game-container .game-brand-icon { display: block; flex: none; width: 32px; height: 32px; object-fit: contain; border-radius: 7px; }
 html:root body.game-container #scenarioTitle { color: var(--work-muted) !important; font-size: 12px; }
 html:root body.game-container #playerNavStats { gap: 10px; }
 html:root body.game-container #playerNavStats .badge { background: transparent !important; border: 0 !important; color: var(--work-text) !important; font-weight: 600; line-height: 1.3; font-size: 14px !important; padding: 7px 9px !important; }
@@ -277,7 +278,7 @@ html:root body.desktop-workspace.workspace-addressbook-full #addressbook .addres
 html:root body.desktop-workspace.workspace-addressbook-full #playerAddressBookTableBody { grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); align-items: start; }
 html:root body.desktop-workspace .workspace-rail { display: flex; flex-direction: column; position: fixed; z-index: 1500; inset: 0 auto 0 0; width: 92px; background: #17110e; border-right: 1px solid var(--work-border); padding: 19px 10px 14px; gap: 32px; overflow: hidden; transition: width .25s ease, box-shadow .25s ease; }
 html:root body.desktop-workspace .workspace-brand { display: flex; gap: 16px; align-items: center; text-decoration: none; padding: 0 14px; color: var(--work-text); white-space: nowrap; }
-html:root body.desktop-workspace .workspace-monogram { display: grid; place-items: center; flex: none; width: 43px; height: 43px; border: 1px solid #edb28c70; border-radius: 11px; color: var(--work-accent); font: 600 30px/1.2 Georgia,serif; }
+html:root body.desktop-workspace .workspace-monogram { display: block; object-fit: contain; flex: none; width: 43px; height: 43px; border: 1px solid #edb28c70; border-radius: 11px; }
 html:root body.desktop-workspace .workspace-brand-name { font: 600 22px/1.2 'Playfair Display',Georgia,serif; opacity: 0; transition: opacity .2s; }
 html:root body.desktop-workspace #workspaceNavHost { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 html:root body.desktop-workspace #workspaceNavHost #playerNavTabs { display: block !important; }

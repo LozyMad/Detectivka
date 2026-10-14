@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<link rel="icon" href="/favicon.ico?v=2" sizes="16x16 32x32 48x48 64x64">
+<link rel="icon" type="image/png" href="/favicon.png?v=2" sizes="192x192">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Детектум - Игра</title>
@@ -384,12 +386,12 @@
     <link href="css/dark-interface.css?v=3" rel="stylesheet">
     <link href="css/game-dossier.css?v=16" rel="stylesheet">
     <link href="css/investigation-board.css?v=31" rel="stylesheet">
-    <link href="css/game-workspace.css?v=19" rel="stylesheet">
-    <link rel="stylesheet" href="/css/player-game.css?v=3">
+    <link href="css/game-workspace.css?v=20" rel="stylesheet">
+    <link rel="stylesheet" href="/css/player-game.css?v=4">
 </head>
 <body class="game-container">
     <aside id="workspaceRail" class="workspace-rail" aria-label="Навигация расследования">
-        <a class="workspace-brand" href="#game" aria-label="Детектум — журнал расследования"><span class="workspace-monogram">Д</span><span class="workspace-brand-name">Детектум</span></a>
+        <a class="workspace-brand" href="#game" aria-label="Детектум — журнал расследования"><img class="workspace-monogram" src="/favicon.png?v=2" width="43" height="43" alt=""><span class="workspace-brand-name">Детектум</span></a>
         <nav id="workspaceNavHost" aria-label="Разделы игры"></nav>
         <button type="button" id="workspaceRailToggle" class="workspace-rail-toggle" aria-label="Развернуть навигацию" aria-expanded="false" aria-controls="workspaceNavHost"><i class="fas fa-angle-double-right" aria-hidden="true"></i><span>Свернуть меню</span></button>
     </aside>
@@ -397,7 +399,7 @@
         <div class="container">
             <!-- Мобильная строка: логотип + кнопка сворачивания -->
             <div class="d-md-none d-flex align-items-center justify-content-between w-100 py-1" style="min-height: 2.5rem;">
-                <span class="navbar-brand mb-0" style="line-height: 1;">Детектум</span>
+                <span class="navbar-brand mb-0" style="line-height: 1;"><img class="game-brand-icon" src="/favicon.png?v=2" width="32" height="32" alt="">Детектум</span>
                 <button class="btn btn-link text-light p-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-expanded="false" aria-controls="navbarCollapse" aria-label="Открыть параметры игры">
                     <i class="fas fa-chevron-down" id="navbarToggleIcon"></i>
                 </button>
@@ -407,7 +409,7 @@
                 <div class="d-flex align-items-center w-100 justify-content-between flex-wrap" id="playerHeaderRow">
                     <!-- Логотип на планшетах и в раскрытом мобильном меню -->
                     <div class="d-none d-md-flex flex-column align-items-start" style="margin-left: 1rem;">
-                        <span class="navbar-brand mb-0" style="line-height: 1;">Детектум</span>
+                        <span class="navbar-brand mb-0" style="line-height: 1;"><img class="game-brand-icon" src="/favicon.png?v=2" width="32" height="32" alt="">Детектум</span>
                     </div>
                     <div id="sharedGameActions" role="group" aria-label="Действия команды"></div>
                     <!-- Центральная часть: кнопки навигации -->

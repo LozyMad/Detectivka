@@ -6,7 +6,7 @@ html:root body.game-container.shared-room #sharedGameActions { flex: 1 1 350px; 
 html:root body.game-container.shared-room #sharedGameActions .cabinet-game-controls { width: auto; position: relative; justify-content: flex-start; padding: 0; margin: 0; border: 0; }
 html:root body.game-container.shared-room #playerNavControls { flex: 0 0 auto; margin-left: auto; }
 @media (max-width: 767.98px) {
-    html:root body.game-container.shared-room #sharedGameActions { flex-basis: 220px; }
+    html:root body.game-container.shared-room #sharedGameActions { flex: none; width: 100%; }
     html:root body.game-container.shared-room #sharedGameActions .btn { min-height: 36px; }
     html:root body.game-container.shared-room #playerNavControls { align-self: flex-start; margin-top: 0 !important; }
 }
