@@ -4,7 +4,7 @@ const { createRequire } = require('node:module');
 const path = require('node:path');
 const backendRequire = createRequire(path.resolve('backend/package.json'));
 const sqlite3 = backendRequire('sqlite3');
-const { applyRevision, validateEntries } = require('../backend/services/addressBookRevision');
+const { applyRevision, validateEntries, getAddressBookStatus } = require('../backend/services/addressBookRevision');
 const entries = require('../backend/data/addressBook.json');
 const manifest = require('../backend/data/addressBookRevision.json');
 
@@ -64,4 +64,32 @@ test('source contains the corrected links without the stale Roman Gurek duplicat
   }
   assert.ok(entries.some(entry => entry.name === 'Интернет-кафе «Облако»' && entry.district === 'Ц' && entry.house_number === '38'));
   assert.throws(() => validateEntries([entries[0], entries[0]]), /Duplicate/);
+});
+
+test('deployment stays ready after deliberate edits and deletion without restoring seed entries', async t => {
+  const client = await fixture(t);
+  await applyRevision({ client, entries });
+  assert.equal((await getAddressBookStatus(client)).ready, true);
+  await client.query("UPDATE address_book_entries SET apartment='777' WHERE id=1");
+  await client.query('DELETE FROM address_book_entries WHERE id=2');
+  await insert(client, {category:'Частные лица',district:'Ц',house_number:'999',apartment:'1',name:'Новый адрес'});
+  const before = (await client.query('SELECT * FROM address_book_entries ORDER BY id')).rows;
+  const status = await getAddressBookStatus(client);
+  assert.equal(status.ready, true);
+  assert.equal(status.matched_entries, entries.length - 2);
+  assert.equal(status.total_entries, entries.length);
+  assert.equal((await applyRevision({client,entries})).applied, false);
+  assert.deepEqual((await client.query('SELECT * FROM address_book_entries ORDER BY id')).rows, before);
+});
+
+test('deployment rejects a missing migration marker or an incomplete imported count', async t => {
+  const client = await fixture(t);
+  await applyRevision({ client, entries });
+  await client.query('UPDATE address_book_revisions SET imported_count=0');
+  assert.equal((await getAddressBookStatus(client)).ready, false);
+  await client.query('DELETE FROM address_book_revisions');
+  const status = await getAddressBookStatus(client);
+  assert.equal(status.ready, false);
+  assert.equal(status.revision, null);
+  assert.equal(status.matched_entries, entries.length);
 });

@@ -77,15 +77,17 @@ async function updateAddressBook() {
   } finally { client.release(); }
 }
 
-async function getAddressBookStatus() {
-  const { query } = require('../config/database');
+async function getAddressBookStatus(database = require('../config/database')) {
+  const { query } = database;
   const rows = (await query(`SELECT ${FIELDS.join(',')} FROM address_book_entries`)).rows;
   const keys = new Set(rows.map(row => JSON.stringify(FIELDS.map(field => row[field]))));
   const entries = loadEntries();
   const matched = entries.filter(entry => keys.has(JSON.stringify(FIELDS.map(field => entry[field])))).length;
-  const revisions = (await query('SELECT revision FROM address_book_revisions')).rows;
-  const applied = revisions.some(row => row.revision === manifest.revision);
-  return { ready: applied && matched === entries.length, revision: applied ? manifest.revision : null,
+  const revisions = (await query('SELECT revision, imported_count FROM address_book_revisions')).rows;
+  const applied = revisions.find(row => row.revision === manifest.revision);
+  // The marker commits atomically with the import. Later admin edits/deletions are valid;
+  // matching the original seed remains diagnostic, not a deployment requirement.
+  return { ready: !!applied && Number(applied.imported_count) === entries.length, revision: applied ? manifest.revision : null,
     source_entries: entries.length, matched_entries: matched, total_entries: rows.length };
 }
 

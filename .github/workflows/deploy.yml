@@ -45,7 +45,7 @@ jobs:
             exit 1
           fi
 
-      - name: Verify the updated address book after restart
+      - name: Verify address book migration after restart
         env:
           DEPLOY_SECRET: ${{ secrets.DETEKTUM }}
         run: |
