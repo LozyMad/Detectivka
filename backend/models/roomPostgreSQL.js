@@ -2,13 +2,13 @@ const { query } = require('../config/database');
 
 const Room = {
     create: async (roomData) => {
-        const { name, scenario_id, created_by, duration_seconds = 7200, is_test = false } = roomData;
+        const { name, scenario_id, created_by, duration_seconds = 7200, questions_delay_seconds = 0, is_test = false } = roomData;
         
         const result = await query(
-            `INSERT INTO rooms (name, scenario_id, created_by, duration_seconds, is_test, state, game_start_time)
-             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+            `INSERT INTO rooms (name, scenario_id, created_by, duration_seconds, is_test, state, game_start_time, questions_delay_seconds)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
             [name, scenario_id, created_by, is_test ? 0 : duration_seconds, is_test,
-                is_test ? 'running' : 'pending', is_test ? new Date().toISOString() : null]
+                is_test ? 'running' : 'pending', is_test ? new Date().toISOString() : null, is_test ? 0 : questions_delay_seconds]
         );
         
         return result.rows[0];

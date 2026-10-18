@@ -1,4 +1,5 @@
 const { remainingSeconds, syncRoomTimer } = require('../services/roomTimer');
+const { questionAccess } = require('../services/questionAccess');
 
 const getRoomState = async (req, res) => {
   try {
@@ -25,7 +26,8 @@ const getRoomState = async (req, res) => {
       },
       scenario_name: room.scenario_name, // Добавляем scenario_name на верхний уровень
       state,
-      remaining
+      remaining,
+      questions_access: questionAccess(room)
     };
     
     res.json(response);

@@ -4,6 +4,7 @@ const Scenario = require('../models/scenario');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { syncRoomTimer } = require('../services/roomTimer');
+const { parseQuestionDelay } = require('../services/questionAccess');
 
 async function canUseScenario(user, scenarioId) {
   if (user.admin_level === 'super_admin') return true;
@@ -29,7 +30,8 @@ const createRoom = async (req, res) => {
       return res.status(400).json({ error: 'Scenario not found' });
     }
     
-    const room = await Room.create({ name, scenario_id, created_by: req.user.id, duration_seconds, is_test: is_test === true });
+    const questions_delay_seconds = is_test === true ? 0 : parseQuestionDelay(req.body.questions_delay_minutes, duration_seconds ?? 7200);
+    const room = await Room.create({ name, scenario_id, created_by: req.user.id, duration_seconds, questions_delay_seconds, is_test: is_test === true });
     
     if (!is_test && req.body.shared_room === true) {
       const invitation = await require('../services/playerRuntime').cabinet.shared.adminInvite(room.id, req.user);
@@ -45,7 +47,7 @@ const createRoom = async (req, res) => {
     });
   } catch (error) {
     console.error('Create room error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Internal server error' });
   }
 };
 

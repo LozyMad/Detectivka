@@ -21,7 +21,8 @@ const {
 const {
   getAddressBookSections,
   getAddressBookEntries,
-  getAddressBookEntryById
+  getAddressBookEntryById,
+  exportAddressBook
 } = require('../controllers/addressBookController');
 const { authenticateToken, adminRequired } = require('../middleware/auth');
 
@@ -73,6 +74,7 @@ router.delete('/addresses/:scenario_id/:id', deleteAddress);
 
 // Address book routes (просмотр доступен любому администратору)
 router.get('/address-book/sections', getAddressBookSections);
+router.get('/address-book/export', exportAddressBook);
 router.get('/address-book/entries', getAddressBookEntries);
 router.get('/address-book/entries/:id', getAddressBookEntryById);
 

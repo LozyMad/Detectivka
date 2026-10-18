@@ -21,6 +21,8 @@ let addressBookFilter = {
     q: ''
 };
 let addressBookEditModalInstance = null;
+let addressBookExportBusy = false;
+const addressBookDeletes = new Set();
 
 /** Запрос с токеном; при 401/403 — выход и редирект на страницу входа */
 async function authFetch(url, options = {}) {
@@ -409,8 +411,11 @@ async function loadAddressBookEntries() {
 
             const actionsCell = showActions
                 ? `<td class="text-center" style="white-space:nowrap;">
-                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openAddressBookEditModal(${e.id})">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openAddressBookEditModal(${e.id})" title="Редактировать запись" aria-label="Редактировать запись">
                         <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-1" onclick="deleteAddressBookEntry(${e.id})" title="Удалить запись" aria-label="Удалить запись">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </td>`
                 : `<td class="text-center" style="display:none;"></td>`;
@@ -550,19 +555,20 @@ async function saveAddressBookEntry() {
     }
 }
 
-async function deleteAddressBookEntry() {
+async function deleteAddressBookEntry(entryId) {
     if (!isSuperAdmin) return;
-    const id = document.getElementById('addressBookEditId').value;
-    if (!id) return;
-
-    if (!confirm('Удалить запись адресной книги?')) return;
+    const id = Number(entryId ?? document.getElementById('addressBookEditId').value);
+    if (!Number.isSafeInteger(id) || id < 1 || addressBookDeletes.has(id)) return;
+    addressBookDeletes.add(id);
 
     try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/super-admin/address-book/entries/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const detailsResponse = await authFetch(`${API_BASE}/admin/address-book/entries/${id}`);
+        const details = await detailsResponse.json().catch(() => ({}));
+        if (!detailsResponse.ok || !details.entry) throw new Error(details.error || 'Запись не найдена');
+        const entry = details.entry;
+        const address = `${entry.district}, дом ${entry.house_number}${entry.apartment ? `, кв. ${entry.apartment}` : ''}`;
+        if (!confirm(`Удалить запись «${entry.name}» (${address}) из общей адресной книги?`)) return;
+        const response = await authFetch(`${API_BASE}/super-admin/address-book/entries/${id}`, { method: 'DELETE' });
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'Ошибка удаления');
@@ -570,13 +576,50 @@ async function deleteAddressBookEntry() {
         showMessage('Запись удалена', 'success');
 
         const modalEl = document.getElementById('addressBookEditModal');
-        const inst = bootstrap.Modal.getInstance(modalEl) || addressBookEditModalInstance;
-        inst && inst.hide();
+        if (Number(document.getElementById('addressBookEditId').value) === id) {
+            const inst = bootstrap.Modal.getInstance(modalEl) || addressBookEditModalInstance;
+            inst && inst.hide();
+        }
 
         await loadAddressBookEntries();
     } catch (err) {
         console.error('deleteAddressBookEntry error:', err);
         showMessage(err.message || 'Ошибка удаления записи', 'danger');
+    } finally {
+        addressBookDeletes.delete(id);
+    }
+}
+
+async function exportAddressBook() {
+    if (addressBookExportBusy) return;
+    addressBookExportBusy = true;
+    const button = document.getElementById('addressBookExportBtn');
+    if (button) button.disabled = true;
+    try {
+        const response = await authFetch(`${API_BASE}/admin/address-book/export`, { timeoutMs: 60000 });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || 'Не удалось скачать адресную книгу');
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        try {
+            link.href = url;
+            link.download = `Адресная книга ${new Date().toISOString().slice(0, 10)}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+        } finally {
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        showMessage('Адресная книга скачана', 'success');
+    } catch (err) {
+        console.error('exportAddressBook error:', err);
+        showMessage(err.message || 'Ошибка скачивания адресной книги', 'danger');
+    } finally {
+        addressBookExportBusy = false;
+        if (button) button.disabled = false;
     }
 }
 
@@ -2285,6 +2328,8 @@ function toggleTestRoomDuration() {
     const isTest = document.getElementById('roomIsTest').checked;
     document.getElementById('roomDurationField').hidden = isTest;
     document.getElementById('roomDuration').disabled = isTest;
+    document.getElementById('roomQuestionsDelayField').hidden = isTest;
+    document.getElementById('roomQuestionsDelay').disabled = isTest;
 }
 
 async function handleCreateRoom(e) {
@@ -2294,12 +2339,13 @@ async function handleCreateRoom(e) {
     const minutes = parseInt(document.getElementById('roomDuration').value || '120', 10);
     const is_test = document.getElementById('roomIsTest').checked;
     const duration_seconds = is_test ? 0 : Math.max(60, minutes * 60);
+    const questions_delay_minutes = is_test ? 0 : Number(document.getElementById('roomQuestionsDelay').value || 0);
     try {
         const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE}/rooms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ name, scenario_id, duration_seconds, is_test, shared_room: !is_test && !!document.getElementById('roomShared')?.checked })
+            body: JSON.stringify({ name, scenario_id, duration_seconds, questions_delay_minutes, is_test, shared_room: !is_test && !!document.getElementById('roomShared')?.checked })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Ошибка создания комнаты');

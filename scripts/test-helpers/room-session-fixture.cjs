@@ -17,7 +17,7 @@ function roomSessionFixture() {
     listByRoom: async () => [], add: async data => ({ id: data.room_id + 1, ...data }) };
   const Scenario = { getById: async id => Number(id) === 12 ? { id: 12, name: 'Ставка на молчание' } : null,
     getActive: async () => ({ id: 12 }) };
-  const dependencies = { jsonwebtoken: jwt, express, crypto: require('node:crypto'),
+  const dependencies = { '../services/questionAccess': require('../../backend/services/questionAccess'), jsonwebtoken: jwt, express, crypto: require('node:crypto'),
     '../models/user': User, '../models/room': Room, '../models/roomUser': RoomUser, '../models/scenario': Scenario,
     '../models/address': { findByScenarioAndAddress: async (id, district, house, apartment) =>
       house === '31' ? { id: 50, district, house_number: house, apartment, description: 'Материал поездки' } : null },

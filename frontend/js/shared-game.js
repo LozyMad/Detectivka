@@ -21,12 +21,13 @@
     })().finally(()=>{item.busy=null;if(item.dirty&&!item.conflict&&item.version!==version)item.timer=setTimeout(()=>save(item),100);});return item.busy;
   }
   const originalDisplay=window.displayQuestions;
-  async function renderQuestions(){if(rendering)return;rendering=true;try{const state=await request('/state');snapshot=state;inputs.clear();if(state.room.state==='pending'){document.getElementById('questionsList').innerHTML='<p class="text-muted">Создатель комнаты ещё не запустил расследование. Пока можно пригласить друзей.</p>';return;}
+  async function renderQuestions(){if(rendering)return;rendering=true;try{const state=await request('/state');inputs.clear();window.setQuestionsAccess?.(state.questions_access,state.room.state);if(state.questions_access?.is_open===false){apply(state);window.showQuestionsLock?.();return;}if(state.room.state==='pending'){apply(state);document.getElementById('questionsList').innerHTML='<p class="text-muted">Создатель комнаты ещё не запустил расследование. Пока можно пригласить друзей.</p>';return;}
     originalDisplay(state.questions,room.scenario_id,undefined);
     for(const question of state.questions){const field=document.getElementById('answer_'+question.id);if(!field)continue;field.value=question.answer_text;const status=document.getElementById('draftStatus_'+question.id);inputs.set(Number(question.id),entry(field,question.revision,status,'draft',Number(question.id)));}
     apply(state);
   }catch(error){const container=document.getElementById('questionsList');if(container)container.innerHTML='<p class="text-danger">'+escape(error.message)+'</p>';}finally{rendering=false;}}
   window.displayQuestions=()=>renderQuestions();
+  window.loadSharedQuestions=renderQuestions;
   window.submitAllAnswers=async()=>{
     if(submitting)return;submitting=true;const status=document.getElementById('answers_global_status'),button=document.getElementById('submitAllAnswersBtn');if(button)button.disabled=true;
     try{for(const item of inputs.values()){await save(item);if(item.dirty)throw new Error('Сначала сохраните изменения и разрешите конфликты в бланке');}
@@ -36,6 +37,7 @@
   function apply(state){
     if(state.room.state==='finished'){session.closeRoom();return;}
     const previous=snapshot;snapshot=state;
+    window.setQuestionsAccess?.(state.questions_access,state.room.state);
     if(notesEntry){if(!notesEntry.dirty&&!notesEntry.busy){notesEntry.field.value=state.notes;notesEntry.revision=Number(state.notes_revision);}notesEntry.field.disabled=state.room.state==='finished';}
     for(const question of state.questions){const item=inputs.get(Number(question.id));if(!item)continue;if(!item.dirty&&!item.busy){item.field.value=question.answer_text;item.revision=Number(question.revision);if(item.status)item.status.textContent=state.answers_submitted?'Отправлено командой':'Сохранено для команды';}item.field.disabled=state.answers_submitted||state.room.state!=='running';}
     const submit=document.getElementById('submitAllAnswersBtn');if(submit)submit.disabled=submitting||state.answers_submitted||state.room.state!=='running';

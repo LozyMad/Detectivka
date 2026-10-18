@@ -1019,6 +1019,7 @@ async function fetchRoomState() {
         const previousState = roomState?.state;
         roomState = await res.json();
         roomStateUpdatedAt = performance.now();
+        setQuestionsAccess(roomState.questions_access, roomState.state);
         if(roomState.state==='finished'&&!roomState.room?.is_test){window.gameSession.closeRoom();return false;}
         if (roomState.state === 'paused' && previousState !== 'paused') {
             showRoomPausedPopup();
@@ -1062,6 +1063,7 @@ async function fetchRoomState() {
 }
 
 function renderTimer() {
+    updateQuestionsCountdown();
     const timerDisplay = document.getElementById('timerDisplay');
     const roomTimer = document.getElementById('roomTimer');
     
@@ -1601,7 +1603,47 @@ async function loadPlayerAddressBookEntries() {
 }
 
 // ===== Questions =====
-async function loadQuestions() {
+let questionsGate = null;
+let questionsLoadRequest = null;
+
+function setQuestionsAccess(access, state) {
+    if (!access) return;
+    questionsGate = { ...access, state, updatedAt: performance.now() };
+    updateQuestionsCountdown();
+}
+
+function showQuestionsLock() {
+    const container = document.getElementById('questionsList');
+    if (!container || !questionsGate || questionsGate.is_open) return false;
+    if (container.dataset.questionsLocked !== 'true') {
+        container.dataset.questionsLocked = 'true';
+        container.innerHTML = '<section class="questions-locked" aria-labelledby="questionsLockedTitle"><i class="fas fa-lock" aria-hidden="true"></i><h2 id="questionsLockedTitle">Вопросы откроются через</h2><p class="questions-countdown" id="questionsUnlockCountdown" role="timer" aria-label="До открытия вопросов"></p><p id="questionsUnlockHint"></p></section>';
+    }
+    currentQuestions = [];
+    updateQuestionsCountdown();
+    return true;
+}
+
+function updateQuestionsCountdown() {
+    const container = document.getElementById('questionsList');
+    if (!container || container.dataset.questionsLocked !== 'true' || !questionsGate) return;
+    const elapsed = questionsGate.state === 'running' ? Math.max(0, Math.floor((performance.now() - questionsGate.updatedAt) / 1000)) : 0;
+    const remaining = Math.max(0, questionsGate.remaining_seconds - elapsed);
+    const timer = document.getElementById('questionsUnlockCountdown');
+    if (timer) timer.textContent = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
+    const hint = document.getElementById('questionsUnlockHint');
+    if (hint) hint.textContent = questionsGate.state === 'pending' ? 'Отсчёт начнётся после запуска игры.' : questionsGate.state === 'paused' ? 'Игра на паузе. Отсчёт продолжится вместе с игрой.' : remaining ? 'Пока продолжайте расследование. Вопросы появятся автоматически.' : 'Открываем вопросы…';
+    if ((questionsGate.is_open || (remaining === 0 && questionsGate.state === 'running')) && !questionsLoadRequest && document.getElementById('questions')?.classList.contains('active')) {
+        loadQuestions();
+    }
+}
+
+function loadQuestions() {
+    if (!questionsLoadRequest) questionsLoadRequest = fetchQuestions().finally(() => { questionsLoadRequest = null; });
+    return questionsLoadRequest;
+}
+
+async function fetchQuestions() {
     try {
         const questionsListElement = document.getElementById('questionsList');
         if (!questionsListElement) {
@@ -1609,7 +1651,9 @@ async function loadQuestions() {
             return;
         }
         
-        questionsListElement.innerHTML = '<p class="text-muted text-center">Загрузка вопросов...</p>';
+        const storedRoom = JSON.parse(gameStorage.getItem('room') || 'null');
+        if (storedRoom?.shared && window.loadSharedQuestions) return await window.loadSharedQuestions();
+        if (questionsListElement.dataset.questionsLocked !== 'true') questionsListElement.innerHTML = '<p class="text-muted text-center">Загрузка вопросов...</p>';
         
         const roomUser = JSON.parse(gameStorage.getItem('roomUser') || 'null');
         let scenarioId;
@@ -1626,6 +1670,8 @@ async function loadQuestions() {
             if (response.ok) {
                 const data = await response.json();
                 scenarioId = data.room.scenario_id;
+                setQuestionsAccess(data.questions_access, data.state);
+                if (showQuestionsLock()) return;
             }
         } else {
             // Для обычных пользователей получаем активный сценарий
@@ -1642,9 +1688,13 @@ async function loadQuestions() {
         }
         
         // Загружаем вопросы для сценария
-        const questionsResponse = await window.gameNetwork.fetch(`${API_BASE}/questions/scenario/${scenarioId}`);
+        const questionsResponse = await window.gameNetwork.fetch(`${API_BASE}/questions/scenario/${scenarioId}`, {
+            headers: { 'Authorization': `Bearer ${gameStorage.getItem('token')}` }
+        });
         if (questionsResponse.ok) {
             const questionsData = await questionsResponse.json();
+            setQuestionsAccess(questionsData.questions_access, roomState?.state);
+            if (questionsData.questions_access && showQuestionsLock()) return;
             displayQuestions(questionsData.questions, scenarioId, roomUser);
         } else {
             questionsListElement.innerHTML = '<p class="text-muted text-center">Ошибка загрузки вопросов</p>';
@@ -1711,6 +1761,7 @@ function updateAnswerDraftStatus() {
 
 function displayQuestions(questions, scenarioId, roomUser) {
     const container = document.getElementById('questionsList');
+    container.dataset.questionsLocked = 'false';
     
     if (!questions || questions.length === 0) {
         container.innerHTML = '<p class="text-muted text-center">Нет вопросов для этого сценария</p>';

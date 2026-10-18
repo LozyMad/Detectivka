@@ -13,7 +13,7 @@ const {
 const router = express.Router();
 
 // Публичные маршруты (для игроков)
-router.get('/scenario/:scenario_id', getQuestionsByScenario);
+router.get('/scenario/:scenario_id', authenticateToken, getQuestionsByScenario);
 router.post('/answer', authenticateToken, createAnswer);
 router.get('/my-answers', authenticateToken, getUserAnswers);
 

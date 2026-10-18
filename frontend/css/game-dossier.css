@@ -288,3 +288,19 @@ body.game-container .notes-status { margin: .4rem 0 0; color: #aaa394; font-size
     }
 }
 @media (prefers-reduced-motion: reduce) { #game .trip-item.success.is-fresh { animation: none; background: #375543 !important; } #game .trip-toggle i { transition: none; } }
+
+#questionsList .questions-locked {
+    max-width: 650px;
+    margin: 2rem auto;
+    padding: clamp(1.5rem, 5vw, 3rem);
+    border: 1px solid #b4a16b;
+    border-radius: 12px;
+    background: #f1ead7;
+    color: #393b30;
+    text-align: center;
+}
+#questionsList .questions-locked > i { color: #8d7234; font-size: 1.5rem; margin-bottom: 1rem; }
+body.game-container #questionsList .questions-locked h2 { color: #393b30 !important; font-size: clamp(1.15rem, 3vw, 1.5rem); margin: 0 !important; }
+body.game-container #questionsList .questions-locked h2::after { display: none !important; }
+#questionsList .questions-countdown { color: #665022; font-size: clamp(2.7rem, 9vw, 4rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin: 1rem 0; }
+#questionsUnlockHint { margin-bottom: 0; }

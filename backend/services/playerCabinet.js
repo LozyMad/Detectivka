@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { parseQuestionDelay } = require('./questionAccess');
 const SESSION_MS = 7 * 86400000;
 const uuid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -173,7 +174,8 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
       const extra=Number((await one(q,'SELECT COALESCE(SUM(amount),0) AS total FROM player_attempt_credits WHERE account_id=$1 AND product_id=$2',[accountId,product.id])).total);
       if(count>=Number(product.max_attempts)+extra)fail(409,'Все попытки по этому делу использованы');
       const scenario=await one(q,'SELECT created_by FROM scenarios WHERE id=$1',[product.scenario_id]);if(!scenario)fail(409,'Сценарий больше не доступен');
-      const room=await one(q,`INSERT INTO rooms (name,scenario_id,created_by,duration_seconds,is_test,state,halfway_paused) VALUES ($1,$2,$3,$4,FALSE,'pending',TRUE) RETURNING id`,[teamName,product.scenario_id,scenario.created_by,product.duration_seconds||7200]);
+      const delay=parseQuestionDelay(body.questions_delay_minutes,product.duration_seconds||7200);
+      const room=await one(q,`INSERT INTO rooms (name,scenario_id,created_by,duration_seconds,questions_delay_seconds,is_test,state,halfway_paused) VALUES ($1,$2,$3,$4,$5,FALSE,'pending',TRUE) RETURNING id`,[teamName,product.scenario_id,scenario.created_by,product.duration_seconds||7200,delay]);
       const link=await shared.provision(q,{...room,name:teamName},accountId,null,product.id);
       const run={id:uuid(),account_id:accountId,product_id:product.id,room_id:room.id,room_user_id:link.room_user_id,attempt_number:count+1,is_owner:1,request_key:requestKey,created_at:now()};
       await q('INSERT INTO player_runs (id,account_id,product_id,room_id,room_user_id,attempt_number,is_owner,request_key,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',Object.values(run));return run;

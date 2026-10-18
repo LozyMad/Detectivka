@@ -42,6 +42,30 @@ test('checkout uses server price, is idempotent and rejects already owned cases'
 test('bundle uses server price and grants every included case',async t=>{const f=await fixture(t);const order=await f.store.purchase(f.account.account.id,{bundle_id:'starter',confirm_local:true,request_key:randomUUID()});assert.equal(order.amount,1800);assert.equal((await f.query('SELECT * FROM player_entitlements')).rows.length,2);});
 test('concurrent creation with same request key consumes just one attempt',async t=>{const f=await fixture(t);const key=randomUUID();const [a,b]=await Promise.all([f.start({request_key:key}),f.start({request_key:key})]);assert.equal(a.id,b.id);assert.equal((await f.query('SELECT * FROM rooms')).rows.length,1);await rejected(f.start({team_password:'other-password'}),409);assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);});
 test('pause preserves time and continuing does not consume another attempt',async t=>{const f=await fixture(t);const run=await f.begin();await f.store.control(f.account.account.id,run.id,'pause');const before=await f.roomSync(run.room_id);await f.query('UPDATE rooms SET paused_at=$1 WHERE id=$2',[new Date(Date.now()-600000).toISOString(),run.room_id]);await f.store.control(f.account.account.id,run.id,'resume');const after=await f.roomSync(run.room_id);assert.ok(new Date(after.game_end_time)>new Date(before.game_end_time));assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);});
+
+test('shared questions remain secret and both answer writes stay blocked until the configured game time',async t=>{
+ const f=await fixture(t);const run=await f.start({questions_delay_minutes:15});
+ const identity={id:run.room_user_id,room_id:run.room_id};
+ let state=await f.store.shared.snapshot(identity);assert.equal(state.questions_access.remaining_seconds,900);assert.deepEqual(state.questions,[]);
+ await f.store.control(f.account.account.id,run.id,'start');
+ state=await f.store.shared.snapshot(identity);assert.deepEqual(state.questions,[]);assert.equal(state.questions_access.is_open,false);
+ await rejected(f.store.shared.saveDraft(identity,{question_id:1,text:'Early',revision:0}),403);
+ await rejected(f.store.shared.submitAnswers(identity,{answers:[{question_id:1,text:'Early',revision:0}]}),403);
+ assert.equal((await f.query('SELECT * FROM question_answers')).rows.length,0);
+ await f.store.control(f.account.account.id,run.id,'pause');
+ assert.equal((await f.store.shared.snapshot(identity)).questions_access.remaining_seconds,900);
+ await f.query('UPDATE rooms SET game_end_time=$1,paused_at=$2 WHERE id=$3',[new Date(Date.now()+6200000).toISOString(),new Date().toISOString(),run.room_id]);
+ state=await f.store.shared.snapshot(identity);assert.equal(state.questions_access.is_open,true);assert.equal(state.questions[0].question_text,'Who?');
+ await f.store.control(f.account.account.id,run.id,'resume');
+ await f.store.shared.saveDraft(identity,{question_id:1,text:'Now open',revision:0});
+ assert.equal((await f.store.shared.snapshot(identity)).questions[0].answer_text,'Now open');
+});
+
+test('cabinet room creation rejects impossible delays without leaving a room or consuming an attempt',async t=>{
+ const f=await fixture(t);for(const delay of [-1,120,'abc',1.5])await rejected(f.start({questions_delay_minutes:delay}),400);
+ assert.equal((await f.query('SELECT * FROM rooms')).rows.length,0);
+ assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);
+});
 test('unrelated account cannot enter, control or read a private game',async t=>{const f=await fixture(t);const run=await f.start();const other=await f.store.register(f.registration('second@test.ru'));await rejected(f.store.enter(other.account.id,run.id),404);await rejected(f.store.control(other.account.id,run.id,'finish'),404);await rejected(f.store.result(other.account.id,run.id),404);});
 test('invite joins without an account and never grants creator controls',async t=>{const f=await fixture(t);const run=await f.begin();const identity=await f.store.enter(f.account.account.id,run.id);const token=identity.shared_access.invite_path.split('#')[1];const joined=await f.store.shared.join(token);assert.equal(joined.user.id,run.room_user_id);assert.equal(joined.shared_access.is_owner,false);assert.equal(joined.shared_access.run_id,null);await rejected(f.store.shared.join('invalid'),404);const profile=await f.store.profile(f.account.account.id);assert.equal(profile.products[0].attempts_used,0);});
 test('demo grading uses stored answers and finish never changes a finalized score',async t=>{const f=await fixture(t);const run=await f.begin();await rejected(f.store.result(f.account.account.id,run.id),409);await f.store.shared.submitAnswers({id:run.room_user_id,room_id:run.room_id},{answers:[{question_id:1,text:'Анна, Лебедева!',revision:0}]});await f.store.control(f.account.account.id,run.id,'finish',{confirmed:true});const result=await f.store.result(f.account.account.id,run.id);assert.equal(result.run.score,2000);assert.equal(result.solution,'Solution');await f.store.control(f.account.account.id,run.id,'finish',{confirmed:true});const profile=await f.store.profile(f.account.account.id);assert.equal(profile.stats.played,1);assert.equal(profile.stats.rating,0);await rejected(f.store.control(f.account.account.id,run.id,'resume'),409);});
@@ -52,6 +76,7 @@ test('overall rating uses the first paid completion even when a replay scores hi
 function answerController(room) {
  const module={exports:{}};const requests=[],created=[];
  const dependencies={
+  '../services/questionAccess':require('../backend/services/questionAccess'),
   '../models/question':{getByScenario:async id=>{requests.push(id);return id===12?[{id:7}]:[];}},
   '../models/questionAnswer':{getByQuestionAndUser:async()=>null,create:async answer=>{created.push(answer);return answer;}},
   '../services/roomTimer':{syncRoomTimer:async()=>room}

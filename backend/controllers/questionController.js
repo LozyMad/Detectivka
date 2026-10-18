@@ -1,5 +1,6 @@
 const Question = require('../models/question');
 const QuestionAnswer = require('../models/questionAnswer');
+const { questionAccess } = require('../services/questionAccess');
 
 // Создание вопроса
 const createQuestion = async (req, res) => {
@@ -40,6 +41,13 @@ const getQuestionsByScenario = async (req, res) => {
             return res.status(400).json({ error: 'Scenario ID required' });
         }
         
+        res.setHeader?.('Cache-Control', 'no-store');
+        if (req.roomUser) {
+            const room = await require('../services/roomTimer').syncRoomTimer(req.roomUser.room_id);
+            if (!room || Number(room.scenario_id) !== Number(scenario_id)) return res.status(403).json({ error: 'Нет доступа к вопросам этого дела' });
+            const access = questionAccess(room);
+            if (!access.is_open) return res.json({ questions: [], questions_access: access });
+        }
         const questions = await Question.getByScenario(scenario_id);
         res.json({ questions });
     } catch (error) {
@@ -110,6 +118,7 @@ const createAnswer = async (req, res) => {
             const room = await syncRoomTimer(req.roomUser.room_id);
             if (!room) return res.status(403).json({ error: 'Room not found' });
             if (room.is_shared) return res.status(409).json({ error: 'В общей комнате отправьте весь бланк командных ответов' });
+            if (!questionAccess(room).is_open) return res.status(403).json({ error: 'Вопросы ещё не открыты', code: 'QUESTIONS_LOCKED' });
             const questions = await Question.getByScenario(room.scenario_id);
             if (!questions.some(q => Number(q.id) === Number(question_id))) {
                 return res.status(403).json({ error: 'Question does not belong to this game' });

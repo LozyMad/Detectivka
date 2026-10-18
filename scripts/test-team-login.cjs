@@ -14,7 +14,7 @@ async function fixture(t, dialect) {
   await query('CREATE TABLE rooms (id INTEGER PRIMARY KEY, name TEXT, scenario_id INTEGER, is_test BOOLEAN DEFAULT FALSE, state TEXT)');
   await query(`CREATE TABLE room_users (id INTEGER PRIMARY KEY, room_id INTEGER, username TEXT, password TEXT,
     UNIQUE(room_id,username))`);
-  const dependencies = { '../config/database': {db,query}, bcryptjs: bcrypt, jsonwebtoken: jwt,
+  const dependencies = { '../services/questionAccess': require('../backend/services/questionAccess'), '../config/database': {db,query}, bcryptjs: bcrypt, jsonwebtoken: jwt,
     crypto: require('node:crypto'), '../models/scenario': {}, '../services/roomTimer': {} };
   const load = file => {
     const module = {exports:{}};

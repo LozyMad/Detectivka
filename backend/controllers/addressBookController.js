@@ -1,7 +1,20 @@
 const AddressBook = require('../models/addressBook');
+const XLSX = require('xlsx');
 
 // Группы букв для «Частные лица» по референсу
 const LETTER_TABS = ['А-Б', 'В-Г', 'Д-Й', 'К-Л', 'М-Н', 'О-П', 'Р-С', 'Т-Ф', 'Х-Я'];
+
+async function readAddressBookEntries(category) {
+  const entries = [];
+  const limit = 5000;
+  for (let offset = 0; ; offset += limit) {
+    const page = category
+      ? await AddressBook.getEntriesByCategory({ category, limit, offset })
+      : await AddressBook.getAllEntries({ limit, offset });
+    entries.push(...page);
+    if (page.length < limit) return entries;
+  }
+}
 
 function normalizeCellText(v) {
   if (v === null || v === undefined) return '';
@@ -113,9 +126,10 @@ async function getAddressBookEntries(req, res) {
     try {
       if (hasQuery) {
         // Глобальный поиск по всей книге: игнорируем category/letter_group
-        entries = await AddressBook.getAllEntries({ limit: 100000, offset: 0 });
+        entries = await readAddressBookEntries();
       } else {
-        entries = await AddressBook.getEntriesByCategory({ category, limit: lim + off, offset: 0 });
+        // Буквенный фильтр и пагинация применяются после чтения всей категории.
+        entries = await readAddressBookEntries(category);
       }
     } catch (listErr) {
       console.error('addressBook getEntriesByCategory:', listErr);
@@ -169,6 +183,38 @@ async function getAddressBookEntryById(req, res) {
   }
 }
 
+async function exportAddressBook(req, res) {
+  try {
+    await AddressBook.ensureSeeded();
+    const entries = await readAddressBookEntries();
+    entries.sort((a, b) => {
+      for (const field of ['district', 'house_number', 'apartment', 'name', 'category']) {
+        const result = String(a[field] ?? '').localeCompare(String(b[field] ?? ''), 'ru', { numeric: true });
+        if (result) return result;
+      }
+      return 0;
+    });
+    const fields = ['district', 'house_number', 'apartment', 'name', 'category', 'note'];
+    const rows = [['Район', 'Номер дома', 'Квартира/Офис', 'Имя / название', 'Категория', 'Примечание'],
+      ...entries.map(entry => fields.map(field => String(entry[field] ?? '')))];
+    const sheet = XLSX.utils.aoa_to_sheet(rows);
+    sheet['!cols'] = [10, 14, 18, 48, 48, 64].map(wch => ({ wch }));
+    sheet['!autofilter'] = { ref: sheet['!ref'] };
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, 'Адресная книга');
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const date = new Date().toISOString().slice(0, 10);
+    const filename = encodeURIComponent(`Адресная книга ${date}.xlsx`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Content-Disposition', `attachment; filename="address-book-${date}.xlsx"; filename*=UTF-8''${filename}`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('exportAddressBook error:', err);
+    res.status(500).json({ error: 'Не удалось скачать адресную книгу' });
+  }
+}
+
 async function createAddressBookEntry(req, res) {
   try {
     const input = req.body || {};
@@ -194,8 +240,12 @@ async function updateAddressBookEntry(req, res) {
 
 async function deleteAddressBookEntry(req, res) {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) {
+      return res.status(400).json({ error: 'Некорректный ID записи' });
+    }
     const deleted = await AddressBook.deleteEntry(id);
+    if (!deleted.changes) return res.status(404).json({ error: 'Запись уже удалена или не найдена' });
     res.json({ deleted });
   } catch (err) {
     console.error('deleteAddressBookEntry error:', err);
@@ -207,6 +257,7 @@ module.exports = {
   getAddressBookSections,
   getAddressBookEntries,
   getAddressBookEntryById,
+  exportAddressBook,
   createAddressBookEntry,
   updateAddressBookEntry,
   deleteAddressBookEntry

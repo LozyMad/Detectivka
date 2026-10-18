@@ -11,15 +11,15 @@ if (DB_TYPE === 'postgresql') {
   const { db } = require('../config/database');
 
   Room = {
-  create: ({ name, scenario_id, created_by, duration_seconds = 7200, is_test = false }) => {
+  create: ({ name, scenario_id, created_by, duration_seconds = 7200, questions_delay_seconds = 0, is_test = false }) => {
     return new Promise((resolve, reject) => {
       db.run(
-        `INSERT INTO rooms (name, scenario_id, created_by, duration_seconds, is_test, state, game_start_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO rooms (name, scenario_id, created_by, duration_seconds, is_test, state, game_start_time, questions_delay_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [name, scenario_id, created_by, is_test ? 0 : duration_seconds, is_test ? 1 : 0,
-          is_test ? 'running' : 'pending', is_test ? new Date().toISOString() : null],
+          is_test ? 'running' : 'pending', is_test ? new Date().toISOString() : null, is_test ? 0 : questions_delay_seconds],
         function(err) {
           if (err) return reject(err);
-          resolve({ id: this.lastID, name, scenario_id, created_by, duration_seconds: is_test ? 0 : duration_seconds, is_test });
+          resolve({ id: this.lastID, name, scenario_id, created_by, duration_seconds: is_test ? 0 : duration_seconds, questions_delay_seconds: is_test ? 0 : questions_delay_seconds, is_test });
         }
       );
     });
