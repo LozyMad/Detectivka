@@ -304,3 +304,40 @@ body.game-container #questionsList .questions-locked h2 { color: #393b30 !import
 body.game-container #questionsList .questions-locked h2::after { display: none !important; }
 #questionsList .questions-countdown { color: #665022; font-size: clamp(2.7rem, 9vw, 4rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin: 1rem 0; }
 #questionsUnlockHint { margin-bottom: 0; }
+
+body.game-container .answer-deadline-notice {
+    position: fixed;
+    z-index: 11000;
+    top: calc(var(--shared-navbar-height, 64px) + 20px + env(safe-area-inset-top, 0px));
+    right: max(20px, env(safe-area-inset-right, 0px));
+    width: min(370px, calc(100vw - 32px));
+    max-height: calc(100dvh - var(--shared-navbar-height, 64px) - 52px);
+    overflow-y: auto;
+    padding: 26px;
+    border: 1px solid #dfb761;
+    border-left: 5px solid #c88936;
+    border-radius: 10px;
+    background: #f5e8c9;
+    color: #302719;
+    box-shadow: 0 14px 48px #0009;
+    text-align: left;
+}
+body.game-container .answer-deadline-notice[hidden] { display: none !important; }
+body.game-container .answer-deadline-label { display: block; padding-right: 35px; margin-bottom: 10px; color: #805018; font: 700 11px/1.4 'Segoe UI', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; }
+body.game-container #answerDeadlineTitle { color: #302719 !important; font: 700 23px/1.2 'Segoe UI', sans-serif; margin: 0 20px 14px 0 !important; }
+body.game-container #answerDeadlineTitle::after { display: none !important; }
+body.game-container .answer-deadline-notice p { color: #493b27; font: 400 15px/1.5 'Segoe UI', sans-serif; margin: 0 0 14px; }
+body.game-container .answer-deadline-notice .answer-deadline-warning { padding-top: 12px; border-top: 1px solid #bda470; color: #74331d; }
+body.game-container .answer-deadline-close {
+    position: absolute; top: 10px; right: 10px;
+    display: grid; place-items: center; width: 44px; height: 44px; padding: 0;
+    border: 1px solid #8b672f; border-radius: 6px; background: #302719; color: #fff3d8;
+    font: 400 32px/1 'Segoe UI', sans-serif; cursor: pointer;
+}
+body.game-container .answer-deadline-close:hover { background: #594022; }
+body.game-container .answer-deadline-action { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid #6f5127; border-radius: 6px; background: #6f5127; color: #fff7e5; font: 600 15px/1.35 'Segoe UI', sans-serif; cursor: pointer; }
+body.game-container .answer-deadline-action:hover { background: #51391c; }
+body.game-container :is(.answer-deadline-close,.answer-deadline-action):focus-visible { outline: 3px solid #a34d19; outline-offset: 3px; }
+@media (max-width: 767.98px) {
+    body.game-container .answer-deadline-notice { top: calc(var(--shared-navbar-height, 64px) + 12px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); padding: 22px; }
+}

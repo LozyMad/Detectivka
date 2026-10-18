@@ -1066,13 +1066,13 @@ function renderTimer() {
     updateQuestionsCountdown();
     const timerDisplay = document.getElementById('timerDisplay');
     const roomTimer = document.getElementById('roomTimer');
-    
-    if (!timerDisplay || !roomTimer) return;
     if (!roomState) return;
     
     const state = roomState.state;
     const elapsed = state === 'running' ? Math.max(0, Math.floor((performance.now() - roomStateUpdatedAt) / 1000)) : 0;
     const remaining = Math.max(0, (roomState.remaining || 0) - elapsed);
+    updateAnswerDeadlineNotice(remaining);
+    if (!timerDisplay || !roomTimer) return;
 
     if (roomState.room?.is_test) {
         timerDisplay.textContent = '∞ Без ограничений';
@@ -1102,6 +1102,43 @@ function renderTimer() {
         roomTimer.style.display = 'block';
         timerDisplay.className = 'badge bg-danger text-dark fs-6';
     }
+}
+
+// A body-level notice stays above every game tab, including the board and materials.
+const dismissedAnswerDeadlines = new Set();
+
+function answerDeadlineKey() {
+    let savedRoom = null, player = null;
+    try {
+        savedRoom = JSON.parse(gameStorage.getItem('room') || 'null');
+        player = JSON.parse(gameStorage.getItem('roomUser') || 'null');
+    } catch (_) {}
+    const roomId = roomState?.room?.id || savedRoom?.id;
+    return roomId ? `detectum-answer-deadline-dismissed-${roomId}-${player?.id || 'team'}` : null;
+}
+
+function updateAnswerDeadlineNotice(remaining) {
+    const notice = document.getElementById('answerDeadlineNotice');
+    if (!notice) return;
+    const key = answerDeadlineKey();
+    let dismissed = key && dismissedAnswerDeadlines.has(key);
+    try { dismissed = dismissed || (key && gameStorage.getItem(key) === '1'); } catch (_) {}
+    notice.hidden = !key || dismissed || roomState?.room?.is_test ||
+        !['running', 'paused'].includes(roomState?.state) || remaining <= 0 || remaining > 300;
+}
+
+function dismissAnswerDeadlineNotice() {
+    const notice = document.getElementById('answerDeadlineNotice');
+    if (notice) notice.hidden = true;
+    const key = answerDeadlineKey();
+    if (!key || dismissedAnswerDeadlines.has(key)) return;
+    dismissedAnswerDeadlines.add(key);
+    try { gameStorage.setItem(key, '1'); } catch (_) {}
+}
+
+function openQuestionsFromDeadlineNotice() {
+    document.getElementById('questions-tab')?.click();
+    dismissAnswerDeadlineNotice();
 }
 
 
@@ -1862,6 +1899,7 @@ async function submitAllAnswers() {
     
     if (successCount > 0 && failCount === 0) {
         globalStatusDiv.innerHTML = '<div class="alert alert-success">Все ответы отправлены</div>';
+        dismissAnswerDeadlineNotice();
         if (lastAnswersScenarioId && lastAnswersRoomUser !== undefined) {
             try {
                 gameStorage.removeItem(getAnswersStorageKey(lastAnswersScenarioId, lastAnswersRoomUser));

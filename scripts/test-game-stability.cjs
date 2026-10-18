@@ -109,6 +109,67 @@ test('system clock corrections do not jump the game countdown', async () => {
   assert.equal(b.clock.jobs.size, 0);
 });
 
+test('deadline notice appears exactly at five minutes on every tab and follows paused and finished state', async () => {
+  const b = game(healthy);
+  b.run("roomState = {state:'running',remaining:301,room:{id:14}};roomStateUpdatedAt=performance.now();initRoomTimer();");
+  assert.equal(b.element('answerDeadlineNotice').hidden, true);
+  await b.clock.advance(1000);
+  assert.equal(b.element('answerDeadlineNotice').hidden, false);
+  for (const pane of ['game','questions','addressbook','applications','board']) {
+    b.run(`activePlayerPane = '${pane}'; renderTimer();`);
+    assert.equal(b.element('answerDeadlineNotice').hidden, false, pane);
+  }
+  b.run("roomState.state='paused';roomState.remaining=300;renderTimer();");
+  await b.clock.advance(600000);
+  assert.equal(b.element('answerDeadlineNotice').hidden, false);
+  b.run("roomState.state='running';roomState.remaining=0;roomStateUpdatedAt=performance.now();renderTimer();");
+  assert.equal(b.element('answerDeadlineNotice').hidden, true);
+  for (const state of ['pending','finished']) {
+    b.run(`roomState.state='${state}';roomState.remaining=120;renderTimer();`);
+    assert.equal(b.element('answerDeadlineNotice').hidden, true);
+  }
+  b.run("roomState.state='running';roomState.room.is_test=true;renderTimer();");
+  assert.equal(b.element('answerDeadlineNotice').hidden, true);
+  assert.equal(b.calls.length, 0);
+});
+
+test('dismissal survives refresh and reload, stays scoped to the player and room, and works without storage', () => {
+  const b = game(healthy);
+  b.run("roomState={state:'running',remaining:250,room:{id:14}};roomStateUpdatedAt=performance.now();renderTimer();dismissAnswerDeadlineNotice();renderTimer();");
+  assert.equal(b.element('answerDeadlineNotice').hidden, true);
+  assert.equal(b.values.get('detectum-answer-deadline-dismissed-14-15'), '1');
+  const c = browser(healthy);
+  for (const [key,value] of b.values) c.values.set(key,value);
+  c.load('frontend/js/game-session.js');c.load('frontend/js/game.js');
+  c.run("roomState={state:'running',remaining:250,room:{id:14}};roomStateUpdatedAt=performance.now();renderTimer();");
+  assert.equal(c.element('answerDeadlineNotice').hidden, true);
+  c.run("roomState.room.id=20;renderTimer();");
+  assert.equal(c.element('answerDeadlineNotice').hidden, false);
+  c.run("gameStorage.setItem('roomUser',JSON.stringify({id:99,room_id:14}));roomState.room.id=14;renderTimer();");
+  assert.equal(c.element('answerDeadlineNotice').hidden, false);
+  c.run("gameStorage.setItem=()=>{throw Error('Storage disabled');};dismissAnswerDeadlineNotice();renderTimer();");
+  assert.equal(c.element('answerDeadlineNotice').hidden, true);
+});
+
+test('deadline action opens the questions tab and dismisses the notice without sending answers', () => {
+  const b = game(healthy);let opened=false;
+  b.element('questions-tab').click=()=>{opened=true;};
+  b.run("roomState={state:'running',remaining:240,room:{id:14}};roomStateUpdatedAt=performance.now();renderTimer();openQuestionsFromDeadlineNotice();");
+  assert.equal(opened,true);
+  assert.equal(b.element('answerDeadlineNotice').hidden,true);
+  assert.equal(b.calls.length,0);
+});
+
+test('only successful submission dismisses the deadline notice', async () => {
+  for (const ok of [false,true]) {
+    const b=game(()=>new Response(JSON.stringify(ok?{}:{error:'Network error'}),{status:ok?201:503}));
+    b.run("roomState={state:'running',remaining:240,room:{id:14}};roomStateUpdatedAt=performance.now();currentQuestions=[{id:7}];renderTimer();");
+    b.element('answer_7').value='Answer';
+    await b.run('submitAllAnswers()');
+    assert.equal(b.element('answerDeadlineNotice').hidden,ok);
+  }
+});
+
 test('history and counter share a snapshot; 100 locations need only two HTTP requests', async () => {
   const attempts = Array.from({ length: 100 }, (_, i) => ({ id: i + 1, found: true, address_id: i + 1,
     visited_location_id: i + 1, has_choices: true, address_description: 'Before', choice_response: `Choice ${i}`, location_names: [] }));

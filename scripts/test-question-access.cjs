@@ -115,16 +115,16 @@ test('player countdown ticks without requests, freezes on pause and opens automa
 });
 
 test('shared room countdown opens the actual shared form automatically without a page reload', async () => {
-  let locked = true;
+  let locked = true, submitted = false;
   const b = browser(() => new Response(JSON.stringify({
-    room: { id: 14, state: 'running' }, notes: '', notes_revision: 0, answers_submitted: false,
+    room: { id: 14, state: 'running' }, notes: '', notes_revision: 0, answers_submitted: submitted,
     questions_access: { is_open: !locked, remaining_seconds: locked ? 1 : 0 },
     questions: locked ? [] : [{ id: 7, question_text: 'Shared question opened', answer_text: '', revision: 0 }]
   })));
   b.values.set('room', JSON.stringify({ id: 14, scenario_id: 12, shared: true }));
   b.load('frontend/js/game-session.js');
   b.load('frontend/js/game.js');
-  for (const name of ['displayQuestions', 'setQuestionsAccess', 'showQuestionsLock']) b.window[name] = b.run(name);
+  for (const name of ['displayQuestions', 'setQuestionsAccess', 'showQuestionsLock', 'dismissAnswerDeadlineNotice']) b.window[name] = b.run(name);
   b.load('frontend/js/shared-game.js');
   b.element('questions').classList.add('active');
   b.run('initRoomTimer();');
@@ -136,4 +136,9 @@ test('shared room countdown opens the actual shared form automatically without a
   assert.match(b.element('questionsList').innerHTML, /Shared question opened/);
   assert.equal(b.element('questionsList').dataset.questionsLocked, 'false');
   assert.equal(b.calls.length, 2);
+  b.run("roomState={state:'running',remaining:240,room:{id:14}};roomStateUpdatedAt=performance.now();renderTimer();");
+  assert.equal(b.element('answerDeadlineNotice').hidden, false);
+  submitted = true;
+  await b.run('loadQuestions()');
+  assert.equal(b.element('answerDeadlineNotice').hidden, true);
 });
