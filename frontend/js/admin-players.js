@@ -96,7 +96,7 @@
     byId('paSearch').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{page=1;list();},300);});
     byId('paState').addEventListener('change',()=>{page=1;list();});
     byId('paPrev').addEventListener('click',()=>{if(page>1){page--;list();}});byId('paNext').addEventListener('click',()=>{if(page<pages){page++;list();}});
-    byId('paCreate').addEventListener('click',()=>{switchTab('rooms');document.getElementById('roomName')?.focus();});
+    byId('paCreate').addEventListener('click',()=>{switchTab('rooms');window.adminWorkspace?.reveal('createRoomForm');document.getElementById('roomName')?.focus();});
     setInterval(()=>{if(document.hidden||panel.style.display!=='block')return;panel.querySelectorAll('[data-pa-seconds]').forEach(el=>{const n=Number(el.dataset.paSeconds);if(el.dataset.paSeconds==='')return;const remaining=el.dataset.paRunning==='true'?Math.max(0,n-Math.floor((Date.now()-Number(el.dataset.paAt))/1000)):n;el.textContent=clock(remaining);});},1000);
   }
   window.adminPlayers={load:()=>{init();return list();}};

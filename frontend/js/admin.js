@@ -682,10 +682,12 @@ function setupEventListeners() {
 }
 
 function switchTab(tabName) {
-    if (tabName === 'playerManagement') window.history?.replaceState(null, '', '#player-management');
-    else if (window.location.hash === '#player-management') window.history?.replaceState(null, '', window.location.pathname+window.location.search);
+    if (!window.adminWorkspace) {
+        if (tabName === 'playerManagement') window.history?.replaceState(null, '', '#player-management');
+        else if (window.location.hash === '#player-management') window.history?.replaceState(null, '', window.location.pathname+window.location.search);
+    }
     // Проверяем, доступна ли вкладка для текущего админа
-    const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup', 'enquiries'];
+    const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup', 'enquiries', 'maintenance'];
     if (currentUser.admin_level !== 'super_admin' && restrictedTabs.includes(tabName)) {
         showMessage('У вас нет доступа к этой вкладке', 'warning');
         return;
@@ -1195,11 +1197,12 @@ function displayScenarios(scenarios) {
             <td>${scenario.description || '-'}</td>
             <td>${new Date(scenario.created_at).toLocaleDateString('ru-RU')}</td>
             <td class="table-actions">
-                <button class="btn btn-sm btn-outline-primary me-1" onclick="editScenario(${scenario.id})">
-                    <i class="fas fa-edit"></i>
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="editScenario(${scenario.id})" title="Настроить дело, брифинг и вопросы">
+                    <i class="fas fa-edit" aria-hidden="true"></i> Настроить
                 </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteScenario(${scenario.id})">
-                    <i class="fas fa-trash"></i>
+                ${window.adminWorkspace ? `<button class="btn btn-sm btn-outline-secondary me-1" onclick="adminWorkspace.openScenes(${scenario.id})">Сцены</button>` : ''}
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteScenario(${scenario.id})" title="Удалить сценарий" aria-label="Удалить сценарий">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
                 </button>
             </td>
         </tr>
@@ -1653,9 +1656,9 @@ function displayEditQuestions(questions) {
 
     container.innerHTML = questions.map(question => `
         <div class="input-group mb-2" data-question-id="${question.id}">
-            <input type="text" class="form-control" value="${question.question_text}" 
+            <input type="text" class="form-control" aria-label="Текст вопроса" value="${escapeHtml(question.question_text)}"
                    onchange="updateQuestion(${question.id}, this.value)">
-            <button type="button" class="btn btn-outline-danger" onclick="deleteQuestion(${question.id})">
+            <button type="button" class="btn btn-outline-danger" aria-label="Удалить вопрос" title="Удалить вопрос" onclick="deleteQuestion(${question.id})">
                 <i class="fas fa-trash"></i>
             </button>
         </div>
@@ -2060,7 +2063,7 @@ async function loadAddressesForScenario() {
                         <td>${escapeHtml(address.district)}</td>
                         <td>${escapeHtml(address.house_number)}</td>
                         <td>${escapeHtml(address.apartment || '-')}</td>
-                        <td class="address-desc-cell">${escapeHtml(address.description || '-')}</td>
+                        <td class="address-desc-cell"><div class="ws-scene-excerpt">${escapeHtml(address.description || '-')}</div>${window.adminWorkspace ? `<button type="button" class="ws-text-button" onclick="openEditAddressModal(${scenarioId}, ${address.id})">Открыть сцену →</button>` : ''}</td>
                         <td class="text-center">
                             ${(address.application_numbers || []).length
                                 ? address.application_numbers.map(number => `<span class="badge bg-warning text-dark d-inline-block mb-1">Приложение ${Number(number)}</span>`).join(' ')
@@ -2170,9 +2173,10 @@ function populateScenarioDropdowns() {
     const viewDropdown = document.getElementById('viewAddressScenario');
     const copyDropdown = document.getElementById('sourceScenarioSelect');
     const internetPageDropdown = document.getElementById('internetPageScenario');
+    const selected = new Map([addDropdown, viewDropdown, copyDropdown, internetPageDropdown].filter(Boolean).map(select => [select, select.value]));
 
     const options = scenarios.map(scenario =>
-        `<option value="${scenario.id}">${scenario.name}</option>`
+        `<option value="${scenario.id}">${escapeHtml(scenario.name)}</option>`
     ).join('');
 
     addDropdown.innerHTML = '<option value="">Выберите сценарий...</option>' + options;
@@ -2186,6 +2190,10 @@ function populateScenarioDropdowns() {
         internetPageDropdown.innerHTML = '<option value="">Выберите сценарий...</option>' + options;
     }
 
+    // Navigation must not silently change the case selected in an unsaved form.
+    for (const [select, value] of selected) {
+        if (Array.from(select.options).some(option => option.value === value)) select.value = value;
+    }
     ensureStatsScenarioOptions();
     ensureRoomScenarioOptions();
     if (typeof populateExportScenarioSelect === 'function') populateExportScenarioSelect();
@@ -3421,10 +3429,10 @@ async function handleAddAddress(e) {
         if (response.ok) {
             showMessage('Адрес успешно добавлен', 'success');
             e.target.reset();
-            // Reload addresses if we're viewing the same scenario
+            document.getElementById('addressScenario').value = scenario_id;
+            // Compare with the submitted case: reset() has already cleared the form.
             const viewScenarioId = document.getElementById('viewAddressScenario').value;
-            const addScenarioId = document.getElementById('addressScenario').value;
-            if (viewScenarioId === addScenarioId) {
+            if (viewScenarioId === String(scenario_id)) {
                 loadAddressesForScenario();
             }
             const ipScenario = document.getElementById('internetPageScenario');

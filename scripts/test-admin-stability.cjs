@@ -15,6 +15,31 @@ function admin(fetchImpl = () => json({ rooms })) {
   return b;
 }
 
+test('adding a scene refreshes the submitted case after resetting the form', async () => {
+  const b = admin(() => json({ success: true }));
+  b.element('addressScenario').value = '12';
+  b.element('viewAddressScenario').value = '12';
+  b.element('addressDistrict').value = 'В';
+  b.element('addressHouseNumber').value = '100';
+  b.element('addressDescription').value = 'Fixture scene';
+  b.run('loadAddressesForScenario = () => { window.sceneReloaded = true; };');
+  b.sandbox.sceneEvent = { preventDefault() {}, target: { reset() { b.element('addressScenario').value = ''; } } };
+  await b.run('handleAddAddress(sceneEvent)');
+  assert.equal(JSON.parse(b.calls[0].options.body).scenario_id, '12');
+  assert.equal(b.element('addressScenario').value, '12');
+  assert.equal(b.window.sceneReloaded, true);
+});
+
+test('refreshing scenario selectors preserves the case chosen for an unsaved scene', () => {
+  const b = admin();
+  for (const id of ['addressScenario', 'viewAddressScenario', 'sourceScenarioSelect', 'internetPageScenario']) {
+    const select = b.element(id); select.value = '12'; select.options = [{ value: '' }, { value: '12' }];
+    Object.defineProperty(select, 'innerHTML', { set() { select.value = ''; } });
+  }
+  b.run("scenarios = [{ id: 12, name: 'Fixture' }]; ensureStatsScenarioOptions = () => {}; ensureRoomScenarioOptions = () => {}; populateExportScenarioSelect = () => {}; populateScenarioDropdowns();");
+  for (const id of ['addressScenario', 'viewAddressScenario', 'sourceScenarioSelect', 'internetPageScenario']) assert.equal(b.element(id).value, '12');
+});
+
 test('room time dialog blocks duplicate submissions and preserves its request key after a lost response',async()=>{
  let first=true;
  const b=admin(call=>{
