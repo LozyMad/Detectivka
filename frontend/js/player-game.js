@@ -7,7 +7,6 @@
   document.addEventListener('DOMContentLoaded',()=>{
     const target=document.getElementById('navbarCollapse');if(!target)return;
     const bar=document.createElement('div');bar.className='cabinet-game-controls';
-    const link=document.createElement('a');link.href='/profile';link.textContent='Мой кабинет';link.className='btn btn-outline-light btn-sm';bar.append(link);
     const info=document.createElement('span');info.className='cabinet-game-message';bar.append(info);
     async function control(action){const response=await fetch('/api/player/games/'+encodeURIComponent(run.id)+'/control',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,confirmed:action==='finish'}),signal:AbortSignal.timeout(15000)});const data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось выполнить действие');return data;}
     if(run.is_owner){

@@ -3,16 +3,14 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const accessService = require('../backend/services/questionAccess');
-const { questionAccess, parseQuestionDelay } = accessService;
+const { questionAccess, newRoomQuestionDelay } = accessService;
 const { roomSessionFixture } = require('./test-helpers/room-session-fixture.cjs');
 const { browser } = require('./test-helpers/browser-runtime.cjs');
 
-test('delay accepts whole minutes and rejects settings that cannot open during the game', () => {
-  for (const value of [undefined, '', 0]) assert.equal(parseQuestionDelay(value, 7200), 0);
-  assert.equal(parseQuestionDelay('15', 7200), 900);
-  for (const value of [-1, 1.5, 'abc', true, 120, 121, Infinity]) {
-    assert.throws(() => parseQuestionDelay(value, 7200), error => error.status === 400);
-  }
+test('new room delay is fixed at 15 minutes; test rooms stay open and ordinary games need time to answer', () => {
+  for (const duration of [5400,7200,'7200']) assert.equal(newRoomQuestionDelay(duration),900);
+  assert.equal(newRoomQuestionDelay(0,true),0);
+  for (const duration of [0,60,900,NaN,Infinity]) assert.throws(()=>newRoomQuestionDelay(duration),error=>error.status===400);
 });
 
 test('15 minute gate starts with the game, freezes during pauses, and survives resume and extra time', () => {
@@ -75,16 +73,21 @@ test('server withholds questions and rejects early answers even through direct H
   assert.equal((await fetch(base + '/answers', { method: 'POST', headers, body: JSON.stringify({ question_id: 7 }) })).status, 201);
 });
 
-test('admin room creation stores the delay and rejects a delay equal to game duration', async t => {
+test('new admin rooms have a fixed 15 minute delay, ignore client overrides, and exempt test rooms', async t => {
   const f = roomSessionFixture();
   const server = await new Promise(resolve => { const s = f.app.listen(0, '127.0.0.1', () => resolve(s)); });
   t.after(() => new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }));
   const headers = { Authorization: 'Bearer ' + f.jwt.sign({ id: 99 }, f.secret), 'Content-Type': 'application/json' };
   const create = body => fetch(`http://127.0.0.1:${server.address().port}/api/rooms`, { method: 'POST', headers, body: JSON.stringify({ name: 'Delay', scenario_id: 12, duration_seconds: 7200, ...body }) });
-  let response = await create({ questions_delay_minutes: 15 });
+  let response = await create({});
   assert.equal(response.status, 201);
   assert.equal((await response.json()).room.questions_delay_seconds, 900);
-  assert.equal((await create({ questions_delay_minutes: 120 })).status, 400);
+  for(const value of [0,-1,120,'abc']){
+    response=await create({questions_delay_minutes:value});
+    assert.equal(response.status,201);
+    assert.equal((await response.json()).room.questions_delay_seconds,900);
+  }
+  assert.equal((await create({duration_seconds:900})).status,400);
   response = await create({ is_test: true, questions_delay_minutes: 15 });
   assert.equal((await response.json()).room.questions_delay_seconds, 0);
 });

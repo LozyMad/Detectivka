@@ -13,3 +13,8 @@ html:root body.game-container.shared-room #playerNavControls { flex: 0 0 auto; m
 html:root body.desktop-workspace.shared-room:not(.board-open) #gameTabContent { height: calc(100dvh - var(--shared-navbar-height, 130px)); }
 .shared-result-dialog { width: min(600px,calc(100% - 32px)); padding: 28px; border: 1px solid #806047; border-radius: 10px; background: #1a1411; color: #f3e8d8; }
 .shared-result-dialog::backdrop { background: #090603dd; }
+.game-copy-toast { position: fixed; z-index: 10000; top: calc(16px + env(safe-area-inset-top)); right: calc(16px + env(safe-area-inset-right)); display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px); padding: 12px 14px; border: 1px solid #d8a266; border-radius: 12px; background: #2b2118; color: #fff2df; box-shadow: 0 8px 32px #0008; font: 600 15px/1.4 system-ui, sans-serif; }
+.game-copy-toast[hidden] { display: none; }
+.game-copy-toast-icon { color: #e7ad74; font-size: 22px; }
+.game-copy-toast button { display: grid; place-items: center; flex: none; width: 36px; height: 36px; padding: 0; border: 1px solid #8b725c; border-radius: 50%; background: transparent; color: #fff2df; font-size: 24px; line-height: 1; }
+.game-copy-toast button:focus-visible { outline: 3px solid #f4c794; outline-offset: 3px; }

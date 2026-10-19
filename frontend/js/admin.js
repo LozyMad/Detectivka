@@ -2328,8 +2328,7 @@ function toggleTestRoomDuration() {
     const isTest = document.getElementById('roomIsTest').checked;
     document.getElementById('roomDurationField').hidden = isTest;
     document.getElementById('roomDuration').disabled = isTest;
-    document.getElementById('roomQuestionsDelayField').hidden = isTest;
-    document.getElementById('roomQuestionsDelay').disabled = isTest;
+    document.getElementById('roomQuestionsNotice').hidden = isTest;
 }
 
 async function handleCreateRoom(e) {
@@ -2339,13 +2338,12 @@ async function handleCreateRoom(e) {
     const minutes = parseInt(document.getElementById('roomDuration').value || '120', 10);
     const is_test = document.getElementById('roomIsTest').checked;
     const duration_seconds = is_test ? 0 : Math.max(60, minutes * 60);
-    const questions_delay_minutes = is_test ? 0 : Number(document.getElementById('roomQuestionsDelay').value || 0);
     try {
         const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE}/rooms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ name, scenario_id, duration_seconds, questions_delay_minutes, is_test, shared_room: !is_test && !!document.getElementById('roomShared')?.checked })
+            body: JSON.stringify({ name, scenario_id, duration_seconds, is_test, shared_room: !is_test && !!document.getElementById('roomShared')?.checked })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Ошибка создания комнаты');

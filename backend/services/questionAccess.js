@@ -12,15 +12,15 @@ function questionAccess(room, now = Date.now()) {
   return { is_open: remaining === 0, remaining_seconds: remaining, delay_seconds: delay };
 }
 
-function parseQuestionDelay(value, durationSeconds) {
-  const minutes = value === undefined || value === null || value === '' ? 0 : Number(value);
-  if (typeof value === 'boolean' || !Number.isSafeInteger(minutes) || minutes < 0 ||
-      !Number.isSafeInteger(minutes * 60) || (minutes > 0 && minutes * 60 >= Number(durationSeconds))) {
-    const error = new Error('Время до открытия вопросов должно быть целым числом минут от 0 и меньше длительности игры');
+const STANDARD_QUESTION_DELAY_SECONDS = 15 * 60;
+function newRoomQuestionDelay(durationSeconds, isTest = false) {
+  if (isTest) return 0;
+  if (!Number.isFinite(Number(durationSeconds)) || Number(durationSeconds) <= STANDARD_QUESTION_DELAY_SECONDS) {
+    const error = new Error('Длительность расследования должна быть больше 15 минут, чтобы осталось время на ответы');
     error.status = 400;
     throw error;
   }
-  return minutes * 60;
+  return STANDARD_QUESTION_DELAY_SECONDS;
 }
 
-module.exports = { questionAccess, parseQuestionDelay };
+module.exports = { questionAccess, newRoomQuestionDelay, STANDARD_QUESTION_DELAY_SECONDS };

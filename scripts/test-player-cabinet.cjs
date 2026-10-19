@@ -27,7 +27,8 @@ async function fixture(t,localMode=true){
  const registration=(email='detective@example.test')=>({username:'Детектив',email,password:'secret-password',confirm_password:'secret-password',accept_terms:true});
  const account=await store.register(registration());
  const start=(extra={})=>store.start(account.account.id,{product_id:'demo',team_name:'Команда',team_password:'team-secret',request_key:randomUUID(),...extra});
- const begin=async extra=>{const run=await start(extra);await store.control(account.account.id,run.id,'start');await query('INSERT INTO visit_attempts (user_id,room_id,scenario_id,found) VALUES ($1,$2,$3,TRUE)',[run.room_user_id,run.room_id,run.product_id==='demo'?1:2]);return run;};
+ // These fixtures exercise answers after the standard 15-minute investigation period.
+ const begin=async extra=>{const run=await start(extra);await store.control(account.account.id,run.id,'start');await query('UPDATE rooms SET game_end_time=$1 WHERE id=$2',[new Date(Date.now()+6300000).toISOString(),run.room_id]);await query('INSERT INTO visit_attempts (user_id,room_id,scenario_id,found) VALUES ($1,$2,$3,TRUE)',[run.room_user_id,run.room_id,run.product_id==='demo'?1:2]);return run;};
  const finish=async run=>{await store.shared.submitAnswers({id:run.room_user_id,room_id:run.room_id},{answers:[{question_id:run.product_id==='demo'?1:2,text:'An answer',revision:0}]});return store.control(account.account.id,run.id,'finish',{confirmed:true});};
  return {query,store,account,registration,start,begin,finish,roomSync};
 }
@@ -58,8 +59,8 @@ test('bundle uses server price and grants every included case',async t=>{const f
 test('concurrent creation with same request key consumes just one attempt',async t=>{const f=await fixture(t);const key=randomUUID();const [a,b]=await Promise.all([f.start({request_key:key}),f.start({request_key:key})]);assert.equal(a.id,b.id);assert.equal((await f.query('SELECT * FROM rooms')).rows.length,1);await rejected(f.start({team_password:'other-password'}),409);assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);});
 test('pause preserves time and continuing does not consume another attempt',async t=>{const f=await fixture(t);const run=await f.begin();await f.store.control(f.account.account.id,run.id,'pause');const before=await f.roomSync(run.room_id);await f.query('UPDATE rooms SET paused_at=$1 WHERE id=$2',[new Date(Date.now()-600000).toISOString(),run.room_id]);await f.store.control(f.account.account.id,run.id,'resume');const after=await f.roomSync(run.room_id);assert.ok(new Date(after.game_end_time)>new Date(before.game_end_time));assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);});
 
-test('shared questions remain secret and both answer writes stay blocked until the configured game time',async t=>{
- const f=await fixture(t);const run=await f.start({questions_delay_minutes:15});
+test('shared questions remain secret and both answer writes stay blocked for the standard 15 minutes',async t=>{
+ const f=await fixture(t);const run=await f.start();
  const identity={id:run.room_user_id,room_id:run.room_id};
  let state=await f.store.shared.snapshot(identity);assert.equal(state.questions_access.remaining_seconds,900);assert.deepEqual(state.questions,[]);
  await f.store.control(f.account.account.id,run.id,'start');
@@ -76,10 +77,12 @@ test('shared questions remain secret and both answer writes stay blocked until t
  assert.equal((await f.store.shared.snapshot(identity)).questions[0].answer_text,'Now open');
 });
 
-test('cabinet room creation rejects impossible delays without leaving a room or consuming an attempt',async t=>{
- const f=await fixture(t);for(const delay of [-1,120,'abc',1.5])await rejected(f.start({questions_delay_minutes:delay}),400);
- assert.equal((await f.query('SELECT * FROM rooms')).rows.length,0);
- assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);
+test('cabinet fixes the delay at 15 minutes and ignores client attempts to override it',async t=>{
+ for(const delay of [undefined,0,-1,120,'abc',1.5]){
+  const f=await fixture(t);const run=await f.start({questions_delay_minutes:delay});
+  assert.equal((await f.roomSync(run.room_id)).questions_delay_seconds,900);
+  assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);
+ }
 });
 test('unrelated account cannot enter, control or read a private game',async t=>{const f=await fixture(t);const run=await f.start();const other=await f.store.register(f.registration('second@test.ru'));await rejected(f.store.enter(other.account.id,run.id),404);await rejected(f.store.control(other.account.id,run.id,'finish'),404);await rejected(f.store.result(other.account.id,run.id),404);});
 test('invite joins without an account and never grants creator controls',async t=>{const f=await fixture(t);const run=await f.begin();const identity=await f.store.enter(f.account.account.id,run.id);const token=identity.shared_access.invite_path.split('#')[1];const joined=await f.store.shared.join(token);assert.equal(joined.user.id,run.room_user_id);assert.equal(joined.shared_access.is_owner,false);assert.equal(joined.shared_access.run_id,null);await rejected(f.store.shared.join('invalid'),404);const profile=await f.store.profile(f.account.account.id);assert.equal(profile.products[0].attempts_used,0);});
@@ -145,7 +148,7 @@ test('added attempts survive reload, preserve completed history and work in play
  const body=adminBody({action:'add_attempts',product_id:'demo',amount:2});await f.store.admin.grant(chief,f.account.account.id,body);await f.store.admin.grant(chief,f.account.account.id,body);
  const product=(await f.store.catalog(f.account.account.id)).find(p=>p.id==='demo');assert.equal(product.attempts_used,3);assert.equal(product.attempts_left,2);assert.equal(product.max_attempts,5);
  assert.equal((await f.query('SELECT * FROM player_attempts')).rows.length,3);
- const fourth=await f.start();await f.store.control(f.account.account.id,fourth.id,'start');await f.finish(fourth);
+ const fourth=await f.start();await f.store.control(f.account.account.id,fourth.id,'start');await f.query('UPDATE rooms SET game_end_time=$1 WHERE id=$2',[new Date(Date.now()+6300000).toISOString(),fourth.room_id]);await f.finish(fourth);
  const fifth=await f.start();await f.store.admin.control(chief,fifth.room_id,adminBody({action:'start'}));assert.equal((await f.roomSync(fifth.room_id)).state,'running');
  assert.equal((await f.store.admin.player(chief,f.account.account.id)).products.find(p=>p.id==='demo').attempts_left,1);
  await rejected(f.store.admin.grant(chief,f.account.account.id,adminBody({action:'add_attempts',product_id:'paid',amount:1})),409);

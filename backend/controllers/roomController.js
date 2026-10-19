@@ -4,7 +4,7 @@ const Scenario = require('../models/scenario');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { syncRoomTimer } = require('../services/roomTimer');
-const { parseQuestionDelay } = require('../services/questionAccess');
+const { newRoomQuestionDelay } = require('../services/questionAccess');
 
 async function canUseScenario(user, scenarioId) {
   if (user.admin_level === 'super_admin') return true;
@@ -30,7 +30,7 @@ const createRoom = async (req, res) => {
       return res.status(400).json({ error: 'Scenario not found' });
     }
     
-    const questions_delay_seconds = is_test === true ? 0 : parseQuestionDelay(req.body.questions_delay_minutes, duration_seconds ?? 7200);
+    const questions_delay_seconds = newRoomQuestionDelay(duration_seconds ?? 7200, is_test === true);
     const room = await Room.create({ name, scenario_id, created_by: req.user.id, duration_seconds, questions_delay_seconds, is_test: is_test === true });
     
     if (!is_test && req.body.shared_room === true) {
