@@ -1389,6 +1389,21 @@ function showApplicationFiles() {
     document.getElementById('applicationTitle').textContent = document.getElementById('applicationOverlay').dataset.title || 'Приложение';
 }
 
+function showDocumentsLockedPopup() {
+    const modal = document.getElementById('documentsLockedModal');
+    if (modal && window.bootstrap?.Modal) bootstrap.Modal.getOrCreateInstance(modal).show();
+    else alert('Пока таймер не запущен, посмотреть документы не получится. Создателю комнаты нужно нажать «Начать расследование», когда все игроки будут готовы.');
+}
+
+function handleDocumentsLock(data, requestId) {
+    if (data?.code !== 'GAME_NOT_STARTED') return false;
+    if (requestId === applicationRequestId) {
+        closeApplicationFolder();
+        showDocumentsLockedPopup();
+    }
+    return true;
+}
+
 async function openApplicationFolder(addressId, number, fallbackUrl = '', briefing = false) {
     const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id || applicationScenarioId;
     const token = gameStorage.getItem('token');
@@ -1412,7 +1427,7 @@ async function openApplicationFolder(addressId, number, fallbackUrl = '', briefi
     const base = `${API_BASE}/applications/game/scenarios/${encodeURIComponent(scenarioId)}` +
         (briefing ? '/briefing' : `/addresses/${encodeURIComponent(addressId)}/${encodeURIComponent(number)}`);
     try {
-        const response = await window.gameNetwork.fetch(base, { signal: controller.signal, headers: { Authorization: `Bearer ${token}` } });
+        const response = await window.gameNetwork.fetch(base, { cache: 'no-store', signal: controller.signal, headers: { Authorization: `Bearer ${token}` } });
         if (response.status === 404 && fallbackUrl) {
             if (requestId === applicationRequestId) {
                 list.innerHTML = `<p>Эта папка ещё не загружена в сценарий.</p><a href="${escapeHtmlPlayer(fallbackUrl)}" target="_blank" rel="noopener noreferrer">Открыть прежнюю ссылку</a>`;
@@ -1420,6 +1435,7 @@ async function openApplicationFolder(addressId, number, fallbackUrl = '', briefi
             return;
         }
         const data = await response.json();
+        if (handleDocumentsLock(data, requestId)) return;
         if (!response.ok) throw new Error(data.error || 'Не удалось открыть приложение');
         if (requestId !== applicationRequestId) return;
         const files = data.application.files || [];
@@ -1450,10 +1466,15 @@ async function openApplicationFile(base, file, index, token) {
     try {
         const response = await window.gameNetwork.fetch(`${base}/files/${encodeURIComponent(file.id)}${file.type.startsWith('image/') ? '?preview=1' : ''}`, {
             timeoutMs: 60000,
+            cache: 'no-store',
             signal: controller.signal,
             headers: { Authorization: `Bearer ${token}` }
         });
-        if (!response.ok) throw new Error('Не удалось загрузить файл');
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            if (handleDocumentsLock(data, requestId)) return;
+            throw new Error(data.error || 'Не удалось загрузить файл');
+        }
         const blob = await response.blob();
         if (requestId !== applicationRequestId) return;
         clearApplicationPreview();

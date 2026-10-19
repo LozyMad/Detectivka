@@ -105,7 +105,10 @@ test('all eleven steps open real tools without visits, edits, submissions or tim
  const b=tour();b.element('houseNumber').value='42';b.element('playerNotesText').value='Моя версия';await b.clock.advance(0);
  for(let i=1;i<11;i++)b.click('gameTutorialNext');
  assert.deepEqual(b.opened,['game','game','addressbook','addressbook','game','game','board','game','questions','questions','game']);
- assert.equal(b.get('gameTutorialNext').textContent,'К расследованию');b.click('gameTutorialNext');
+ assert.equal(b.get('gameTutorialNext').textContent,'Завершить обучение');
+ assert.match(b.get('gameTutorialText').textContent,/создателю комнаты нужно нажать «Начать расследование»/);
+ assert.match(b.get('gameTutorialText').textContent,/До запуска таймера открыть брифинг/);
+ b.click('gameTutorialNext');
  assert.equal(b.dialog.open,false);assert.equal(b.saved().status,'completed');assert.equal(b.calls.length,0);
  assert.equal(b.element('houseNumber').value,'42');assert.equal(b.element('playerNotesText').value,'Моя версия');
 });

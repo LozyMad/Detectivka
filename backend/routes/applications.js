@@ -11,6 +11,13 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024, files: 30 } });
 
+function documentsStarted(room, res) {
+  if (room.is_test || room.state !== 'pending') return true;
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(409).json({ code: 'GAME_NOT_STARTED', error: 'Пока таймер не запущен, посмотреть документы не получится. Создателю комнаты нужно нажать «Начать расследование», когда все игроки будут готовы.' });
+  return false;
+}
+
 async function adminScenario(req, res, next) {
   try {
     if (!req.user?.is_admin) return res.status(403).json({ error: 'Нет доступа' });
@@ -30,6 +37,7 @@ async function playerScenario(req, res, next) {
     const scenarioId = applications.positiveId(req.params.scenarioId);
     const room = await Room.getById(req.roomUser.room_id);
     if (!room || Number(room.scenario_id) !== scenarioId) return res.status(403).json({ error: 'Нет доступа к сценарию' });
+    if (!documentsStarted(room, res)) return;
     next();
   } catch (error) {
     if (error.message === 'Неверный идентификатор') return res.status(400).json({ error: error.message });
@@ -103,6 +111,7 @@ async function playerAddress(req, res, next) {
     const addressId = applications.positiveId(req.params.addressId);
     const room = await Room.getById(roomUser.room_id);
     if (!room || Number(room.scenario_id) !== scenarioId) return res.status(403).json({ error: 'Нет доступа к сценарию' });
+    if (!documentsStarted(room, res)) return;
     const DB_TYPE = process.env.DB_TYPE || 'sqlite';
     let visited;
     if (DB_TYPE === 'postgresql') {
@@ -216,7 +225,7 @@ async function sendApplicationFile(req, res, next, file) {
     res.setHeader('Content-Type', preview.type);
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.setHeader('Cache-Control', 'private, no-store');
     const stream = fs.createReadStream(preview.path);
     stream.on('error', next);
     stream.pipe(res);

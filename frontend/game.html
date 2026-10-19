@@ -631,6 +631,13 @@
         </div>
     </div>
 
+    <div class="modal fade" id="documentsLockedModal" tabindex="-1" aria-labelledby="documentsLockedTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="documentsLockedTitle">Сначала начните расследование</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button></div>
+            <div class="modal-body">Пока таймер не запущен, посмотреть документы не получится. Когда все игроки будут готовы к игре, создателю комнаты нужно нажать «Начать расследование» и запустить таймер.</div>
+            <div class="modal-footer"><button type="button" class="btn btn-primary" data-bs-dismiss="modal">Понятно</button></div>
+        </div></div>
+    </div>
     <div class="modal fade" id="roomPausedModal" tabindex="-1" aria-labelledby="roomPausedModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -765,7 +772,7 @@
         <button type="button" class="answer-deadline-action" onclick="openQuestionsFromDeadlineNotice()">Перейти к вопросам <span aria-hidden="true">→</span></button>
     </aside>
 
-    <script src="js/game.js?v=tutorial1&t=20261019&encoding=fixed"></script>
+    <script src="js/game.js?v=documents-start1&t=20261019&encoding=fixed"></script>
     <script src="js/investigation-board.js?v=shared2"></script>
     <script src="js/persist-inputs.js"></script>
     <div id="gameCopyToast" class="game-copy-toast" role="status" aria-live="polite" aria-atomic="true" hidden><span class="game-copy-toast-icon" aria-hidden="true">✓</span><span id="gameCopyToastMessage"></span><button id="gameCopyToastClose" type="button" aria-label="Закрыть уведомление">×</button></div>
@@ -792,6 +799,6 @@
             <div class="game-tutorial-actions"><button id="gameTutorialSkip" class="game-tutorial-skip" type="button">Пропустить</button><div><button id="gameTutorialBack" class="game-tutorial-back" type="button">Назад</button><button id="gameTutorialNext" class="game-tutorial-next" type="button">Далее →</button></div></div>
         </section>
     </dialog>
-    <script src="/js/game-tutorial.js?v=7"></script>
+    <script src="/js/game-tutorial.js?v=documents-start1"></script>
 </body>
 </html>
