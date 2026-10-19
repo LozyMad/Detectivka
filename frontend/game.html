@@ -388,6 +388,7 @@
     <link href="css/investigation-board.css?v=31" rel="stylesheet">
     <link href="css/game-workspace.css?v=20" rel="stylesheet">
     <link rel="stylesheet" href="/css/player-game.css?v=4">
+    <link rel="stylesheet" href="/css/game-tutorial.css?v=1">
 </head>
 <body class="game-container">
     <aside id="workspaceRail" class="workspace-rail" aria-label="Навигация расследования">
@@ -442,6 +443,7 @@
                             <span class="navbar-text ms-3" id="usernameDisplay"></span>
                         </div>
                         <div class="d-flex align-items-center">
+                            <button class="btn btn-outline-light btn-sm me-2" id="gameTutorialLaunch" type="button">Обучение</button>
                             <button class="btn btn-outline-light btn-sm" onclick="logout()">Выйти</button>
                         </div>
                     </div>
@@ -762,10 +764,24 @@
         <button type="button" class="answer-deadline-action" onclick="openQuestionsFromDeadlineNotice()">Перейти к вопросам <span aria-hidden="true">→</span></button>
     </aside>
 
-    <script src="js/game.js?v=answer-deadline1&t=20261014&encoding=fixed"></script>
+    <script src="js/game.js?v=tutorial1&t=20261019&encoding=fixed"></script>
     <script src="js/investigation-board.js?v=shared1"></script>
     <script src="js/persist-inputs.js"></script>
     <script src="/js/player-game.js?v=2"></script>
     <script src="/js/shared-game.js?v=7"></script>
+    <dialog id="gameTutorial" class="game-tutorial" aria-labelledby="gameTutorialTitle" aria-describedby="gameTutorialText">
+        <div id="gameTutorialSpotlight" class="game-tutorial-spotlight" aria-hidden="true" hidden></div>
+        <section id="gameTutorialCard" class="game-tutorial-card">
+            <div class="game-tutorial-top"><span>ДЕТЕКТУМ · ПЕРВОЕ РАССЛЕДОВАНИЕ</span><button id="gameTutorialClose" class="game-tutorial-close" type="button" aria-label="Пропустить обучение">×</button></div>
+            <div id="gameTutorialProgress" class="game-tutorial-progress" aria-hidden="true"></div>
+            <p id="gameTutorialCounter" class="game-tutorial-counter" role="status" aria-live="polite"></p>
+            <h2 id="gameTutorialTitle" tabindex="-1"></h2>
+            <p id="gameTutorialText" class="game-tutorial-text"></p>
+            <p class="game-tutorial-timer">Обучение не останавливает общий таймер комнаты.</p>
+            <div class="game-tutorial-actions"><button id="gameTutorialSkip" class="game-tutorial-skip" type="button">Пропустить</button><div><button id="gameTutorialBack" class="game-tutorial-back" type="button">Назад</button><button id="gameTutorialNext" class="game-tutorial-next" type="button">Далее →</button></div></div>
+            <p class="game-tutorial-keyboard">← → — шаги · Esc — пропустить</p>
+        </section>
+    </dialog>
+    <script src="/js/game-tutorial.js?v=1"></script>
 </body>
 </html>

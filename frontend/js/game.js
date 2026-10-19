@@ -1218,6 +1218,15 @@ function setupTabSwitching() {
         if (pane === applicationsContent || (wasApplicationsOpen && pane !== boardContent)) window.scrollTo(0, 0);
     }
 
+    // The tour only opens existing tools; visits, edits and timer controls stay explicit player actions.
+    window.gameTutorialNavigation = {
+        current: () => activePlayerPane,
+        open(id) {
+            if (id === 'addressbook') window.openPlayerAddressBook?.('full');
+            else document.getElementById(`${id}-tab`)?.click();
+        }
+    };
+
     if (gameTab && questionsTab && gameContent && questionsContent) {
         gameTab.addEventListener('click', (e) => {
             e.preventDefault();
