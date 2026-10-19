@@ -15,6 +15,11 @@ function admin(fetchImpl = () => json({ rooms })) {
   return b;
 }
 
+test('admin no longer exposes the retired database reset action', () => {
+  const b = admin();
+  assert.equal(b.run('typeof nuclearReset'), 'undefined');
+});
+
 test('adding a scene refreshes the submitted case after resetting the form', async () => {
   const b = admin(() => json({ success: true }));
   b.element('addressScenario').value = '12';

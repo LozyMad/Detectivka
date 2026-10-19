@@ -30,7 +30,6 @@ const scenarioRoutes = require('./routes/scenarios');
 const questionRoutes = require('./routes/questions');
 const backupRoutes = require('./routes/backup');
 const choiceRoutes = require('./routes/choices');
-const nuclearRoutes = require('./routes/nuclear');
 const internetCafeRoutes = require('./routes/internetCafe');
 const applicationRoutes = require('./routes/applications');
 const enquiryRoutes = require('./routes/enquiries');
@@ -188,7 +187,6 @@ app.use('/api/backup', backupRoutes);
 app.use('/api/choices', choiceRoutes);
 app.use('/api/internet-cafe', internetCafeRoutes);
 app.use('/api/applications', applicationRoutes);
-app.use('/api/nuclear', nuclearRoutes);
 
 // Player account pages share the same application shell.
 for (const route of ['/register','/account-login','/forgot-password','/reset-password','/profile','/catalog','/how-to-play','/room','/room-finished']) {

@@ -5,6 +5,15 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { Clock } = require('./test-helpers/browser-runtime.cjs');
 
+test('retired database reset route and executable scripts are not shipped', () => {
+  for (const file of ['backend/routes/nuclear.js', 'backend/scripts/nuclear_reset.js',
+    'backend/scripts/nuclear_reset_postgresql.js', 'backend/scripts/nuclear_reset_universal.js']) {
+    assert.equal(fs.existsSync(file), false, file);
+  }
+  assert.doesNotMatch(fs.readFileSync('backend/server.js', 'utf8'), /nuclearRoutes|\/api\/nuclear/);
+  assert.doesNotMatch(fs.readFileSync('frontend/admin.html', 'utf8'), /nuclearReset|maintenance-tab/);
+});
+
 function sse() {
   const clock = new Clock(), module = { exports: {} };
   vm.runInNewContext(fs.readFileSync('backend/sse/roomEvents.js', 'utf8'), { module,

@@ -151,63 +151,6 @@ function setupAdminInterface(adminLevel) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // -----------------------------
 // Address Book (admin)
@@ -687,7 +630,7 @@ function switchTab(tabName) {
         else if (window.location.hash === '#player-management') window.history?.replaceState(null, '', window.location.pathname+window.location.search);
     }
     // Проверяем, доступна ли вкладка для текущего админа
-    const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup', 'enquiries', 'maintenance'];
+    const restrictedTabs = ['users', 'scenarios', 'permissions', 'backup', 'enquiries'];
     if (currentUser.admin_level !== 'super_admin' && restrictedTabs.includes(tabName)) {
         showMessage('У вас нет доступа к этой вкладке', 'warning');
         return;
@@ -736,63 +679,6 @@ function switchTab(tabName) {
     updateAdminPolling();
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function loadInitialData() {
     // Параллельная загрузка данных для ускорения
@@ -847,63 +733,6 @@ async function loadUsers() {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 function displayUsers(users) {
     const tbody = document.getElementById('usersTable');
@@ -966,63 +795,6 @@ async function handleAddUser(e) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function deleteUser(userId) {
     if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
@@ -1047,63 +819,6 @@ async function deleteUser(userId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Scenarios management
 async function loadScenarios() {
@@ -1124,63 +839,6 @@ async function loadScenarios() {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 function displayScenarios(scenarios) {
     const tbody = document.getElementById('scenariosTable');
@@ -1312,63 +970,6 @@ async function handleCopyScenario(e) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function editScenario(scenarioId) {
     const scenario = scenarios.find(s => s.id === scenarioId);
@@ -1507,63 +1108,6 @@ async function updateScenario() {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Load questions for scenario editing
 async function loadScenarioQuestions(scenarioId) {
@@ -1586,63 +1130,6 @@ async function loadScenarioQuestions(scenarioId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Display questions in edit modal
 function displayEditQuestions(questions) {
@@ -1702,63 +1189,6 @@ async function addEditQuestion() {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Update existing question
 async function updateQuestion(questionId, newText) {
@@ -1788,63 +1218,6 @@ async function updateQuestion(questionId, newText) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Delete question
 async function deleteQuestion(questionId) {
@@ -1872,63 +1245,6 @@ async function deleteQuestion(questionId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function deleteScenario(scenarioId) {
     if (!confirm('Вы уверены, что хотите удалить этот сценарий? Все связанные адреса также будут удалены.')) {
@@ -1963,63 +1279,6 @@ async function deleteScenario(scenarioId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Addresses management
 async function loadAddressesForScenario() {
@@ -2110,63 +1369,6 @@ async function loadAddressesForScenario() {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 function populateScenarioDropdowns() {
     const addDropdown = document.getElementById('addressScenario');
@@ -2268,63 +1470,6 @@ async function loadStatistics() {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 function ensureRoomScenarioOptions() {
     const select = document.getElementById('roomScenario');
@@ -2366,63 +1511,6 @@ async function handleCreateRoom(e) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 function loadRooms(forceRefresh = false) {
     if (roomsRequest) return roomsRequest;
@@ -2465,63 +1553,6 @@ async function fetchRooms(forceRefresh) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 function displayRooms(rooms) {
     const tbody = document.getElementById('roomsTable');
@@ -2677,63 +1708,6 @@ async function startRoom(roomId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function pauseRoom(roomId) {
     try {
@@ -2749,63 +1723,6 @@ async function pauseRoom(roomId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function resumeRoom(roomId) {
     try {
@@ -2821,63 +1738,6 @@ async function resumeRoom(roomId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function stopRoom(roomId) {
     try {
@@ -2893,63 +1753,6 @@ async function stopRoom(roomId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 function viewRoomUsers(roomId) {
     const select = document.getElementById('roomSelectForUsers');
@@ -2958,63 +1761,6 @@ function viewRoomUsers(roomId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function handleAddRoomUser(e) {
     e.preventDefault();
@@ -3041,63 +1787,6 @@ async function handleAddRoomUser(e) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Функция для загрузки списка игроков комнаты
 async function loadRoomUsers(roomId) {
@@ -3117,63 +1806,6 @@ async function loadRoomUsers(roomId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Функция для отображения списка игроков
 function displayRoomUsers(users) {
@@ -3228,63 +1860,6 @@ async function removeRoomUser(userId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 
 
@@ -3308,63 +1883,6 @@ async function deleteRoom(roomId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Функции для работы с вопросами
 function addQuestion() {
@@ -3448,63 +1966,6 @@ async function handleAddAddress(e) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 
 
@@ -3673,63 +2134,6 @@ async function deleteAddress(addressId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Utility functions
 function showMessage(message, type) {
@@ -3763,63 +2167,6 @@ function showLoadingIndicator(elementId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 function hideLoadingIndicator(elementId) {
     const element = document.getElementById(elementId);
@@ -3829,63 +2176,6 @@ function hideLoadingIndicator(elementId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 function createToastContainer() {
     const container = document.createElement('div');
@@ -3938,63 +2228,6 @@ async function loadRoomAnswers() {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 function displayRoomAnswers(data) {
     const answersList = document.getElementById('answersList');
@@ -4174,63 +2407,6 @@ async function populateAnswersRoomSelect() {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Permissions management
 async function loadPermissions() {
@@ -4274,63 +2450,6 @@ async function loadPermissions() {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function populatePermissionDropdowns() {
     try {
@@ -4382,63 +2501,6 @@ async function populatePermissionDropdowns() {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function handleGrantPermission(e) {
     e.preventDefault();
@@ -4477,63 +2539,6 @@ async function handleGrantPermission(e) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function revokePermission(adminId, scenarioId) {
     if (!confirm('Вы уверены, что хотите отозвать это разрешение?')) {
@@ -4565,63 +2570,6 @@ async function revokePermission(adminId, scenarioId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Функция для загрузки списка игроков комнаты
 async function loadRoomUsers(roomId) {
@@ -4641,63 +2589,6 @@ async function loadRoomUsers(roomId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 // Функция для отображения списка игроков
 function displayRoomUsers(users) {
@@ -4752,63 +2643,6 @@ async function removeRoomUser(userId) {
     }
 }
 
-// Функция ядерного сброса
-async function nuclearReset() {
-    // Двойное подтверждение для безопасности
-    const confirm1 = confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ данные:\n\n' +
-        '• Все сценарии\n' +
-        '• Все игроки (кроме суперадмина)\n' +
-        '• Все комнаты\n' +
-        '• Все адреса\n' +
-        '• Все выборы\n' +
-        '• Все ID будут сброшены\n\n' +
-        'Это действие НЕОБРАТИМО!\n\n' +
-        'Продолжить?');
-    
-    if (!confirm1) return;
-    
-    const confirm2 = confirm('🔥 ПОСЛЕДНЕЕ ПРЕДУПРЕЖДЕНИЕ!\n\n' +
-        'Вы действительно хотите УНИЧТОЖИТЬ ВСЕ ДАННЫЕ?\n\n' +
-        'Введите "ДА" в следующем окне для подтверждения.');
-    
-    if (!confirm2) return;
-    
-    const finalConfirm = prompt('Для подтверждения введите "УНИЧТОЖИТЬ ВСЕ":');
-    if (finalConfirm !== 'УНИЧТОЖИТЬ ВСЕ') {
-        showMessage('Ядерный сброс отменен', 'info');
-        return;
-    }
-    
-    try {
-        showMessage('💥 Запуск ядерного сброса...', 'warning');
-        
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/nuclear/reset`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await res.json();
-        
-        if (!res.ok) {
-            throw new Error(data.error || 'Ошибка при выполнении ядерного сброса');
-        }
-        
-        showMessage('💥 Ядерный сброс выполнен успешно! Все данные удалены, ID сброшены.', 'success');
-        
-        // Перезагружаем страницу через 2 секунды
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-        
-    } catch (err) {
-        console.error('Ошибка ядерного сброса:', err);
-        showMessage(err.message || 'Ошибка при выполнении ядерного сброса', 'danger');
-    }
-}
 
 async function copyRoomInvite(roomId) {
  try { const response=await authFetch(API_BASE+'/rooms/'+roomId+'/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось получить ссылку');const link=new URL(data.invite_path,location.origin).href;try {await navigator.clipboard.writeText(link);showMessage('Ссылка скопирована. Участникам не нужна регистрация.','success');}catch(_){prompt('Ссылка общей комнаты',link);} }catch(error){showMessage(error.message,'danger');}

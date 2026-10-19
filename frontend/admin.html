@@ -499,7 +499,7 @@
         }
     </style>
     <link href="css/admin-enquiries.css?v=2" rel="stylesheet">
-    <link href="css/admin-workspace.css?v=1" rel="stylesheet">
+    <link href="css/admin-workspace.css?v=no-reset1" rel="stylesheet">
 </head>
 <body class="admin-interface admin-workspace"><a class="ws-skip" href="#adminWorkspaceHeader">К содержимому</a>
     <!-- Navigation -->
@@ -530,7 +530,7 @@
         <div class="row">
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 sidebar" id="sidebar">
-<div class="ws-sidebar-brand"><span class="ws-monogram">Д</span><div>ДЕТЕКТУМ<small>Панель организатора</small></div></div><nav class="nav flex-column" aria-label="Администрирование"><div class="ws-nav-group"><span class="ws-nav-label">Рабочий стол</span><a class="nav-link" href="#overview" data-tab="overview"><i class="fas fa-th-large" aria-hidden="true"></i><span>Обзор</span></a></div><div class="ws-nav-group"><span class="ws-nav-label">Проведение игр</span><a class="nav-link" href="#rooms" data-tab="rooms"><i class="fas fa-door-open" aria-hidden="true"></i><span>Комнаты</span></a><a class="nav-link" href="#player-management" data-tab="playerManagement"><i class="fas fa-user-secret" aria-hidden="true"></i><span>Игроки и прохождения</span></a><a class="nav-link" href="#reviews" data-tab="reviews"><i class="fas fa-clipboard-check" aria-hidden="true"></i><span>Проверка и гонорары</span></a><a class="nav-link" href="#answers" data-tab="answers"><i class="fas fa-align-left" aria-hidden="true"></i><span>Ответы отдельных команд</span></a><a class="nav-link" href="#statistics" data-tab="statistics"><i class="fas fa-chart-bar" aria-hidden="true"></i><span>Статистика</span></a></div><div class="ws-nav-group"><span class="ws-nav-label">Подготовка дел</span><a class="nav-link" href="#scenarios" data-tab="scenarios"><i class="fas fa-folder-open" aria-hidden="true"></i><span>Сценарии</span></a><a class="nav-link" href="#addressBook" data-tab="addressBook"><i class="fas fa-address-book" aria-hidden="true"></i><span>Адресная книга города</span></a><a class="nav-link" href="#backup" data-tab="backup"><i class="fas fa-exchange-alt" aria-hidden="true"></i><span>Импорт и экспорт</span></a></div><div class="ws-nav-group"><span class="ws-nav-label">Администрирование</span><a class="nav-link" href="#enquiries" data-tab="enquiries"><i class="fas fa-inbox" aria-hidden="true"></i><span>Заявки с сайта</span><span id="enquiriesBadge" class="enquiries-nav-badge" hidden>0</span></a><a class="nav-link" href="#users" data-tab="users"><i class="fas fa-user-shield" aria-hidden="true"></i><span>Организаторы</span></a><a class="nav-link" href="#permissions" data-tab="permissions"><i class="fas fa-key" aria-hidden="true"></i><span>Права доступа</span></a><a class="nav-link" href="#maintenance" data-tab="maintenance"><i class="fas fa-cog" aria-hidden="true"></i><span>Служебные операции</span></a></div></nav><a class="ws-site-link" href="/" target="_blank" rel="noopener"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Открыть сайт</a>
+<div class="ws-sidebar-brand"><span class="ws-monogram">Д</span><div>ДЕТЕКТУМ<small>Панель организатора</small></div></div><nav class="nav flex-column" aria-label="Администрирование"><div class="ws-nav-group"><span class="ws-nav-label">Рабочий стол</span><a class="nav-link" href="#overview" data-tab="overview"><i class="fas fa-th-large" aria-hidden="true"></i><span>Обзор</span></a></div><div class="ws-nav-group"><span class="ws-nav-label">Проведение игр</span><a class="nav-link" href="#rooms" data-tab="rooms"><i class="fas fa-door-open" aria-hidden="true"></i><span>Комнаты</span></a><a class="nav-link" href="#player-management" data-tab="playerManagement"><i class="fas fa-user-secret" aria-hidden="true"></i><span>Игроки и прохождения</span></a><a class="nav-link" href="#reviews" data-tab="reviews"><i class="fas fa-clipboard-check" aria-hidden="true"></i><span>Проверка и гонорары</span></a><a class="nav-link" href="#answers" data-tab="answers"><i class="fas fa-align-left" aria-hidden="true"></i><span>Ответы отдельных команд</span></a><a class="nav-link" href="#statistics" data-tab="statistics"><i class="fas fa-chart-bar" aria-hidden="true"></i><span>Статистика</span></a></div><div class="ws-nav-group"><span class="ws-nav-label">Подготовка дел</span><a class="nav-link" href="#scenarios" data-tab="scenarios"><i class="fas fa-folder-open" aria-hidden="true"></i><span>Сценарии</span></a><a class="nav-link" href="#addressBook" data-tab="addressBook"><i class="fas fa-address-book" aria-hidden="true"></i><span>Адресная книга города</span></a><a class="nav-link" href="#backup" data-tab="backup"><i class="fas fa-exchange-alt" aria-hidden="true"></i><span>Импорт и экспорт</span></a></div><div class="ws-nav-group"><span class="ws-nav-label">Администрирование</span><a class="nav-link" href="#enquiries" data-tab="enquiries"><i class="fas fa-inbox" aria-hidden="true"></i><span>Заявки с сайта</span><span id="enquiriesBadge" class="enquiries-nav-badge" hidden>0</span></a><a class="nav-link" href="#users" data-tab="users"><i class="fas fa-user-shield" aria-hidden="true"></i><span>Организаторы</span></a><a class="nav-link" href="#permissions" data-tab="permissions"><i class="fas fa-key" aria-hidden="true"></i><span>Права доступа</span></a></div></nav><a class="ws-site-link" href="/" target="_blank" rel="noopener"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Открыть сайт</a>
             </div>
 
             <!-- Main Content -->
@@ -543,7 +543,6 @@
  <div class="ws-section-line"><div><h2>С чего начнём?</h2><p>Выберите задачу — нужные инструменты уже рядом.</p></div></div><div class="ws-task-grid"><button type="button" data-ws-go="scenarios" data-ws-super><i class="far fa-folder-open"></i><strong>Подготовить дело</strong><span>Сцены, вопросы, брифинг и приложения.</span><b>Открыть сценарии →</b></button><button type="button" data-ws-go="playerManagement"><i class="far fa-user"></i><strong>Помочь игроку</strong><span>Найти прохождение, проверить доступ и попытки.</span><b>Открыть игроков →</b></button><button type="button" data-ws-go="reviews"><i class="far fa-check-circle"></i><strong>Подвести итоги</strong><span>Оценить ответы и опубликовать гонорар.</span><b>Перейти к проверке →</b></button></div>
 </section>
 <section id="reviews-tab" class="tab-content" style="display:none" data-no-persist><div class="ws-help-note">Здесь проверяются общие комнаты: оценка каждого ответа от 0 до 5 и публикация гонорара. <button class="ws-text-button" type="button" data-ws-go="answers">Ответы отдельных команд →</button></div><div class="filters ws-review-filters"><label>Статус проверки<select id="review-status" class="form-select"><option value="pending_review">Ожидают проверки</option><option value="graded">Опубликованные</option><option value="all">Все завершённые</option></select></label><button class="btn btn-outline-primary" id="review-refresh" type="button">Обновить</button></div><p id="review-error" class="alert alert-danger" role="alert" hidden></p><p id="review-notice" class="alert alert-success" role="status" hidden></p><div id="reviews" class="review-layout"><div id="review-list" class="review-list">Загружаем игры…</div><div id="review-detail" class="review-detail"><p class="muted">Выберите комнату для проверки.</p></div></div></section>
-<section id="maintenance-tab" class="tab-content" style="display:none"><div class="ws-danger-zone"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i><h2>Операции с данными</h2><p>Полный сброс удаляет сценарии, комнаты и связанные данные. Для обычной работы используйте импорт и экспорт сценария.</p><details><summary>Показать опасные операции</summary><div id="wsDangerActions"></div></details></div></section>
 
                 <section id="playerManagement-tab" class="tab-content player-admin" style="display:none" data-no-persist aria-labelledby="playerManagementTitle">
  <div class="pa-heading"><div><span class="pa-eyebrow">Игроки и совместные расследования</span><h3 id="playerManagementTitle">Самостоятельные игры</h3><p>Доступы к делам, попытки и управление общими комнатами.</p></div><button type="button" class="btn btn-outline-primary" id="paRefresh">Обновить</button></div>
@@ -752,9 +751,6 @@
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">Список сценариев</h5>
-                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="nuclearReset()" title="Ядерный сброс - удалить ВСЕ данные">
-                                <i class="fas fa-bomb me-1"></i>Ядерный сброс
-                            </button>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -1712,14 +1708,14 @@
             </form>
         </div></div>
     </div>
-    <script src="js/admin.js?v=workspace1"></script>
+    <script src="js/admin.js?v=no-reset1"></script>
     <script src="js/admin-players.js?v=workspace1"></script>
     <script src="js/admin-enquiries.js?v=2"></script>
     <script src="js/backup.js?v=3"></script>
     <script src="js/choices.js?v=2"></script>
     <script src="js/internet-cafe-admin.js?v=3"></script>
     <script src="js/persist-inputs.js"></script>
-    <script src="js/admin-workspace.js?v=1"></script>
+    <script src="js/admin-workspace.js?v=no-reset1"></script>
     
     <script>
         // Функции для управления сайдбаром

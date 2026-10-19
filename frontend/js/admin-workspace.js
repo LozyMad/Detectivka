@@ -14,8 +14,7 @@
   backup:['Подготовка дел','Импорт и экспорт','Переносите сценарии целиком с материалами или импортируйте таблицы Excel.'],
   enquiries:['Администрирование','Заявки с сайта','Обращения компаний, статусы, контакты и договорённости.'],
   users:['Администрирование','Организаторы','Служебные учётные записи и роли. Аккаунты покупателей находятся в разделе «Игроки и прохождения».'],
-  permissions:['Администрирование','Права доступа','Назначайте организаторам доступ к нужным сценариям.'],
-  maintenance:['Администрирование','Служебные операции','Действия, требующие особого внимания к данным.']
+  permissions:['Администрирование','Права доступа','Назначайте организаторам доступ к нужным сценариям.']
  };
  const slug=id=>id==='playerManagement'?'player-management':id;
  let initialized=false,routing=false,reviewLoaded=false,active='overview',scenarioPane='library';
@@ -81,7 +80,6 @@
   const internetRow=byId('internetPageScenario').closest('.row');if(internetRow)panels.get('internet').prepend(internetRow);
   const internetForm=disclosure('internetPageForm','Создать или изменить интернет-страницу','Блочный редактор и HTML. Существующие страницы находятся в списке выше.');
   if(internetForm)panels.get('internet').append(internetForm);
-  const danger=document.querySelector('[onclick="nuclearReset()"]');if(danger)byId('wsDangerActions').append(danger);
   const form=byId('editScenarioForm'),fields=[...form.children];
   const briefing=fields.find(n=>n.contains(byId('scenarioBriefingFiles'))),questions=fields.find(n=>n.contains(byId('editScenarioQuestions')));
   if(briefing&&questions)makePanes(form,'settings',[
@@ -140,7 +138,6 @@
   let user;try{user=JSON.parse(localStorage.getItem('user')||'{}');}catch(_){return;}
   if(!user.is_admin)return;
   document.querySelectorAll('[data-ws-super]').forEach(n=>{n.hidden=user.admin_level!=='super_admin';});
-  const maintenance=document.querySelector('[data-tab="maintenance"]');maintenance.style.display=user.admin_level==='super_admin'?'':'none';
   document.querySelectorAll('.ws-nav-group').forEach(group=>{group.hidden=![...group.querySelectorAll('[data-tab]')].some(link=>link.style.display!=='none');});
   const adminGroup=[...document.querySelectorAll('.ws-nav-group')].find(group=>group.querySelector('.ws-nav-label')?.textContent==='Администрирование');
   if(adminGroup){const details=document.createElement('details');details.className='ws-nav-group ws-system-group';details.open=true;details.hidden=adminGroup.hidden;const summary=document.createElement('summary');summary.className='ws-nav-label';summary.textContent='Администрирование';details.append(summary,...adminGroup.querySelectorAll('[data-tab]'));adminGroup.replaceWith(details);}
