@@ -15,6 +15,34 @@ function admin(fetchImpl = () => json({ rooms })) {
   return b;
 }
 
+test('room time dialog blocks duplicate submissions and preserves its request key after a lost response',async()=>{
+ let first=true;
+ const b=admin(call=>{
+  if(call.options.method==='POST'){
+   if(first){first=false;return Promise.reject(new Error('Connection lost'));}
+   return json({room:{duration_seconds:6300}});
+  }
+  return json({rooms:[{id:14,name:'Комната',duration_seconds:6300,state:'running'}]});
+ });
+ b.sandbox.crypto=require('node:crypto');
+ const modal={show(){},hide(){}};b.sandbox.bootstrap={Modal:{getOrCreateInstance:()=>modal,getInstance:()=>modal}};
+ b.run("roomsCache=[{id:14,name:'Комната',duration_seconds:5400,state:'running'}];openRoomTimeDialog(14);");
+ assert.match(b.element('roomTimeName').textContent,/90 мин/);
+ b.element('roomTimeMinutes').value='15';
+ const event={preventDefault(){}};b.sandbox.submitEvent=event;
+ const firstCall=b.run('handleAddRoomTime(submitEvent)');
+ await b.run('handleAddRoomTime(submitEvent)');await firstCall;
+ assert.equal(b.calls.filter(c=>c.options.method==='POST').length,1);
+ assert.equal(b.element('roomTimeError').hidden,false);
+ await b.run('handleAddRoomTime(submitEvent)');
+ const posts=b.calls.filter(c=>c.options.method==='POST').map(c=>JSON.parse(c.options.body));
+ assert.equal(posts.length,2);assert.equal(posts[0].request_key,posts[1].request_key);
+ assert.equal(posts[1].minutes,15);assert.equal(posts[1].action,'add_time');
+ assert.match(b.window.lastMessage,/105 мин/);
+ b.element('roomTimeMinutes').value='0';await b.run('handleAddRoomTime(submitEvent)');
+ assert.equal(b.calls.filter(c=>c.options.method==='POST').length,2);
+});
+
 test('1000 admin refreshes share one request; timeout preserves rooms and permits recovery', async () => {
   let broken = true;
   const b = admin(call => broken ? hanging(call) : json({ rooms }));

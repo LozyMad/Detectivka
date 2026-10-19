@@ -163,6 +163,43 @@ test('admin timer controls preserve paused time, are idempotent and record every
  await f.store.admin.control(organizer,run.room_id,adminBody({action:'resume'}));assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);
  assert.equal((await f.store.admin.journal(organizer,{room_id:run.room_id})).length,4);
 });
+
+test('adding time to shared rooms preserves lobby, running and paused state without resetting question access',async t=>{
+ const f=await fixture(t);const run=await f.start();
+ for(const state of ['pending','running','paused']){
+  const end=state==='pending'?null:new Date(Date.now()+3600000).toISOString();
+  const paused=state==='paused'?new Date().toISOString():null;
+  await f.query('UPDATE rooms SET state=$1,game_end_time=$2,paused_at=$3 WHERE id=$4',[state,end,paused,run.room_id]);
+  const before=await f.roomSync(run.room_id),body=adminBody({action:'add_time',minutes:10});
+  await f.store.admin.control(organizer,run.room_id,body);await f.store.admin.control(organizer,run.room_id,body);
+  const after=await f.roomSync(run.room_id);
+  assert.equal(after.state,state);assert.equal(after.duration_seconds,before.duration_seconds+600);
+  assert.equal(after.paused_at,paused);assert.equal(after.game_start_time,before.game_start_time);
+  assert.equal(after.questions_delay_seconds,before.questions_delay_seconds);
+  assert.equal(after.game_end_time,end?new Date(new Date(end).getTime()+600000).toISOString():null);
+ }
+ assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);
+ assert.equal((await f.store.admin.journal(organizer,{room_id:run.room_id})).filter(j=>j.action==='add_time').length,3);
+});
+
+test('adding time also supports legacy organizer rooms with scoped access, validation and no timer restart',async t=>{
+ const f=await fixture(t);
+ for(const state of ['pending','running','paused']){
+  const end=state==='pending'?null:new Date(Date.now()+3600000).toISOString(),paused=state==='paused'?new Date().toISOString():null;
+  const room=(await f.query('INSERT INTO rooms (name,scenario_id,created_by,duration_seconds,is_test,state,game_end_time,paused_at) VALUES ($1,1,$2,7200,FALSE,$3,$4,$5) RETURNING id',['Обычная комната',organizer.id,state,end,paused])).rows[0];
+  const body=adminBody({action:'add_time',minutes:15});
+  await rejected(f.store.admin.control(outsider,room.id,body),404);
+  await f.store.admin.control(organizer,room.id,body);await f.store.admin.control(organizer,room.id,body);
+  const after=await f.roomSync(room.id);assert.equal(after.duration_seconds,8100);assert.equal(after.state,state);assert.equal(after.paused_at,paused);
+  assert.equal(after.game_end_time,end?new Date(new Date(end).getTime()+900000).toISOString():null);
+  for(const minutes of [0,-1,241,1.5,'15'])await rejected(f.store.admin.control(chief,room.id,adminBody({action:'add_time',minutes})),400);
+  await f.query("UPDATE rooms SET state='finished' WHERE id=$1",[room.id]);
+  await rejected(f.store.admin.control(chief,room.id,adminBody({action:'add_time',minutes:15})),409);
+ }
+ const testRoom=(await f.query("INSERT INTO rooms (name,scenario_id,created_by,duration_seconds,is_test,state) VALUES ('Тест',1,$1,0,TRUE,'running') RETURNING id",[organizer.id])).rows[0];
+ await rejected(f.store.admin.control(chief,testRoom.id,adminBody({action:'add_time',minutes:15})),400);
+ assert.equal((await f.store.admin.journal(organizer)).filter(j=>j.action==='add_time').length,3);
+});
 test('admin can force confirmed finish without answers, consuming one attempt and preventing restart',async t=>{
  const f=await fixture(t);const run=await f.begin();const body=adminBody({action:'finish',confirmed:true});
  await rejected(f.store.admin.control(chief,run.room_id,{...body,confirmed:false}),400);

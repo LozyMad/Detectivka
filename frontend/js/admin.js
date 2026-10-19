@@ -4,6 +4,7 @@ let scenarios = [];
 let roomsCache = null;
 let roomsCacheTime = 0;
 let roomsRequest = null;
+let roomTimeRequest = null;
 let adminPageReady = false;
 let adminPageSuspended = false;
 const roomsPoll = window.gameNetwork.poll(() => loadRooms(true), 5000);
@@ -2535,7 +2536,7 @@ function displayRooms(rooms) {
                 : escapeHtml(scenarioName)}</td>
             <td>${r.game_start_time ? new Date(r.game_start_time).toLocaleString('ru-RU') : '-'}</td>
             <td>${r.is_test ? 'Без ограничения' : `${Math.floor((r.duration_seconds||3600)/60)} мин.`}</td>
-            <td class="table-actions">
+            <td class="table-actions room-actions"><div class="room-actions-controls">
                 ${r.is_test ? `<button class="btn btn-sm btn-primary me-1" onclick="enterTestRoom(${r.id})" title="Войти в тестовую комнату"><i class="fas fa-sign-in-alt me-1"></i>Войти</button>` : `
                 <div class="btn-group btn-group-sm" role="group">
                     <button class="btn btn-outline-success" title="${r.state === 'paused' ? 'Продолжить' : 'Старт'}" onclick="${r.state === 'paused' ? 'resumeRoom' : 'startRoom'}(${r.id})" ${r.state === 'running' || r.state === 'finished' ? 'disabled' : ''}>
@@ -2549,14 +2550,63 @@ function displayRooms(rooms) {
                     </button>
                 </div>`}
                 ${r.is_test || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-light" onclick="copyRoomInvite(${r.id})" title="Ссылка для друзей">Ссылка</button>`}
+                ${r.is_test || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-warning" onclick="openRoomTimeDialog(${r.id})" title="Добавить время"><i class="fas fa-clock me-1" aria-hidden="true"></i>Добавить время</button>`}
                 ${r.is_test || r.is_shared ? '' : `<button class="btn btn-sm btn-outline-primary" onclick="viewRoomUsers(${r.id})"><i class="fas fa-users"></i></button>`}
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteRoom(${r.id})" title="Удалить комнату">
                     <i class="fas fa-trash"></i>
                 </button>
-            </td>
+            </div></td>
         </tr>
     `;
     }).join('');
+}
+
+function openRoomTimeDialog(roomId) {
+    if (roomTimeRequest?.busy) return;
+    const room = roomsCache?.find(r => Number(r.id) === Number(roomId));
+    if (!room || room.is_test || room.state === 'finished') return;
+    roomTimeRequest = { roomId, key: crypto.randomUUID(), minutes: null, busy: false };
+    document.getElementById('roomTimeName').textContent = `Комната «${room.name}» · ${Math.floor(room.duration_seconds / 60)} мин.`;
+    document.getElementById('roomTimeMinutes').value = '15';
+    document.getElementById('roomTimeError').hidden = true;
+    document.getElementById('roomTimeSubmit').disabled = false;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('roomTimeModal')).show();
+}
+
+async function handleAddRoomTime(event) {
+    event.preventDefault();
+    const request = roomTimeRequest;
+    if (!request || request.busy) return;
+    const minutes = Number(document.getElementById('roomTimeMinutes').value);
+    const errorBox = document.getElementById('roomTimeError');
+    errorBox.hidden = true;
+    if (!Number.isInteger(minutes) || minutes < 1 || minutes > 240) {
+        errorBox.textContent = 'Введите целое число от 1 до 240 минут';
+        errorBox.hidden = false;
+        return;
+    }
+    if (request.minutes !== null && request.minutes !== minutes) request.key = crypto.randomUUID();
+    request.minutes = minutes;
+    request.busy = true;
+    const submit = document.getElementById('roomTimeSubmit');
+    submit.disabled = true;
+    try {
+        const response = await authFetch(`${API_BASE}/player/admin/manage/rooms/${request.roomId}/control`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'add_time', minutes, request_key: request.key, reason: 'Дополнительное время из списка «Мои комнаты»' })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Не удалось добавить время');
+        bootstrap.Modal.getInstance(document.getElementById('roomTimeModal'))?.hide();
+        showMessage(`Добавлено ${minutes} мин. Общая длительность — ${Math.floor(data.room.duration_seconds / 60)} мин.`, 'success');
+        await loadRooms(true);
+    } catch (error) {
+        errorBox.textContent = error.message || 'Не удалось добавить время. Повторите попытку';
+        errorBox.hidden = false;
+    } finally {
+        request.busy = false;
+        submit.disabled = false;
+    }
 }
 
 async function changeTestRoomScenario(roomId, scenarioId) {

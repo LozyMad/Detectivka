@@ -110,11 +110,18 @@ function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync
     staff(admin);const action=body.action;if(!['start','pause','resume','add_time','finish'].includes(action))fail(400,'Неизвестное действие');mutation(body);
     if(action==='finish'&&body.confirmed!==true)fail(400,'Подтвердите завершение комнаты');
     const minutes=action==='add_time'?body.minutes:0;if(action==='add_time'&&(!Number.isInteger(minutes)||minutes<1||minutes>240))fail(400,'Можно добавить от 1 до 240 минут');
-    await roomIdentity(admin,id);await roomSync(id);await finalizeRoom(id);
+    const controlRoom=async(q=query)=>{
+      if(action!=='add_time')return roomIdentity(admin,id,q);
+      const room=await one(q,`SELECT r.* FROM rooms r WHERE r.id=$2 AND (${roomScope(admin)})`,[admin.id,id]);
+      if(!room)fail(404,'Комната не найдена или недоступна');
+      if(room.is_test)fail(400,'В тестовых комнатах нет ограничения времени');
+      return room;
+    };
+    await controlRoom();await roomSync(id);await finalizeRoom(id);
     return transaction(async q=>{
-      await q('UPDATE rooms SET name=name WHERE id=$1',[id]);const r=await roomIdentity(admin,id,q);
+      await q('UPDATE rooms SET name=name WHERE id=$1',[id]);const r=await controlRoom(q);
       const link=await one(q,'SELECT owner_account_id FROM shared_rooms WHERE room_id=$1',[id]);
-      return audited(q,admin,action,link.owner_account_id,id,body,{minutes,confirmed:action==='finish'},async()=>{
+      return audited(q,admin,action,link?.owner_account_id,id,body,{minutes,confirmed:action==='finish'},async()=>{
         if(r.state==='finished')fail(409,'Завершённую комнату нельзя изменять');
         if(action==='start'){
           if(r.state!=='pending')fail(409,'Комната уже запущена');
