@@ -4,12 +4,13 @@ const {browser}=require('./test-helpers/browser-runtime.cjs');
 
 function tour({saved,width=1280,height=900,isTest=false,blockedStorage=false}={}){
  const b=browser(),elements=new Map(),opened=[];
- const ids=['gameTutorial','gameTutorialCard','gameTutorialSpotlight','gameTutorialTitle','gameTutorialText','gameTutorialCounter','gameTutorialProgress','gameTutorialBack','gameTutorialNext','gameTutorialSkip','gameTutorialClose','gameTutorialLaunch','receivedApplicationsPanel','receivedApplicationsList','applications','addressbook-tab','playerAddressBookSearch','game-tab','locationSearchPanel','locationSearchTitle','tripHistoryTitle','boardCreate','playerNavStats','questions-tab','questionsList'];
+ const ids=['gameTutorial','gameTutorialCard','gameTutorialSpotlight','gameTutorialSecondarySpotlight','gameTutorialHole','gameTutorialSecondaryHole','gameTutorialTitle','gameTutorialText','gameTutorialCounter','gameTutorialProgress','gameTutorialBack','gameTutorialNext','gameTutorialSkip','gameTutorialClose','gameTutorialLaunch','receivedApplicationsPanel','receivedApplicationsList','applications','addressbook-tab','playerAddressBookSearch','game-tab','locationSearchPanel','locationSearchTitle','tripHistory','tripHistoryTitle','boardCreate','board-tab','playerNavStats','questions-tab','questionsList'];
  for(const id of ids){
   const el=b.element(id);elements.set(id,el);el.hidden=false;el.offsetWidth=Math.min(400,width-24);el.offsetHeight=Math.min(430,height-24);
   el.click=()=>el.emit('click');el.getClientRects=()=>[{}];
   el.getBoundingClientRect=()=>({left:24,top:60,right:Math.min(380,width-24),bottom:100});
   el.scrollIntoView=()=>{};el.focus=()=>{b.document.activeElement=el;};
+  const attributes=new Map();el.setAttribute=(key,value)=>attributes.set(key,String(value));el.getAttribute=key=>attributes.get(key);
   el.classList.toggle=(name,value)=>value?el.classList.add(name):el.classList.remove(name);
  }
  b.document.getElementById=id=>elements.get(id)||null;
@@ -30,6 +31,26 @@ test('first game entry starts the tour; skip closes it and prevents another auto
  assert.equal(b.dialog.open,false);assert.equal(b.saved().status,'skipped');assert.equal(b.opened.at(-1),'game');assert.equal(b.window.lastScroll.top,140);
  const next=tour({saved:b.saved()});await next.clock.advance(0);assert.equal(next.dialog.open,false);
  next.click('gameTutorialLaunch');assert.equal(next.dialog.open,true);assert.equal(next.get('gameTutorialCounter').textContent,'Шаг 1 из 11');
+});
+
+test('trip, history and board steps light both the tool and its navigation, then remove the extra hole',async()=>{
+ const b=tour({saved:{status:'active',step:4,total:11}});
+ b.get('locationSearchPanel').getBoundingClientRect=()=>({left:900,top:180,right:1240,bottom:600});
+ b.get('game-tab').getBoundingClientRect=()=>({left:16,top:100,right:80,bottom:160});
+ await b.clock.advance(0);
+ assert.equal(b.get('gameTutorialHole').getAttribute('x'),'894');
+ assert.equal(b.get('gameTutorialSecondaryHole').getAttribute('x'),'10');
+ assert.equal(b.get('gameTutorialSecondarySpotlight').hidden,false);
+ b.get('game-tab').getBoundingClientRect=()=>({left:20,top:120,right:84,bottom:180});
+ b.window.emit('resize');await b.clock.advance(0);
+ assert.equal(b.get('gameTutorialSecondaryHole').getAttribute('x'),'14');
+ b.get('tripHistory').getBoundingClientRect=()=>({left:130,top:340,right:850,bottom:500});
+ b.click('gameTutorialNext');assert.equal(b.get('gameTutorialHole').getAttribute('x'),'124');
+ assert.equal(b.get('gameTutorialSecondaryHole').getAttribute('x'),'14');
+ b.get('board-tab').getBoundingClientRect=()=>({left:18,top:310,right:82,bottom:370});
+ b.click('gameTutorialNext');assert.equal(b.get('gameTutorialSecondaryHole').getAttribute('y'),'304');
+ b.click('gameTutorialNext');assert.equal(b.get('gameTutorialSecondarySpotlight').hidden,true);
+ assert.equal(b.get('gameTutorialSecondaryHole').getAttribute('width'),'0');
 });
 
 test('all eleven steps open real tools without visits, edits, submissions or timer controls',async()=>{

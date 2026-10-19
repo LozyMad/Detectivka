@@ -6,35 +6,52 @@
         {title:'Начните с брифинга', pane:'game', narrowPane:'applications', target:'receivedApplicationsPanel', fullPanel:true, text:'Начните с брифинга: в нём — обстоятельства дела, имена и первые зацепки. Здесь же собраны начальные материалы, а по мере расследования появятся новые газеты, фотографии и документы. Открывайте их повторно и сопоставляйте детали — это не расходует поездки.'},
         {title:'Найдите человека или организацию', pane:'addressbook', target:'addressbook-tab', text:'Кнопка «Адреса» открывает адресную книгу — ваш справочник по городу. Здесь собраны частные лица и предприятия. Выбирайте разделы или ищите нужное имя и название.'},
         {title:'Поиск приведёт к адресу', pane:'addressbook', target:'playerAddressBookSearch', text:'Введите имя, название или адрес. Нажатие на найденную запись подставит район, дом и квартиру в форму поездки. Сам выбор адреса ещё не считается поездкой.'},
-        {title:'Отправляйтесь по зацепке', pane:'game', target:'locationSearchPanel', fullPanel:true, text:'Во вкладке «Журнал» укажите район, номер дома и, если нужно, квартиру или офис. Кнопка «Поехать» отправляет команду по адресу. Сначала обсудите цель: неверные адреса и повторные поездки тоже учитываются при расчёте гонорара.'},
-        {title:'Возвращайтесь к прочитанному', pane:'game', target:'game-tab', text:'Журнал хранит результаты поездок, разговоры и найденные зацепки. Новые записи появляются сверху. Используйте поиск по истории: перечитать сцену можно без новой поездки.'},
-        {title:'Собирайте связи на доске', pane:'board', target:'boardCreate', text:'Добавляйте стикеры с уликами и своими версиями, перетаскивайте их и соединяйте нитями. В журнале также есть заметки с автосохранением.'},
+        {title:'Отправляйтесь по зацепке', pane:'game', target:'locationSearchPanel', secondaryTarget:'game-tab', fullPanel:true, text:'Во вкладке «Журнал» укажите район, номер дома и, если нужно, квартиру или офис. Кнопка «Поехать» отправляет команду по адресу. Сначала обсудите цель: неверные адреса и повторные поездки тоже учитываются при расчёте гонорара.'},
+        {title:'Возвращайтесь к прочитанному', pane:'game', target:'tripHistory', secondaryTarget:'game-tab', fullPanel:true, text:'Журнал хранит результаты поездок, разговоры и найденные зацепки. Новые записи появляются сверху. Используйте поиск по истории: перечитать сцену можно без новой поездки.'},
+        {title:'Собирайте связи на доске', pane:'board', target:'boardCreate', secondaryTarget:'board-tab', text:'Добавляйте стикеры с уликами и своими версиями, перетаскивайте их и соединяйте нитями. В журнале также есть заметки с автосохранением.'},
         {title:'Следите за временем', pane:'game', target:'playerNavStats', text:'Таймер показывает оставшееся время, рядом — число поездок. Создатель общей комнаты запускает расследование и управляет паузой. Пройдите тур обучения до начала игры.'},
         {title:'Формулируйте версии в «Вопросах»', pane:'questions', target:'questions-tab', text:'Бланк ответов откроется через 15 минут после начала дела. Конечная цель игры — правильно ответить на наибольшее число вопросов. Пишите подробно и опирайтесь на найденные доказательства.'},
         {title:'Обязательно отправьте ответы', pane:'questions', target:'questionsList', text:'Черновик и отправка — разные действия. До конца времени нажмите «Отправить все ответы». Без отправленных ответов команда получит ноль очков. После отправки создатель может завершить дело досрочно; ответы проверяет организатор.'},
         {title:'Всё готово к расследованию', pane:'game', text:'Начните с брифинга, найдите первый адрес и обсудите следующую поездку. Кнопка «Обучение» в меню игры позволит пройти этот тур снова. Удачного расследования!'}
     ];
-    let dialog,card,spotlight,targetObserver,index=0,frame=0,origin=null,active=false;
+    let dialog,card,spotlight,secondarySpotlight,targetObserver,index=0,frame=0,origin=null,active=false;
     const byId=id=>id?document.getElementById(id):null;
     const read=()=>{try{return JSON.parse(localStorage.getItem(storageKey)||'null');}catch(_){return null;}};
     const remember=status=>{try{localStorage.setItem(storageKey,JSON.stringify({status,step:index,total:steps.length}));}catch(_){}};
     const visible=element=>element?.getClientRects().length>0;
+    function targetRect(target,fullPanel=false){
+        const width=window.innerWidth,height=window.innerHeight;
+        const rect=visible(target)?target.getBoundingClientRect():null;
+        if(!rect||rect.bottom<=0||rect.top>=height||rect.right<=0||rect.left>=width)return null;
+        return {left:Math.max(6,rect.left-6),top:Math.max(6,rect.top-6),right:Math.min(width-6,rect.right+6),bottom:Math.min(height-6,rect.bottom+6,width<900&&!fullPanel?Math.max(6,rect.top-6)+80:Infinity)};
+    }
+    function placeSpotlight(outline,hole,rect){
+        outline.hidden=!rect;
+        const width=rect?Math.max(0,rect.right-rect.left):0,height=rect?Math.max(0,rect.bottom-rect.top):0;
+        if(rect)Object.assign(outline.style,{left:rect.left+'px',top:rect.top+'px',width:width+'px',height:height+'px'});
+        hole.setAttribute('x',rect?.left||0);hole.setAttribute('y',rect?.top||0);
+        hole.setAttribute('width',width);hole.setAttribute('height',height);
+    }
     function position() {
         if(!active)return;
-        const target=byId(steps[index].target);
         const width=window.innerWidth,height=window.innerHeight,gap=16,pad=12;
-        const rect=visible(target)?target.getBoundingClientRect():null;
-        const r=rect&&rect.bottom>0&&rect.top<height&&rect.right>0&&rect.left<width?{
-            left:Math.max(6,rect.left-6),top:Math.max(6,rect.top-6),
-            right:Math.min(width-6,rect.right+6),bottom:Math.min(height-6,rect.bottom+6,width<900&&!steps[index].fullPanel?Math.max(6,rect.top-6)+80:Infinity)
-        }:null;
+        const primary=targetRect(byId(steps[index].target),steps[index].fullPanel);
+        const secondary=targetRect(byId(steps[index].secondaryTarget),true);
+        const r=primary||secondary;
         dialog.classList.toggle('has-spotlight',!!r);
-        spotlight.hidden=!r;
-        if(r)Object.assign(spotlight.style,{left:r.left+'px',top:r.top+'px',width:Math.max(0,r.right-r.left)+'px',height:Math.max(0,r.bottom-r.top)+'px'});
+        placeSpotlight(spotlight,byId('gameTutorialHole'),primary);
+        placeSpotlight(secondarySpotlight,byId('gameTutorialSecondaryHole'),secondary);
+        card.style.width='';
+        if(r&&steps[index].secondaryTarget&&width>=900){
+            const rightSpace=width-r.right-gap-pad,leftSpace=r.left-gap-pad;
+            if(rightSpace>=300&&rightSpace<card.offsetWidth)card.style.width=rightSpace+'px';
+            else if(rightSpace<300&&leftSpace>=300&&leftSpace<card.offsetWidth)card.style.width=leftSpace+'px';
+        }
         // Desktop: prefer a free side of the target. Phones: use the space below or above it.
-        card.style.maxHeight=(height-24)+'px';
+        const cardBottom=secondary&&width<900&&secondary.top>=height*.6?Math.min(height-pad,secondary.top-gap):height-pad;
+        card.style.maxHeight=(cardBottom-pad)+'px';
         const mobileAbove=r&&width<900&&r.top>height-r.bottom;
-        if(r&&width<900)card.style.maxHeight=Math.max(180,(mobileAbove?r.top:height-r.bottom)-gap-pad)+'px';
+        if(r&&width<900)card.style.maxHeight=Math.max(180,mobileAbove?r.top-gap-pad:cardBottom-r.bottom-gap)+'px';
         const cw=card.offsetWidth,ch=card.offsetHeight;
         let left=(width-cw)/2,top=(height-ch)/2;
         if(r){
@@ -45,7 +62,7 @@
             else if(r.top>=ch+gap+pad){top=r.top-ch-gap;}
             else top=height-ch-pad;
         }
-        Object.assign(card.style,{transform:'none',left:Math.max(pad,Math.min(left,width-cw-pad))+'px',top:Math.max(pad,Math.min(top,height-ch-pad))+'px'});
+        Object.assign(card.style,{transform:'none',left:Math.max(pad,Math.min(left,width-cw-pad))+'px',top:Math.max(pad,Math.min(top,cardBottom-ch))+'px'});
     }
     function schedulePosition(){if(!active||frame)return;frame=requestAnimationFrame(()=>{frame=0;position();});}
     function revealTarget(){
@@ -76,6 +93,8 @@
         const target=byId(step.target);
         targetObserver.disconnect();
         if(target)targetObserver.observe(target);
+        const secondary=byId(step.secondaryTarget);
+        if(secondary)targetObserver.observe(secondary);
         revealTarget();
         position();schedulePosition();
     }
@@ -105,8 +124,8 @@
         index=Math.max(0,Math.min(steps.length-1,index+amount));render();
     }
     document.addEventListener('DOMContentLoaded',()=>{
-        dialog=byId('gameTutorial');card=byId('gameTutorialCard');spotlight=byId('gameTutorialSpotlight');
-        if(!dialog||!card||!spotlight)return;
+        dialog=byId('gameTutorial');card=byId('gameTutorialCard');spotlight=byId('gameTutorialSpotlight');secondarySpotlight=byId('gameTutorialSecondarySpotlight');
+        if(!dialog||!card||!spotlight||!secondarySpotlight)return;
         targetObserver=new ResizeObserver(()=>{if(active){revealTarget();schedulePosition();}});
         byId('gameTutorialLaunch')?.addEventListener('click',()=>start());
         byId('gameTutorialSkip').addEventListener('click',()=>finish('skipped'));

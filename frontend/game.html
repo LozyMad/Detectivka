@@ -388,7 +388,7 @@
     <link href="css/investigation-board.css?v=31" rel="stylesheet">
     <link href="css/game-workspace.css?v=20" rel="stylesheet">
     <link rel="stylesheet" href="/css/player-game.css?v=4">
-    <link rel="stylesheet" href="/css/game-tutorial.css?v=3">
+    <link rel="stylesheet" href="/css/game-tutorial.css?v=4">
 </head>
 <body class="game-container">
     <aside id="workspaceRail" class="workspace-rail" aria-label="Навигация расследования">
@@ -770,7 +770,16 @@
     <script src="/js/player-game.js?v=2"></script>
     <script src="/js/shared-game.js?v=7"></script>
     <dialog id="gameTutorial" class="game-tutorial" aria-labelledby="gameTutorialTitle" aria-describedby="gameTutorialText">
+        <svg class="game-tutorial-shade" aria-hidden="true" focusable="false">
+            <defs><mask id="gameTutorialMask" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
+                <rect width="100%" height="100%" fill="white"></rect>
+                <rect id="gameTutorialHole" width="0" height="0" rx="12" fill="black"></rect>
+                <rect id="gameTutorialSecondaryHole" width="0" height="0" rx="12" fill="black"></rect>
+            </mask></defs>
+            <rect width="100%" height="100%" fill="#050403" fill-opacity=".79" mask="url(#gameTutorialMask)"></rect>
+        </svg>
         <div id="gameTutorialSpotlight" class="game-tutorial-spotlight" aria-hidden="true" hidden></div>
+        <div id="gameTutorialSecondarySpotlight" class="game-tutorial-spotlight" aria-hidden="true" hidden></div>
         <section id="gameTutorialCard" class="game-tutorial-card">
             <div class="game-tutorial-top"><span>ДЕТЕКТУМ · ПЕРВОЕ РАССЛЕДОВАНИЕ</span><button id="gameTutorialClose" class="game-tutorial-close" type="button" aria-label="Пропустить обучение">×</button></div>
             <div id="gameTutorialProgress" class="game-tutorial-progress" aria-hidden="true"></div>
@@ -780,6 +789,6 @@
             <div class="game-tutorial-actions"><button id="gameTutorialSkip" class="game-tutorial-skip" type="button">Пропустить</button><div><button id="gameTutorialBack" class="game-tutorial-back" type="button">Назад</button><button id="gameTutorialNext" class="game-tutorial-next" type="button">Далее →</button></div></div>
         </section>
     </dialog>
-    <script src="/js/game-tutorial.js?v=5"></script>
+    <script src="/js/game-tutorial.js?v=6"></script>
 </body>
 </html>
