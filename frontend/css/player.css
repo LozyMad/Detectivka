@@ -77,6 +77,10 @@ section { margin: 44px 0; }
 .active-game { padding-left: 34px; border-color: #a46f4555; box-shadow: inset 3px 0 var(--accent); background: linear-gradient(105deg, #302016, #17110e); }
 .active-game > .eyebrow { display: inline-flex; align-items: center; gap: 9px; }
 .active-game > .eyebrow::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+.room-recovery { margin: 18px 0; padding: 22px; border: 1px solid #b48154; border-radius: 8px; background: #302016; }
+.room-recovery h3 { margin: 10px 0; }
+.room-recovery p { color: var(--muted); font-size: 13px; }
+.room-recovery .actions .button { min-height: 44px; }
 .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
 .filters input { flex: 1; min-width: 150px; }
 .field { display: grid; gap: 8px; margin: 18px 0; }
@@ -197,6 +201,9 @@ dialog::backdrop { background: #090603d9; backdrop-filter: blur(5px); }
   #account-nav { max-width: 52%; }
   #account-nav .button { min-height: 38px; padding: 8px 12px; font-size: 10px; }
   .header-inner nav { order: 3; justify-content: space-between; width: 100%; margin-top: 4px; padding-top: 11px; border-top: 1px solid #d6b69a24; font-size: 11px; }
+  .header-inner nav { flex-wrap: wrap; gap: 10px 16px; }
+  .room-recovery { padding: 18px; }
+  .room-recovery .actions { flex-direction: column; }
   section { margin: 32px 0; }
   .welcome { margin-top: 24px; padding: 28px 23px 0; }
   .welcome::after { left: 23px; }

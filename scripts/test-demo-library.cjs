@@ -74,3 +74,34 @@ test('profile shows the free demo inside a distinct library with a play action',
  assert.match(html,/Играть бесплатно/);
  assert.match(html,/90 мин/);
 });
+
+test('catalog discovers an existing room before creation and resumes that same paused run',async()=>{
+ for(const state of ['pending','running','paused']){
+  const game={id:'existing-run',product_id:demo.id,is_owner:true,state,title:demo.title,team_name:'Команда'};
+  const profile={account,products:[demo],bundles:[],games:[game],orders:[],stats:{}};
+  const b=browser(call=>{
+   if(call.url.endsWith('/session'))return new Response(JSON.stringify({account}));
+   if(call.url.endsWith('/catalog'))return new Response(JSON.stringify({products:[demo],bundles:[]}));
+   if(call.url.endsWith('/profile'))return new Response(JSON.stringify(profile));
+   if(call.url.endsWith('/existing-run/control'))return new Response(JSON.stringify({game}));
+   if(call.url.endsWith('/existing-run/enter'))return new Response(JSON.stringify({room:{id:42},cabinet_run:{id:game.id}}));
+   throw Error('Unexpected request '+call.url);
+  });
+  Object.assign(b.window.location,{pathname:'/catalog',search:'',hash:''});b.sandbox.location=b.window.location;
+  const dialog=b.element('player-dialog');dialog.showModal=()=>{dialog.open=true;};
+  let saved;b.window.gameSession={saveLogin:result=>{saved=result;}};
+  b.load('frontend/js/player.js');await flush();
+  const click=(action,id)=>b.document.emit('click',{target:{closest:selector=>selector==='[data-action]'?{dataset:{action,id}}:null}});
+  click('new-game',demo.id);await flush();
+  assert.match(dialog.innerHTML,/Ваша комната/);
+  assert.match(dialog.innerHTML,/История игр/);
+  assert.match(dialog.innerHTML,/data-action="enter" data-id="existing-run"/);
+  assert.equal(b.calls.filter(c=>c.url==='/api/player/games').length,0);
+  click('enter',game.id);await flush();
+  assert.equal(b.window.location.href,'/game');assert.equal(saved.room.id,42);
+  const controls=b.calls.filter(c=>c.url.endsWith('/control'));
+  assert.equal(controls.length,state==='paused'?1:0);
+  if(controls.length)assert.equal(JSON.parse(controls[0].options.body).action,'resume');
+  assert.equal(b.calls.filter(c=>c.url==='/api/player/games').length,0);
+ }
+});
