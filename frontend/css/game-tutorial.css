@@ -15,7 +15,8 @@ dialog.game-tutorial[open] { display: block; }
 .game-tutorial-progress span.passed { background: #e7ad74; }
 .game-tutorial-counter { margin: 0 0 6px; color: #dfb38b; font-size: 11px; }
 .game-tutorial-card h2 { margin: 0 0 14px; padding: 0; color: #fff2df; font: 600 25px/1.2 system-ui, sans-serif; }
-.game-tutorial-text { margin: 0 0 18px; color: #ede2d4; }
+.game-tutorial-text { margin: 0 0 18px; color: #ede2d4; white-space: pre-line; }
+body.game-tutorial-running #receivedApplicationsPanel > h2 { display: block !important; }
 .game-tutorial-actions, .game-tutorial-actions > div { display: flex; align-items: center; gap: 8px; }
 .game-tutorial-actions { justify-content: space-between; }
 .game-tutorial-actions button { min-height: 42px; border-radius: 24px; padding: 8px 16px; font: 600 12px/1.3 system-ui, sans-serif; white-space: nowrap; }

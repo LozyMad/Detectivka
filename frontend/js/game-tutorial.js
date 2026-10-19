@@ -2,23 +2,22 @@
     'use strict';
     const storageKey = 'detectum-game-tutorial-v1';
     const steps = [
-        {title:'Добро пожаловать в Детектум', pane:'game', text:'Вы — частные детективы. Читайте материалы, обсуждайте версии и восстанавливайте события по уликам. За пару минут покажем основные инструменты. На любом шаге обучение можно пропустить.'},
-        {title:'Начните с вводной', pane:'applications', target:'receivedApplicationsList', text:'Откройте брифинг и начальные материалы дела. В них — обстоятельства происшествия, имена и первые зацепки. Запишите, кого хотите найти и о чём спросить. Документы открывайте уже после обучения.'},
+        {title:'Добро пожаловать в Детектум', pane:'game', text:'Вы — частные детективы. Вам предстоит перемещаться по городу, искать улики, разговаривать со свидетелями и сопоставлять факты.\n\nВаша цель — правильно ответить на наибольшее число вопросов, совершив как можно меньше поездок.\n\nЗа пару минут покажем основные инструменты. На любом шаге обучение можно пропустить.'},
+        {title:'Начните с брифинга', pane:'game', narrowPane:'applications', target:'receivedApplicationsPanel', fullPanel:true, text:'Начните с брифинга: в нём — обстоятельства дела, имена и первые зацепки. Здесь же собраны начальные материалы, а по мере расследования появятся новые газеты, фотографии и документы. Открывайте их повторно и сопоставляйте детали — это не расходует поездки.'},
         {title:'Найдите человека или организацию', pane:'addressbook', target:'addressbook-tab', text:'Кнопка «Адреса» открывает адресную книгу — ваш справочник по городу. Здесь собраны частные лица и предприятия. Выбирайте разделы или ищите нужное имя и название.'},
         {title:'Поиск приведёт к адресу', pane:'addressbook', target:'playerAddressBookSearch', text:'Введите имя, название или адрес. Нажатие на найденную запись подставит район, дом и квартиру в форму поездки. Сам выбор адреса ещё не считается поездкой.'},
         {title:'Отправляйтесь по зацепке', pane:'game', target:'locationSearchPanel', fullPanel:true, text:'Во вкладке «Журнал» укажите район, номер дома и, если нужно, квартиру или офис. Кнопка «Поехать» отправляет команду по адресу. Сначала обсудите цель: неверные адреса и повторные поездки тоже учитываются при расчёте гонорара.'},
         {title:'Возвращайтесь к прочитанному', pane:'game', target:'game-tab', text:'Журнал хранит результаты поездок, разговоры и найденные зацепки. Новые записи появляются сверху. Используйте поиск по истории: перечитать сцену можно без новой поездки.'},
-        {title:'Изучайте материалы дела', pane:'applications', target:'applications', fullPanel:true, text:'Газеты, фотографии и документы собираются здесь по мере расследования. Открывайте их повторно, сопоставляйте даты, имена и детали. Повторное открытие материалов не расходует поездки.'},
-        {title:'Собирайте связи на доске', pane:'board', target:'boardCreate', text:'Добавляйте стикеры с уликами и своими версиями, перетаскивайте их и соединяйте нитями. В журнале также есть заметки с автосохранением. В общей комнате доска и заметки доступны всей команде.'},
+        {title:'Собирайте связи на доске', pane:'board', target:'boardCreate', text:'Добавляйте стикеры с уликами и своими версиями, перетаскивайте их и соединяйте нитями. В журнале также есть заметки с автосохранением.'},
         {title:'Следите за временем', pane:'game', target:'playerNavStats', text:'Таймер показывает оставшееся время, рядом — число поездок. Создатель общей комнаты запускает расследование и управляет паузой. Пройдите тур обучения до начала игры.'},
-        {title:'Формулируйте версии в «Вопросах»', pane:'questions', target:'questions-tab', text:'Бланк ответов откроется через 15 минут после начала дела. Конечная цель игры — правильно ответить на наибольшее число вопросов. Пишите подробно и опирайтесь на найденные доказательства. В общей комнате черновики сохраняются для команды.'},
+        {title:'Формулируйте версии в «Вопросах»', pane:'questions', target:'questions-tab', text:'Бланк ответов откроется через 15 минут после начала дела. Конечная цель игры — правильно ответить на наибольшее число вопросов. Пишите подробно и опирайтесь на найденные доказательства.'},
         {title:'Обязательно отправьте ответы', pane:'questions', target:'questionsList', text:'Черновик и отправка — разные действия. До конца времени нажмите «Отправить все ответы». Без отправленных ответов команда получит ноль очков. После отправки создатель может завершить дело досрочно; ответы проверяет организатор.'},
         {title:'Всё готово к расследованию', pane:'game', text:'Начните с брифинга, найдите первый адрес и обсудите следующую поездку. Кнопка «Обучение» в меню игры позволит пройти этот тур снова. Удачного расследования!'}
     ];
     let dialog,card,spotlight,targetObserver,index=0,frame=0,origin=null,active=false;
     const byId=id=>id?document.getElementById(id):null;
     const read=()=>{try{return JSON.parse(localStorage.getItem(storageKey)||'null');}catch(_){return null;}};
-    const remember=status=>{try{localStorage.setItem(storageKey,JSON.stringify({status,step:index}));}catch(_){}};
+    const remember=status=>{try{localStorage.setItem(storageKey,JSON.stringify({status,step:index,total:steps.length}));}catch(_){}};
     const visible=element=>element?.getClientRects().length>0;
     function position() {
         if(!active)return;
@@ -63,7 +62,8 @@
     }
     function render() {
         const step=steps[index];
-        window.gameTutorialNavigation?.open(step.pane);
+        const narrow=window.innerWidth<768||(window.innerWidth<=950&&window.innerHeight<=500);
+        window.gameTutorialNavigation?.open(narrow&&step.narrowPane?step.narrowPane:step.pane);
         byId('gameTutorialTitle').textContent=step.title;
         byId('gameTutorialText').textContent=step.text;
         byId('gameTutorialCounter').textContent=`Шаг ${index+1} из ${steps.length}`;
@@ -83,7 +83,10 @@
         if(active||window.gameSession?.expired)return;
         origin={pane:window.gameTutorialNavigation?.current()||'game',x:window.scrollX,y:window.scrollY,focus:document.activeElement};
         const saved=resume?read():null;
-        index=saved?.status==='active'&&Number.isInteger(saved.step)?Math.max(0,Math.min(steps.length-1,saved.step)):0;
+        let resumeIndex=saved?.status==='active'&&Number.isInteger(saved.step)?saved.step:0;
+        // In the previous 12-step tour, the materials step (index 6) is now part of the briefing.
+        if(saved?.status==='active'&&(saved.total===undefined||saved.total===12)&&resumeIndex>=6)resumeIndex=resumeIndex===6?1:resumeIndex-1;
+        index=Math.max(0,Math.min(steps.length-1,resumeIndex));
         active=true;document.body.classList.add('game-tutorial-running');dialog.showModal();render();
     }
     function finish(status) {
@@ -116,7 +119,7 @@
             if(event.key==='ArrowRight'){event.preventDefault();move(1);}
             if(event.key==='ArrowLeft'){event.preventDefault();move(-1);}
         });
-        window.addEventListener('resize',schedulePosition);
+        window.addEventListener('resize',()=>{if(active&&steps[index].narrowPane)render();else schedulePosition();});
         window.visualViewport?.addEventListener('resize',schedulePosition);
         document.addEventListener('scroll',schedulePosition,true);
         new ResizeObserver(schedulePosition).observe(card);

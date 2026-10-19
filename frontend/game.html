@@ -388,7 +388,7 @@
     <link href="css/investigation-board.css?v=31" rel="stylesheet">
     <link href="css/game-workspace.css?v=20" rel="stylesheet">
     <link rel="stylesheet" href="/css/player-game.css?v=4">
-    <link rel="stylesheet" href="/css/game-tutorial.css?v=2">
+    <link rel="stylesheet" href="/css/game-tutorial.css?v=3">
 </head>
 <body class="game-container">
     <aside id="workspaceRail" class="workspace-rail" aria-label="Навигация расследования">
@@ -508,7 +508,7 @@
                             <button type="button" class="dispatch-directory" onclick="openPlayerAddressBook('compact')"><i class="far fa-address-book" aria-hidden="true"></i> Открыть адресную книгу <span aria-hidden="true">↗</span></button>
                         </section>
                     <aside class="dossier-sidebar" aria-label="Приложения и заметки">
-                        <section class="latest-location" aria-labelledby="receivedApplicationsTitle">
+                        <section class="latest-location" id="receivedApplicationsPanel" aria-labelledby="receivedApplicationsTitle">
                             <h2 id="receivedApplicationsTitle"><i class="far fa-folder-open" aria-hidden="true"></i> Материалы дела <span id="materialsCount" class="workspace-count">0</span></h2>
                             <div id="receivedApplicationsList" class="received-applications-list">Пока нет приложений</div>
                         </section>
@@ -780,6 +780,6 @@
             <div class="game-tutorial-actions"><button id="gameTutorialSkip" class="game-tutorial-skip" type="button">Пропустить</button><div><button id="gameTutorialBack" class="game-tutorial-back" type="button">Назад</button><button id="gameTutorialNext" class="game-tutorial-next" type="button">Далее →</button></div></div>
         </section>
     </dialog>
-    <script src="/js/game-tutorial.js?v=4"></script>
+    <script src="/js/game-tutorial.js?v=5"></script>
 </body>
 </html>
