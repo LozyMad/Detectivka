@@ -385,10 +385,10 @@
     <link href="css/design-system.css?v=6" rel="stylesheet">
     <link href="css/dark-interface.css?v=3" rel="stylesheet">
     <link href="css/game-dossier.css?v=18" rel="stylesheet">
-    <link href="css/investigation-board.css?v=31" rel="stylesheet">
+    <link href="css/investigation-board.css?v=32" rel="stylesheet">
     <link href="css/game-workspace.css?v=20" rel="stylesheet">
     <link rel="stylesheet" href="/css/player-game.css?v=4">
-    <link rel="stylesheet" href="/css/game-tutorial.css?v=4">
+    <link rel="stylesheet" href="/css/game-tutorial.css?v=5">
 </head>
 <body class="game-container">
     <aside id="workspaceRail" class="workspace-rail" aria-label="Навигация расследования">
@@ -595,7 +595,7 @@
                         <button type="button" id="boardExit" class="board-exit" aria-label="Вернуться к игре">←<span> К игре</span></button>
                         <div class="board-title-block">
                             <h1 id="boardTitle">Доска расследования</h1>
-                            <p id="boardHint">Нажмите на два стикера, чтобы создать или убрать нить. Перетаскивайте стикеры и приближайте доску.</p>
+                            <p>Перетаскивайте стикеры и приближайте доску.</p>
                         </div>
                         <nav id="boardNavHost" class="board-navigation" aria-label="Разделы игры"></nav>
                         <div id="boardTimerHost" class="board-timer" aria-label="Оставшееся время игры"></div>
@@ -613,6 +613,7 @@
                             </details>
                         </div>
                     </header>
+                    <div class="board-link-tip" role="status" aria-live="polite"><i class="fas fa-project-diagram" aria-hidden="true"></i><span id="boardHint">Выберите два стикера, чтобы создать или убрать нить.</span></div>
                     <div id="boardStatus" class="board-status" role="status" aria-live="polite"></div>
                     <div class="board-frame">
                       <div id="boardViewport" class="board-viewport" aria-label="Пробковая доска расследования">
@@ -765,7 +766,7 @@
     </aside>
 
     <script src="js/game.js?v=tutorial1&t=20261019&encoding=fixed"></script>
-    <script src="js/investigation-board.js?v=shared1"></script>
+    <script src="js/investigation-board.js?v=shared2"></script>
     <script src="js/persist-inputs.js"></script>
     <script src="/js/player-game.js?v=2"></script>
     <script src="/js/shared-game.js?v=7"></script>
@@ -781,14 +782,15 @@
         <div id="gameTutorialSpotlight" class="game-tutorial-spotlight" aria-hidden="true" hidden></div>
         <div id="gameTutorialSecondarySpotlight" class="game-tutorial-spotlight" aria-hidden="true" hidden></div>
         <section id="gameTutorialCard" class="game-tutorial-card">
-            <div class="game-tutorial-top"><span>ДЕТЕКТУМ · ПЕРВОЕ РАССЛЕДОВАНИЕ</span><button id="gameTutorialClose" class="game-tutorial-close" type="button" aria-label="Пропустить обучение">×</button></div>
+            <div class="game-tutorial-top"><div><span>ДЕТЕКТУМ · ПЕРВОЕ РАССЛЕДОВАНИЕ</span><p id="gameTutorialCounter" class="game-tutorial-counter" role="status" aria-live="polite"></p></div><button id="gameTutorialClose" class="game-tutorial-close" type="button" aria-label="Пропустить обучение">×</button></div>
             <div id="gameTutorialProgress" class="game-tutorial-progress" aria-hidden="true"></div>
-            <p id="gameTutorialCounter" class="game-tutorial-counter" role="status" aria-live="polite"></p>
-            <h2 id="gameTutorialTitle" tabindex="-1"></h2>
-            <p id="gameTutorialText" class="game-tutorial-text"></p>
+            <div id="gameTutorialBody" class="game-tutorial-body" tabindex="0" aria-label="Описание шага обучения">
+                <h2 id="gameTutorialTitle" tabindex="-1"></h2>
+                <p id="gameTutorialText" class="game-tutorial-text"></p>
+            </div>
             <div class="game-tutorial-actions"><button id="gameTutorialSkip" class="game-tutorial-skip" type="button">Пропустить</button><div><button id="gameTutorialBack" class="game-tutorial-back" type="button">Назад</button><button id="gameTutorialNext" class="game-tutorial-next" type="button">Далее →</button></div></div>
         </section>
     </dialog>
-    <script src="/js/game-tutorial.js?v=6"></script>
+    <script src="/js/game-tutorial.js?v=7"></script>
 </body>
 </html>

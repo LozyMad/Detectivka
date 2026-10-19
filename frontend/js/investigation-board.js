@@ -15,7 +15,7 @@
   let viewportSize = null;
   let resizeFitFrame = null;
   const pendingPositions = new Map();
-  const defaultHint = 'Нажмите на два стикера, чтобы создать или убрать нить. Перетаскивайте стикеры и приближайте доску.';
+  const defaultHint = 'Выберите два стикера, чтобы создать или убрать нить.';
   const threadSegments = new Map();
   const $ = id => document.getElementById(id);
   const noteById = id => state.notes.find(note => Number(note.id) === Number(id));

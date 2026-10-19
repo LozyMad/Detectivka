@@ -48,6 +48,21 @@ body.board-open #board {
   box-shadow: 0 8px 26px #0004;
 }
 .board-title-block { flex: 1; min-width: 0; }
+.board-link-tip {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 10px;
+  margin: 10px clamp(16px, 2.5vw, 42px);
+  padding: 10px 14px;
+  border: 1px solid #d8a26666;
+  border-left: 3px solid #e7ad74;
+  border-radius: 8px;
+  background: #2b2118f5;
+  color: #f5dbb6;
+  font: 600 14px/1.45 system-ui, sans-serif;
+}
+.board-link-tip > i { flex: none; color: #e7ad74; font-size: 18px; }
 .board-navigation, .board-timer, .board-account { display: none; }
 .board-nav-short-label { display: none; }
 .board-exit {
@@ -535,4 +550,9 @@ body.board-touch-header #boardTimerHost .badge { min-width: 0; font-size: .72rem
 @media (max-width: 740px) {
   body.board-landscape-header .board-timer { display: none; }
   body.board-landscape-header #boardNavHost .btn { padding: 6px 5px !important; font-size: .72rem !important; }
+}
+
+@media (max-width: 767.98px), (max-height: 500px) {
+  .board-link-tip { margin: 6px 10px; padding: 8px 10px; font-size: 13px; gap: 8px; }
+  body.board-touch-header .board-status, body.board-landscape-header .board-status { position: static; }
 }

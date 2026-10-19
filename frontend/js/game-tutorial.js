@@ -11,7 +11,7 @@
         {title:'Собирайте связи на доске', pane:'board', target:'boardCreate', secondaryTarget:'board-tab', text:'Добавляйте стикеры с уликами и своими версиями, перетаскивайте их и соединяйте нитями. В журнале также есть заметки с автосохранением.'},
         {title:'Следите за временем', pane:'game', target:'playerNavStats', text:'Таймер показывает оставшееся время, рядом — число поездок. Создатель общей комнаты запускает расследование и управляет паузой. Пройдите тур обучения до начала игры.'},
         {title:'Формулируйте версии в «Вопросах»', pane:'questions', target:'questions-tab', text:'Бланк ответов откроется через 15 минут после начала дела. Конечная цель игры — правильно ответить на наибольшее число вопросов. Пишите подробно и опирайтесь на найденные доказательства.'},
-        {title:'Обязательно отправьте ответы', pane:'questions', target:'questionsList', text:'Черновик и отправка — разные действия. До конца времени нажмите «Отправить все ответы». Без отправленных ответов команда получит ноль очков. После отправки создатель может завершить дело досрочно; ответы проверяет организатор.'},
+        {title:'Обязательно отправьте ответы', pane:'questions', target:'submitAllAnswersBtn', fallbackTarget:'questions-tab', watchTarget:'questionsList', text:'Черновик и отправка — разные действия. До конца времени нажмите «Отправить все ответы». Без отправленных ответов команда получит ноль очков. После отправки создатель может завершить дело досрочно; ответы проверяет организатор.'},
         {title:'Всё готово к расследованию', pane:'game', text:'Начните с брифинга, найдите первый адрес и обсудите следующую поездку. Кнопка «Обучение» в меню игры позволит пройти этот тур снова. Удачного расследования!'}
     ];
     let dialog,card,spotlight,secondarySpotlight,targetObserver,index=0,frame=0,origin=null,active=false;
@@ -19,11 +19,21 @@
     const read=()=>{try{return JSON.parse(localStorage.getItem(storageKey)||'null');}catch(_){return null;}};
     const remember=status=>{try{localStorage.setItem(storageKey,JSON.stringify({status,step:index,total:steps.length}));}catch(_){}};
     const visible=element=>element?.getClientRects().length>0;
-    function targetRect(target,fullPanel=false){
-        const width=window.innerWidth,height=window.innerHeight;
+    const currentTarget=()=>{const step=steps[index],target=byId(step.target);return visible(target)?target:byId(step.fallbackTarget);};
+    const navigationTarget=target=>target?.id?.endsWith('-tab')||target?.closest?.('#playerNavTabs');
+    const viewport=()=>{
+        const view=window.visualViewport,left=view?.offsetLeft||0,top=view?.offsetTop||0;
+        const width=view?.width||window.innerWidth,height=view?.height||window.innerHeight;
+        const css=dialog&&window.getComputedStyle?.(dialog);
+        const inset=side=>parseFloat(css?.[side])||0;
+        const safeLeft=inset('paddingLeft'),safeRight=inset('paddingRight'),safeTop=inset('paddingTop'),safeBottom=inset('paddingBottom');
+        return {left:left+safeLeft,top:top+safeTop,width:width-safeLeft-safeRight,height:height-safeTop-safeBottom,right:left+width-safeRight,bottom:top+height-safeBottom};
+    };
+    function targetRect(target){
+        const view=viewport();
         const rect=visible(target)?target.getBoundingClientRect():null;
-        if(!rect||rect.bottom<=0||rect.top>=height||rect.right<=0||rect.left>=width)return null;
-        return {left:Math.max(6,rect.left-6),top:Math.max(6,rect.top-6),right:Math.min(width-6,rect.right+6),bottom:Math.min(height-6,rect.bottom+6,width<900&&!fullPanel?Math.max(6,rect.top-6)+80:Infinity)};
+        if(!rect||rect.bottom<=view.top||rect.top>=view.bottom||rect.right<=view.left||rect.left>=view.right)return null;
+        return {left:Math.max(view.left+6,rect.left-6),top:Math.max(view.top+6,rect.top-6),right:Math.min(view.right-6,rect.right+6),bottom:Math.min(view.bottom-6,rect.bottom+6)};
     }
     function placeSpotlight(outline,hole,rect){
         outline.hidden=!rect;
@@ -34,47 +44,70 @@
     }
     function position() {
         if(!active)return;
-        const width=window.innerWidth,height=window.innerHeight,gap=16,pad=12;
-        const primary=targetRect(byId(steps[index].target),steps[index].fullPanel);
-        const secondary=targetRect(byId(steps[index].secondaryTarget),true);
+        const view=viewport(),{width,height}=view,gap=16,pad=12;
+        const target=currentTarget(),extra=byId(steps[index].secondaryTarget);
+        let primary=targetRect(target),secondary=targetRect(extra);
         const r=primary||secondary;
-        dialog.classList.toggle('has-spotlight',!!r);
+        const mobile=width<900||height<=500,landscape=mobile&&width>=600&&width>height;
+        dialog.classList.toggle('is-mobile',mobile);
+        if(mobile){
+            const nav=targetRect(byId('playerBottomNav'));
+            const bottomTarget=[nav, navigationTarget(target)&&primary, navigationTarget(extra)&&secondary].find(rect=>rect&&rect.top>view.top+height*.6);
+            const bottom=bottomTarget?bottomTarget.top-10:view.bottom-pad;
+            const available=Math.max(160,bottom-view.top-pad);
+            card.style.width=(landscape?Math.min(400,Math.round(width*.48)):width-pad*2)+'px';
+            card.style.maxHeight=available+'px';
+            // Keep controls in one place; only the description scrolls on small screens.
+            card.style.height=r?(landscape?available:Math.min(360,Math.round(height*.54),Math.max(180,available-100)))+'px':'';
+            const cw=card.offsetWidth,ch=card.offsetHeight;
+            const rightSide=!r||(r.left+r.right)/2<view.left+width/2;
+            const left=landscape&&r?(rightSide?view.right-cw-pad:view.left+pad):view.left+(width-cw)/2;
+            const top=r?(landscape?view.top+pad:bottom-ch):view.top+(bottom-view.top-ch)/2;
+            Object.assign(card.style,{transform:'none',left:left+'px',top:Math.max(view.top+pad,top)+'px'});
+            // A tall panel may continue behind the sheet. Light only its visible part,
+            // while keeping the separately highlighted bottom navigation unobstructed.
+            const clip=(rect,element)=>{
+                if(!rect||navigationTarget(element))return rect;
+                const clipped={...rect};
+                if(landscape){if(rightSide)clipped.right=Math.min(clipped.right,left-gap);else clipped.left=Math.max(clipped.left,left+cw+gap);}
+                else clipped.bottom=Math.min(clipped.bottom,top-gap);
+                return clipped.right>clipped.left&&clipped.bottom>clipped.top?clipped:null;
+            };
+            primary=clip(primary,target);secondary=clip(secondary,extra);
+        }else{
+            card.style.width='';card.style.height='';
+            if(r&&steps[index].secondaryTarget&&width>=900){
+                const rightSpace=width-r.right-gap-pad,leftSpace=r.left-gap-pad;
+                if(rightSpace>=300&&rightSpace<card.offsetWidth)card.style.width=rightSpace+'px';
+                else if(rightSpace<300&&leftSpace>=300&&leftSpace<card.offsetWidth)card.style.width=leftSpace+'px';
+            }
+            card.style.maxHeight=(height-pad*2)+'px';
+            const cw=card.offsetWidth,ch=card.offsetHeight;
+            let left=view.left+(width-cw)/2,top=view.top+(height-ch)/2;
+            if(r){
+                if(view.right-r.right>=cw+gap+pad){left=r.right+gap;top=r.top;}
+                else if(r.left-view.left>=cw+gap+pad){left=r.left-cw-gap;top=r.top;}
+                else if(view.bottom-r.bottom>=ch+gap+pad){top=r.bottom+gap;}
+                else if(r.top-view.top>=ch+gap+pad){top=r.top-ch-gap;}
+                else top=view.bottom-ch-pad;
+            }
+            Object.assign(card.style,{transform:'none',left:Math.max(view.left+pad,Math.min(left,view.right-cw-pad))+'px',top:Math.max(view.top+pad,Math.min(top,view.bottom-pad-ch))+'px'});
+        }
+        dialog.classList.toggle('has-spotlight',!!(primary||secondary));
         placeSpotlight(spotlight,byId('gameTutorialHole'),primary);
         placeSpotlight(secondarySpotlight,byId('gameTutorialSecondaryHole'),secondary);
-        card.style.width='';
-        if(r&&steps[index].secondaryTarget&&width>=900){
-            const rightSpace=width-r.right-gap-pad,leftSpace=r.left-gap-pad;
-            if(rightSpace>=300&&rightSpace<card.offsetWidth)card.style.width=rightSpace+'px';
-            else if(rightSpace<300&&leftSpace>=300&&leftSpace<card.offsetWidth)card.style.width=leftSpace+'px';
-        }
-        // Desktop: prefer a free side of the target. Phones: use the space below or above it.
-        const cardBottom=secondary&&width<900&&secondary.top>=height*.6?Math.min(height-pad,secondary.top-gap):height-pad;
-        card.style.maxHeight=(cardBottom-pad)+'px';
-        const mobileAbove=r&&width<900&&r.top>height-r.bottom;
-        if(r&&width<900)card.style.maxHeight=Math.max(180,mobileAbove?r.top-gap-pad:cardBottom-r.bottom-gap)+'px';
-        const cw=card.offsetWidth,ch=card.offsetHeight;
-        let left=(width-cw)/2,top=(height-ch)/2;
-        if(r){
-            if(width<900){top=mobileAbove?r.top-ch-gap:r.bottom+gap;}
-            else if(width-r.right>=cw+gap+pad){left=r.right+gap;top=r.top;}
-            else if(width>=900&&r.left>=cw+gap+pad){left=r.left-cw-gap;top=r.top;}
-            else if(height-r.bottom>=ch+gap+pad){top=r.bottom+gap;}
-            else if(r.top>=ch+gap+pad){top=r.top-ch-gap;}
-            else top=height-ch-pad;
-        }
-        Object.assign(card.style,{transform:'none',left:Math.max(pad,Math.min(left,width-cw-pad))+'px',top:Math.max(pad,Math.min(top,cardBottom-ch))+'px'});
     }
     function schedulePosition(){if(!active||frame)return;frame=requestAnimationFrame(()=>{frame=0;position();});}
     function revealTarget(){
-        const target=byId(steps[index].target);
+        const target=currentTarget();
         if(!visible(target))return;
-        if(target.closest?.('#playerNavTabs'))return;
+        if(navigationTarget(target))return;
         // Native modal content is inert in some browsers, which blocks scrolling it into view.
         // Release and restore the modal synchronously, before the next paint.
         const wasOpen=dialog.open,focus=document.activeElement;
         if(wasOpen)dialog.close();
         target.scrollIntoView({block:window.innerWidth<900?'start':'center',inline:'nearest',behavior:'instant'});
-        if(window.innerWidth<900)window.scrollBy({top:steps[index].fullPanel?-12:-Math.min(120,window.innerHeight*.18),behavior:'instant'});
+        if(window.innerWidth<900)window.scrollBy({top:-12,behavior:'instant'});
         if(wasOpen){dialog.showModal();focus?.focus({preventScroll:true});}
     }
     function render() {
@@ -87,14 +120,16 @@
         byId('gameTutorialProgress').innerHTML=steps.map((_,i)=>`<span${i<=index?' class="passed"':''}></span>`).join('');
         byId('gameTutorialBack').disabled=index===0;
         byId('gameTutorialNext').textContent=index===steps.length-1?'К расследованию':'Далее →';
-        card.scrollTop=0;
+        byId('gameTutorialBody').scrollTop=0;
         remember('active');
         byId('gameTutorialTitle').focus({preventScroll:true});
-        const target=byId(step.target);
+        const target=currentTarget();
         targetObserver.disconnect();
         if(target)targetObserver.observe(target);
         const secondary=byId(step.secondaryTarget);
         if(secondary)targetObserver.observe(secondary);
+        const watched=byId(step.watchTarget);
+        if(watched)targetObserver.observe(watched);
         revealTarget();
         position();schedulePosition();
     }
@@ -138,8 +173,10 @@
             if(event.key==='ArrowRight'){event.preventDefault();move(1);}
             if(event.key==='ArrowLeft'){event.preventDefault();move(-1);}
         });
-        window.addEventListener('resize',()=>{if(active&&steps[index].narrowPane)render();else schedulePosition();});
-        window.visualViewport?.addEventListener('resize',schedulePosition);
+        const reposition=()=>{if(active)revealTarget();schedulePosition();};
+        window.addEventListener('resize',()=>{if(active&&steps[index].narrowPane)render();else reposition();});
+        window.visualViewport?.addEventListener('resize',reposition);
+        window.visualViewport?.addEventListener('scroll',schedulePosition);
         document.addEventListener('scroll',schedulePosition,true);
         new ResizeObserver(schedulePosition).observe(card);
         // Stored locally, never shared with teammates; skipping on one device does not dismiss their tour.
