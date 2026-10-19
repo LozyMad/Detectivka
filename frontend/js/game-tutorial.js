@@ -4,9 +4,9 @@
     const steps = [
         {title:'Добро пожаловать в Детектум', pane:'game', text:'Вы — частные детективы. Читайте материалы, обсуждайте версии и восстанавливайте события по уликам. За пару минут покажем основные инструменты. На любом шаге обучение можно пропустить.'},
         {title:'Начните с вводной', pane:'applications', target:'receivedApplicationsList', text:'Откройте брифинг и начальные материалы дела. В них — обстоятельства происшествия, имена и первые зацепки. Запишите, кого хотите найти и о чём спросить. Документы открывайте уже после обучения.'},
-        {title:'Найдите человека или организацию', pane:'addressbook', target:'playerAddressBookSearch', text:'Адресная книга — ваш справочник по городу. Здесь собраны частные лица и предприятия. Выбирайте разделы или ищите нужное имя и название.'},
+        {title:'Найдите человека или организацию', pane:'addressbook', target:'addressbook-tab', text:'Кнопка «Адреса» открывает адресную книгу — ваш справочник по городу. Здесь собраны частные лица и предприятия. Выбирайте разделы или ищите нужное имя и название.'},
         {title:'Поиск приведёт к адресу', pane:'addressbook', target:'playerAddressBookSearch', text:'Введите имя, название или адрес. Нажатие на найденную запись подставит район, дом и квартиру в форму поездки. Сам выбор адреса ещё не считается поездкой.'},
-        {title:'Отправляйтесь по зацепке', pane:'game', target:'locationSearchTitle', text:'Укажите район, номер дома и, если нужно, квартиру или офис. Кнопка «Поехать» отправляет команду по адресу. Сначала обсудите цель: неверные адреса и повторные поездки тоже учитываются при расчёте гонорара.'},
+        {title:'Отправляйтесь по зацепке', pane:'game', target:'game-tab', text:'Во вкладке «Журнал» укажите район, номер дома и, если нужно, квартиру или офис. Кнопка «Поехать» отправляет команду по адресу. Сначала обсудите цель: неверные адреса и повторные поездки тоже учитываются при расчёте гонорара.'},
         {title:'Возвращайтесь к прочитанному', pane:'game', target:'tripHistoryTitle', text:'Журнал хранит результаты поездок, разговоры и найденные зацепки. Новые записи появляются сверху. Используйте поиск по истории: перечитать сцену можно без новой поездки.'},
         {title:'Изучайте материалы дела', pane:'applications', target:'receivedApplicationsList', text:'Газеты, фотографии и документы собираются здесь по мере расследования. Открывайте их повторно, сопоставляйте даты, имена и детали. Повторное открытие материалов не расходует поездки.'},
         {title:'Собирайте связи на доске', pane:'board', target:'boardCreate', text:'Добавляйте стикеры с уликами и своими версиями, перетаскивайте их и соединяйте нитями. В журнале также есть заметки с автосохранением. В общей комнате доска и заметки доступны всей команде.'},
@@ -34,11 +34,12 @@
         if(r)Object.assign(spotlight.style,{left:r.left+'px',top:r.top+'px',width:Math.max(0,r.right-r.left)+'px',height:Math.max(0,r.bottom-r.top)+'px'});
         // Desktop: prefer a free side of the target. Phones: use the space below or above it.
         card.style.maxHeight=(height-24)+'px';
-        if(r&&width<900)card.style.maxHeight=Math.max(180,height-r.bottom-gap-pad)+'px';
+        const mobileAbove=r&&width<900&&r.top>height-r.bottom;
+        if(r&&width<900)card.style.maxHeight=Math.max(180,(mobileAbove?r.top:height-r.bottom)-gap-pad)+'px';
         const cw=card.offsetWidth,ch=card.offsetHeight;
         let left=(width-cw)/2,top=(height-ch)/2;
         if(r){
-            if(width<900){top=r.bottom+gap;}
+            if(width<900){top=mobileAbove?r.top-ch-gap:r.bottom+gap;}
             else if(width-r.right>=cw+gap+pad){left=r.right+gap;top=r.top;}
             else if(width>=900&&r.left>=cw+gap+pad){left=r.left-cw-gap;top=r.top;}
             else if(height-r.bottom>=ch+gap+pad){top=r.bottom+gap;}
@@ -51,6 +52,7 @@
     function revealTarget(){
         const target=byId(steps[index].target);
         if(!visible(target))return;
+        if(target.closest?.('#playerNavTabs'))return;
         // Native modal content is inert in some browsers, which blocks scrolling it into view.
         // Release and restore the modal synchronously, before the next paint.
         const wasOpen=dialog.open,focus=document.activeElement;

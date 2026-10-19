@@ -4,7 +4,7 @@ const {browser}=require('./test-helpers/browser-runtime.cjs');
 
 function tour({saved,width=1280,height=900,isTest=false,blockedStorage=false}={}){
  const b=browser(),elements=new Map(),opened=[];
- const ids=['gameTutorial','gameTutorialCard','gameTutorialSpotlight','gameTutorialTitle','gameTutorialText','gameTutorialCounter','gameTutorialProgress','gameTutorialBack','gameTutorialNext','gameTutorialSkip','gameTutorialClose','gameTutorialLaunch','receivedApplicationsList','playerAddressBookSearch','locationSearchTitle','tripHistoryTitle','boardCreate','playerNavStats','questions-tab','questionsList'];
+ const ids=['gameTutorial','gameTutorialCard','gameTutorialSpotlight','gameTutorialTitle','gameTutorialText','gameTutorialCounter','gameTutorialProgress','gameTutorialBack','gameTutorialNext','gameTutorialSkip','gameTutorialClose','gameTutorialLaunch','receivedApplicationsList','addressbook-tab','playerAddressBookSearch','game-tab','locationSearchTitle','tripHistoryTitle','boardCreate','playerNavStats','questions-tab','questionsList'];
  for(const id of ids){
   const el=b.element(id);elements.set(id,el);el.hidden=false;el.offsetWidth=Math.min(400,width-24);el.offsetHeight=Math.min(430,height-24);
   el.click=()=>el.emit('click');el.getClientRects=()=>[{}];
