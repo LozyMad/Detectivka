@@ -2550,7 +2550,7 @@ function displayRooms(rooms) {
                     </button>
                 </div>`}
                 ${r.is_test || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-light" onclick="copyRoomInvite(${r.id})" title="Ссылка для друзей">Ссылка</button>`}
-                ${r.is_test || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-warning" onclick="openRoomTimeDialog(${r.id})" title="Добавить время"><i class="fas fa-clock me-1" aria-hidden="true"></i>Добавить время</button>`}
+                ${r.is_test || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-warning" onclick="openRoomTimeDialog(${r.id})" title="Добавить время" aria-label="Добавить время"><i class="fas fa-clock" aria-hidden="true"></i></button>`}
                 ${r.is_test || r.is_shared ? '' : `<button class="btn btn-sm btn-outline-primary" onclick="viewRoomUsers(${r.id})"><i class="fas fa-users"></i></button>`}
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteRoom(${r.id})" title="Удалить комнату">
                     <i class="fas fa-trash"></i>
