@@ -125,6 +125,8 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
     return rows.map(p=>({...p,base_attempts:Number(p.max_attempts),max_attempts:Number(p.max_attempts)+Number(p.extra_attempts),owned:!!p.owned,attempts_used:Number(p.attempts_used),attempts_left:Math.max(0,Number(p.max_attempts)+Number(p.extra_attempts)-Number(p.attempts_used))}));
   }
   async function bundles() {
+    // Bundle prices are a local checkout prototype, not a public offer.
+    if (!localMode) return [];
     const products = await catalog();
     if (products.length < 2 || !products.some(p=>p.price>0)) return [];
     return [{id:'starter',title:'Стартовый набор',description:'Знакомство с платформой и полное расследование в одном наборе.',product_ids:products.map(p=>p.id),original_price:products.reduce((s,p)=>s+p.price,0),price:Math.floor(products.reduce((s,p)=>s+p.price,0)*0.9),discount:10}];

@@ -32,6 +32,21 @@ async function fixture(t,localMode=true){
  return {query,store,account,registration,start,begin,finish,roomSync};
 }
 const rejected=(promise,status)=>assert.rejects(promise,error=>error.status===status);
+
+test('new and existing accounts receive the free demo in their library without an order or a used attempt',async t=>{
+ const f=await fixture(t,false);
+ await f.query("INSERT INTO player_products (id,scenario_id,title,description,cover,price,duration_seconds,difficulty,max_attempts) VALUES ('borrowed-time',1,'Время взаймы','Демо','/assets/landing/borrowed-time-case-cover-v1.webp',0,5400,2,3)");
+ const fresh=await f.store.register(f.registration('fresh@example.test'));
+ for(const id of [f.account.account.id,fresh.account.id]){
+  const profile=await f.store.profile(id);const demo=profile.products.find(p=>p.id==='borrowed-time');
+  assert.equal(demo.owned,true);assert.equal(demo.price,0);assert.equal(demo.duration_seconds,5400);assert.equal(demo.attempts_used,0);
+  assert.deepEqual(profile.bundles,[]);
+ }
+ assert.equal((await f.query('SELECT * FROM player_orders')).rows.length,0);
+ assert.equal((await f.query('SELECT * FROM player_attempts')).rows.length,0);
+ const run=await f.store.start(fresh.account.id,{product_id:'borrowed-time',team_name:'Демо-команда',request_key:randomUUID()});
+ const room=await f.roomSync(run.room_id);assert.equal(room.state,'pending');assert.equal(room.duration_seconds,5400);
+});
 test('registration validates agreement, confirmation, Unicode password length and unique normalized email',async t=>{const f=await fixture(t);await rejected(f.store.register({...f.registration('other@test.ru'),accept_terms:false}),400);await rejected(f.store.register({...f.registration('other@test.ru'),confirm_password:'different'}),400);await rejected(f.store.register({...f.registration('other@test.ru'),password:'я'.repeat(40),confirm_password:'я'.repeat(40)}),400);await rejected(f.store.register(f.registration('DETECTIVE@EXAMPLE.TEST')),409);const row=(await f.query('SELECT * FROM player_accounts')).rows[0];assert.notEqual(row.password_hash,'secret-password');assert.equal(f.account.account.password_hash,undefined);assert.equal((await f.store.authenticate(f.account.token)).email,'detective@example.test');});
 test('login, logout and expiration enforce sessions',async t=>{const f=await fixture(t);await rejected(f.store.login({email:'detective@example.test',password:'wrong'}),401);const login=await f.store.login({email:' DETECTIVE@EXAMPLE.TEST ',password:'secret-password'});assert.equal((await f.store.authenticate(login.token)).id,f.account.account.id);await f.store.logout(login.token);await rejected(f.store.authenticate(login.token),401);await f.query("UPDATE player_login_sessions SET expires_at='2000-01-01'");await rejected(f.store.authenticate(f.account.token),401);});
 test('password change requires current password and revokes old sessions',async t=>{const f=await fixture(t);await rejected(f.store.updateAccount(f.account.account.id,{username:'Новое имя',email:'new@test.ru',current_password:'wrong'}),400);const updated=await f.store.updateAccount(f.account.account.id,{username:'Новое имя',email:'new@test.ru',current_password:'secret-password',new_password:'next-password',confirm_password:'next-password'});await rejected(f.store.authenticate(f.account.token),401);assert.equal((await f.store.authenticate(updated.token)).email,'new@test.ru');await rejected(f.store.login({email:'new@test.ru',password:'secret-password'}),401);});

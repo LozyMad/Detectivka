@@ -9,6 +9,8 @@ async function seedCatalog(){
   const upsert=async p=>query(`INSERT INTO player_products (id,scenario_id,title,description,cover,price,duration_seconds,difficulty,max_attempts,published,rubric,solution) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,1,$10,$11) ON CONFLICT(id) DO NOTHING`,p);
   const main=rows.find(s=>s.name==='Ставка на молчание');
   if(main)await upsert(['silence',main.id,main.name,'Журналистка Вероника Гронская найдена мёртвой. Милиция уверена: это самоубийство. Её расследование осталось незавершённым.','/assets/landing/silence-case-cover-v1.webp',2000,7200,3,3,null,null]);
+  const publicDemo=rows.find(s=>s.name.trim().toLocaleLowerCase('ru')==='время взаймы');
+  if(publicDemo)await upsert(['borrowed-time',publicDemo.id,'Время взаймы','Часовщик читает в газете о собственной гибели. Сам он жив, но его помощник исчез, а фургон сгорел. Выясните, что произошло.','/assets/landing/borrowed-time-case-cover-v1.webp',0,5400,2,3,null,null]);
   await query("UPDATE player_products SET duration_seconds=7200 WHERE id='first-case' AND duration_seconds=1800");
   if(process.env.PLAYER_LOCAL_MODE!=='1'||process.env.NODE_ENV==='production')return;
   const author=(await query("SELECT id FROM users WHERE admin_level='super_admin' ORDER BY id")).rows[0];
