@@ -16,7 +16,6 @@ dialog.game-tutorial[open] { display: block; }
 .game-tutorial-counter { margin: 0 0 6px; color: #dfb38b; font-size: 11px; }
 .game-tutorial-card h2 { margin: 0 0 14px; padding: 0; color: #fff2df; font: 600 25px/1.2 system-ui, sans-serif; }
 .game-tutorial-text { margin: 0 0 18px; color: #ede2d4; }
-.game-tutorial-timer { padding: 10px 12px; margin: 0 0 20px; border-left: 2px solid #d8a266; background: #d8a2660d; color: #d0b99f; font-size: 11px; }
 .game-tutorial-actions, .game-tutorial-actions > div { display: flex; align-items: center; gap: 8px; }
 .game-tutorial-actions { justify-content: space-between; }
 .game-tutorial-actions button { min-height: 42px; border-radius: 24px; padding: 8px 16px; font: 600 12px/1.3 system-ui, sans-serif; white-space: nowrap; }
@@ -24,7 +23,6 @@ dialog.game-tutorial[open] { display: block; }
 .game-tutorial-back { border: 1px solid #8b725c; background: transparent; color: #f4e5d5; }
 .game-tutorial-back:disabled { opacity: .4; }
 .game-tutorial-next { border: 1px solid #bb5029; background: #b64c21; color: white; }
-.game-tutorial-keyboard { text-align: right; margin: 12px 0 0; font-size: 10px; color: #b59d85; }
 .game-tutorial button:focus-visible { outline: 3px solid #f4c794; outline-offset: 3px; }
 .game-tutorial-card h2:focus { outline: none !important; box-shadow: none !important; }
 @media (max-width: 899.98px) {
@@ -35,8 +33,6 @@ dialog.game-tutorial[open] { display: block; }
     .game-tutorial-card { padding: 16px; font-size: 13px; line-height: 1.5; }
     .game-tutorial-card h2 { font-size: 21px; }
     .game-tutorial-top span { font-size: 8px; }
-    .game-tutorial-keyboard { display: none; }
-    .game-tutorial-timer { margin-bottom: 12px; }
     .game-tutorial-actions button { padding-inline: 12px; }
     .game-tutorial-actions { position: sticky; bottom: -16px; padding: 8px 0 2px; background: #211a15; box-shadow: 0 -10px 12px #211a15; }
 }
