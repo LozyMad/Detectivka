@@ -24,14 +24,16 @@ async function main() {
     return response;
   };
   const grader = createYandexGrader({config, fetchImpl});
-  if (process.argv.includes('--full')) {
+  if (process.argv.includes('--full') || process.argv.includes('--mixed')) {
+    const mixed=process.argv.includes('--mixed');
     const questions = freezeRubric(rules.map((rule,index)=>({id:index+1,question_text:rule.aliases[0],criteria:''})));
-    const result = await grader.grade({questions,answers:questions.map(q=>({question_id:q.id,answer_text:q.ai_rule.answer}))});
+    const result = await grader.grade({questions,answers:questions.map(q=>({question_id:q.id,answer_text:mixed&&q.id===3?'Деньги дал Хованец. Кто поручился — не знаем.':mixed&&q.id===7?'Фургон поджёг Хованец из-за долга Марека.':q.ai_rule.answer}))});
     const points=result.grades.reduce((sum,g)=>sum+g.grade,0);
-    const passed=points===35&&!result.grades.some(g=>g.needs_review);
-    console.log(JSON.stringify({expected:35,actual:points,passed,grades:result.grades.map(g=>({question_id:g.question_id,grade:g.grade,needs_review:g.needs_review})),usage:result.usage}));
+    const expected=mixed?28:35;
+    const passed=points===expected&&!result.grades.some(g=>g.needs_review||g.grade!==(mixed&&g.question_id===3?3:mixed&&g.question_id===7?0:5));
+    console.log(JSON.stringify({expected,actual:points,passed,grades:result.grades.map(g=>({question_id:g.question_id,grade:g.grade,needs_review:g.needs_review})),usage:result.usage}));
     if(!passed)throw Object.assign(new Error(),{code:'AI_SMOKE_TEST_FAILED'});
-    console.log('Full demo API check passed. No database changes were made.');
+    console.log('Demo API check passed. No database changes were made.');
     return;
   }
   const rule = rules[2];

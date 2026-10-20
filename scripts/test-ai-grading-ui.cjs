@@ -50,3 +50,17 @@ test('closing a pending result stops polling and discards a later response',asyn
  const count=b.calls.length;b.element('player-dialog').open=false;b.element('player-dialog').emit('close');
  await b.clock.advance(10000);assert.equal(b.calls.length,count);
 });
+
+test('closing an account dialog does not stop automatic grading updates on the dedicated fee page',async()=>{
+ let requests=0;
+ const b=browser(call=>{
+  if(call.url.endsWith('/session'))return new Response(JSON.stringify({account:null}));
+  if(call.url==='/api/game/shared/result'){requests++;return new Response(JSON.stringify({scoring:{fee:requests===1?null:1280,ai_review:{status:requests===1?'processing':'completed'}}}));}
+  throw Error('Unexpected request');
+ });
+ b.window.location.pathname='/room-result';b.sandbox.location=b.window.location;
+ b.sandbox.sessionStorage.setItem('detectum-room-result',JSON.stringify({token:'fixture-result-token'}));
+ b.load('frontend/js/player-results.js');b.load('frontend/js/player.js');await flush();
+ b.element('player-dialog').emit('close');await b.clock.advance(2000);
+ assert.equal(requests,2);assert.match(b.element('room-result-content').innerHTML,/1\s*280/);
+});
