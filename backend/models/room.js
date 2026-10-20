@@ -63,17 +63,17 @@ if (DB_TYPE === 'postgresql') {
         if (err) return reject(err);
         if (!row) return reject(new Error('Room not found'));
 
-        const durationSeconds = row.duration_seconds || 3600;
+        const durationSeconds = Number(row.duration_seconds ?? 3600);
         const now = new Date();
-        const endTime = new Date(now.getTime() + durationSeconds * 1000);
+        const endTime = durationSeconds === 0 ? null : new Date(now.getTime() + durationSeconds * 1000).toISOString();
 
         db.run(`UPDATE rooms 
                 SET game_start_time = ?, game_end_time = ?, paused_at = NULL,
                     halfway_paused = 0, state = 'running'
-                WHERE id = ? AND state = 'pending'`, [now.toISOString(), endTime.toISOString(), roomId], function(updateErr) {
+                WHERE id = ? AND state = 'pending'`, [now.toISOString(), endTime, roomId], function(updateErr) {
           if (updateErr) return reject(updateErr);
           if (!this.changes) return reject(new Error('Room cannot be started in its current state'));
-          resolve({ id: roomId, game_start_time: now.toISOString(), game_end_time: endTime.toISOString(), duration_seconds: durationSeconds });
+          resolve({ id: roomId, game_start_time: now.toISOString(), game_end_time: endTime, duration_seconds: durationSeconds });
         });
       });
     });
@@ -99,11 +99,11 @@ if (DB_TYPE === 'postgresql') {
         const now = new Date();
         const pausedAt = new Date(room.paused_at || now);
         const remainingMs = Math.max(0, new Date(room.game_end_time) - pausedAt);
-        const endTime = new Date(now.getTime() + remainingMs);
+        const endTime = room.game_end_time == null ? null : new Date(now.getTime() + remainingMs).toISOString();
         db.run(`UPDATE rooms SET state = 'running', game_end_time = ?, paused_at = NULL
-                WHERE id = ? AND state = 'paused'`, [endTime.toISOString(), roomId], function(updateErr) {
+                WHERE id = ? AND state = 'paused'`, [endTime, roomId], function(updateErr) {
           if (updateErr) return reject(updateErr);
-          resolve(this.changes ? { id: roomId, state: 'running', game_end_time: endTime.toISOString() } : null);
+          resolve(this.changes ? { id: roomId, state: 'running', game_end_time: endTime } : null);
         });
       });
     });

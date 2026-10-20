@@ -1,7 +1,7 @@
 // Use elapsed game time: pauses freeze the delay, and extra time does not reset it.
 function questionAccess(room, now = Date.now()) {
   const delay = Math.max(0, Number(room?.questions_delay_seconds) || 0);
-  if (room?.is_test || !delay) return { is_open: true, remaining_seconds: 0, delay_seconds: delay };
+  if (room?.is_test || room?.duration_seconds === 0 || !delay) return { is_open: true, remaining_seconds: 0, delay_seconds: delay };
   let elapsed = 0;
   if (room.state !== 'pending' && room.game_end_time) {
     const reference = room.state === 'paused' ? new Date(room.paused_at).getTime() : now;

@@ -115,6 +115,7 @@ function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync
       const room=await one(q,`SELECT r.* FROM rooms r WHERE r.id=$2 AND (${roomScope(admin)})`,[admin.id,id]);
       if(!room)fail(404,'Комната не найдена или недоступна');
       if(room.is_test)fail(400,'В тестовых комнатах нет ограничения времени');
+      if(room.duration_seconds===0)fail(400,'В комнате без таймера дополнительное время не требуется');
       return room;
     };
     await controlRoom();await roomSync(id);await finalizeRoom(id);
@@ -127,13 +128,13 @@ function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync
           if(r.state!=='pending')fail(409,'Комната уже запущена');
           const run=await one(q,'SELECT account_id,product_id FROM player_runs WHERE room_id=$1 AND is_owner=1',[id]);
           if(run){const p=await one(q,'SELECT max_attempts FROM player_products WHERE id=$1',[run.product_id]);const used=Number((await one(q,'SELECT COUNT(*) AS n FROM player_attempts WHERE account_id=$1 AND product_id=$2',[run.account_id,run.product_id])).n);const extra=Number((await one(q,'SELECT COALESCE(SUM(amount),0) AS n FROM player_attempt_credits WHERE account_id=$1 AND product_id=$2',[run.account_id,run.product_id])).n);if(!p||used>=Number(p.max_attempts)+extra)fail(409,'Все попытки игрока использованы');}
-          await q("UPDATE rooms SET state='running',game_start_time=$1,game_end_time=$2,paused_at=NULL,halfway_paused=TRUE WHERE id=$3",[now(),new Date(Date.now()+r.duration_seconds*1000).toISOString(),id]);
+          await q("UPDATE rooms SET state='running',game_start_time=$1,game_end_time=$2,paused_at=NULL,halfway_paused=TRUE WHERE id=$3",[now(),r.duration_seconds===0?null:new Date(Date.now()+r.duration_seconds*1000).toISOString(),id]);
         }else if(action==='pause'){
           if(r.state!=='running')fail(409,'Поставить на паузу можно только идущую игру');
           await q("UPDATE rooms SET state='paused',paused_at=$1 WHERE id=$2",[now(),id]);
         }else if(action==='resume'){
-          if(r.state!=='paused')fail(409,'Комната сейчас не на паузе');const remaining=remainingSeconds(r);if(remaining<=0)fail(409,'Время игры истекло');
-          await q("UPDATE rooms SET state='running',game_end_time=$1,paused_at=NULL WHERE id=$2",[new Date(Date.now()+remaining*1000).toISOString(),id]);
+          if(r.state!=='paused')fail(409,'Комната сейчас не на паузе');const remaining=remainingSeconds(r);if(remaining!==null&&remaining<=0)fail(409,'Время игры истекло');
+          await q("UPDATE rooms SET state='running',game_end_time=$1,paused_at=NULL WHERE id=$2",[r.duration_seconds===0?null:new Date(Date.now()+remaining*1000).toISOString(),id]);
         }else if(action==='add_time'){
           const seconds=minutes*60;const end=r.game_end_time?new Date(new Date(r.game_end_time).getTime()+seconds*1000).toISOString():null;
           await q('UPDATE rooms SET duration_seconds=duration_seconds+$1,game_end_time=$2 WHERE id=$3',[seconds,end,id]);

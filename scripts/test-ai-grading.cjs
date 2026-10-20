@@ -29,7 +29,7 @@ async function fixture(t, options = {}) {
     'CREATE TABLE rooms (id INTEGER PRIMARY KEY,name TEXT,scenario_id INTEGER,is_test BOOLEAN,state TEXT,game_start_time TEXT,created_by INTEGER,game_end_time TEXT)',
     'CREATE TABLE shared_rooms (room_id INTEGER,room_user_id INTEGER)',
     'CREATE TABLE player_runs (id TEXT,account_id TEXT,product_id TEXT,room_id INTEGER,room_user_id INTEGER,is_owner INTEGER,score INTEGER,result_status TEXT,created_at TEXT)',
-    'CREATE TABLE player_products (id TEXT PRIMARY KEY,rubric TEXT,price INTEGER)',
+    'CREATE TABLE player_products (id TEXT PRIMARY KEY,rubric TEXT,price INTEGER,scenario_id INTEGER)',
     'CREATE TABLE questions (id INTEGER PRIMARY KEY,scenario_id INTEGER,question_text TEXT,is_active BOOLEAN,question_order INTEGER)',
     'CREATE TABLE question_answers (id INTEGER PRIMARY KEY,question_id INTEGER,room_user_id INTEGER,answer_text TEXT)',
     'CREATE TABLE visit_attempts (id INTEGER PRIMARY KEY,user_id INTEGER,room_id INTEGER)',
@@ -46,7 +46,7 @@ async function fixture(t, options = {}) {
   await scoring.init();
   await query("INSERT INTO scenarios VALUES (1,'Время Взаймы',1)");
   await query("INSERT INTO rooms VALUES (1,'Команда',1,FALSE,'running','2026-10-21',1,'2999-01-01')");
-  await query('INSERT INTO player_products VALUES ($1,NULL,0)', [options.product || 'borrowed-time']);
+  await query('INSERT INTO player_products VALUES ($1,NULL,0,1)', [options.product || 'borrowed-time']);
   await query('INSERT INTO player_runs VALUES ($1,$2,$3,1,10,1,NULL,NULL,$4)', ['run', 'account', options.product || 'borrowed-time', '2026-10-21']);
   await query('INSERT INTO shared_rooms VALUES (1,10)');
   for (const q of questions()) {
@@ -54,7 +54,8 @@ async function fixture(t, options = {}) {
     await query('INSERT INTO question_answers (question_id,room_user_id,answer_text) VALUES ($1,10,$2)', [q.id, options.empty ? '' : 'Ответ команды']);
   }
   await query('INSERT INTO visit_attempts VALUES (1,10,1)');
-  await transaction(q => scoring.capture(q, 1, options.product || 'borrowed-time'));
+  if(options.adminUntimed){await query('ALTER TABLE rooms ADD COLUMN duration_seconds INTEGER');await query('UPDATE rooms SET duration_seconds=0 WHERE id=1');await query('DELETE FROM player_runs');}
+  await transaction(q => scoring.capture(q, 1, options.adminUntimed?null:options.product || 'borrowed-time'));
   const finish = () => transaction(async q => { await q("UPDATE rooms SET state='finished' WHERE id=1"); return scoring.complete(q, 1); });
   t.after(async () => { scoring.aiReviews.stop(); await new Promise(resolve => db.close(resolve)); });
   return {query, transaction, scoring, finish, grader, calls: () => calls, time: () => time, advance: ms => {time += ms;}};
@@ -69,6 +70,13 @@ test('rubric identifies all seven questions independently of order and freezes t
   const changed = questions(); changed[0].question_text = 'Другой вопрос'; assert.equal(freezeRubric(changed), null);
   const duplicate = questions(); duplicate[1] = duplicate[0]; assert.equal(freezeRubric(duplicate), null);
   const custom = questions(); custom[0].criteria = 'Авторская новая шкала'; assert.equal(freezeRubric(custom), null);
+});
+
+test('a new untimed administrator demo room receives AI grading without a player purchase or owner run',async t=>{
+ const f=await fixture(t,{adminUntimed:true});
+ await f.finish();await f.scoring.aiReviews.tick();
+ const summary=await f.scoring.publicSummary(1);
+ assert.equal(f.calls(),1);assert.equal(summary.ai_review.status,'completed');assert.equal(summary.points,35);assert.equal(summary.grades.length,7);
 });
 
 test('Responses request matches the Yandex example and sends only answers and frozen rules', async () => {

@@ -93,7 +93,7 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     await q('UPDATE scenarios SET name=name WHERE id=$1',[room.scenario_id]);
     const saved=await one(q,'SELECT * FROM scenario_scoring_settings WHERE scenario_id=$1',[room.scenario_id]);
     const criteria=(await q('SELECT question_id,criteria FROM scenario_question_criteria WHERE scenario_id=$1',[room.scenario_id])).rows;
-    const product=productId||owner?.product_id?await one(q,'SELECT id,rubric FROM player_products WHERE id=$1',[productId||owner.product_id]):null;
+    const product=productId||owner?.product_id?await one(q,'SELECT id,rubric FROM player_products WHERE id=$1',[productId||owner.product_id]):room.duration_seconds===0?await one(q,"SELECT id,rubric FROM player_products WHERE scenario_id=$1 AND id='borrowed-time'",[room.scenario_id]):null;
     const rubric=product?.rubric?JSON.parse(product.rubric):[];
     let questions=(await q('SELECT id,question_text FROM questions WHERE scenario_id=$1 AND is_active=TRUE ORDER BY question_order,id',[room.scenario_id])).rows.map(item=>({...item,criteria:criteria.find(c=>Number(c.question_id)===Number(item.id))?.criteria||'',auto_answers:rubric.find(r=>Number(r.question_id)===Number(item.id))?.answers||null}));
     if(aiReviews.enabled&&product?.id==='borrowed-time'&&!preserveLegacy)questions=require('./borrowedTimeGrading').freezeRubric(questions)||questions;

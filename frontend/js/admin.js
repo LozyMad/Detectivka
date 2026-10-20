@@ -607,6 +607,7 @@ function setupEventListeners() {
     const createRoomForm = document.getElementById('createRoomForm');
     if (createRoomForm) createRoomForm.addEventListener('submit', handleCreateRoom);
     document.getElementById('roomIsTest')?.addEventListener('change', toggleTestRoomDuration);
+    document.getElementById('roomWithoutTimer')?.addEventListener('change', toggleTestRoomDuration);
     const addRoomUserForm = document.getElementById('addRoomUserForm');
     if (addRoomUserForm) addRoomUserForm.addEventListener('submit', handleAddRoomUser);
     const roomSelectForUsers = document.getElementById('roomSelectForUsers');
@@ -1480,9 +1481,12 @@ function ensureRoomScenarioOptions() {
 
 function toggleTestRoomDuration() {
     const isTest = document.getElementById('roomIsTest').checked;
-    document.getElementById('roomDurationField').hidden = isTest;
-    document.getElementById('roomDuration').disabled = isTest;
-    document.getElementById('roomQuestionsNotice').hidden = isTest;
+    const withoutTimer = document.getElementById('roomWithoutTimer');
+    if (withoutTimer) withoutTimer.disabled = isTest;
+    const hideDuration = isTest || !!withoutTimer?.checked;
+    document.getElementById('roomDurationField').hidden = hideDuration;
+    document.getElementById('roomDuration').disabled = hideDuration;
+    document.getElementById('roomQuestionsNotice').hidden = hideDuration;
 }
 
 async function handleCreateRoom(e) {
@@ -1491,13 +1495,14 @@ async function handleCreateRoom(e) {
     const scenario_id = document.getElementById('roomScenario').value;
     const minutes = parseInt(document.getElementById('roomDuration').value || '120', 10);
     const is_test = document.getElementById('roomIsTest').checked;
-    const duration_seconds = is_test ? 0 : Math.max(60, minutes * 60);
+    const timer_disabled = !is_test && !!document.getElementById('roomWithoutTimer')?.checked;
+    const duration_seconds = is_test || timer_disabled ? 0 : Math.max(60, minutes * 60);
     try {
         const token = localStorage.getItem('token');
         const res = await fetch(`${API_BASE}/rooms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ name, scenario_id, duration_seconds, is_test, shared_room: !is_test && !!document.getElementById('roomShared')?.checked })
+            body: JSON.stringify({ name, scenario_id, duration_seconds, is_test, timer_disabled, shared_room: !is_test && !!document.getElementById('roomShared')?.checked })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Ошибка создания комнаты');
@@ -1574,7 +1579,7 @@ function displayRooms(rooms) {
                 ? `<select class="form-select form-select-sm" aria-label="Сценарий тестовой комнаты" onchange="changeTestRoomScenario(${r.id}, this.value)">${scenarios.map(s => `<option value="${s.id}" ${String(s.id) === String(r.scenario_id) ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select>`
                 : escapeHtml(scenarioName)}</td>
             <td>${r.game_start_time ? new Date(r.game_start_time).toLocaleString('ru-RU') : '-'}</td>
-            <td>${r.is_test ? 'Без ограничения' : `${Math.floor((r.duration_seconds||3600)/60)} мин.`}</td>
+            <td>${r.is_test || r.duration_seconds === 0 ? 'Без таймера' : `${Math.floor((r.duration_seconds||3600)/60)} мин.`}</td>
             <td class="table-actions room-actions"><div class="room-actions-controls">
                 ${r.is_test ? `<button class="btn btn-sm btn-primary me-1" onclick="enterTestRoom(${r.id})" title="Войти в тестовую комнату"><i class="fas fa-sign-in-alt me-1"></i>Войти</button>` : `
                 <div class="btn-group btn-group-sm" role="group">
@@ -1589,7 +1594,7 @@ function displayRooms(rooms) {
                     </button>
                 </div>`}
                 ${r.is_test || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-light" onclick="copyRoomInvite(${r.id})" title="Ссылка для друзей">Ссылка</button>`}
-                ${r.is_test || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-warning" onclick="openRoomTimeDialog(${r.id})" title="Добавить время" aria-label="Добавить время"><i class="fas fa-clock" aria-hidden="true"></i></button>`}
+                ${r.is_test || r.duration_seconds === 0 || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-warning" onclick="openRoomTimeDialog(${r.id})" title="Добавить время" aria-label="Добавить время"><i class="fas fa-clock" aria-hidden="true"></i></button>`}
                 ${r.is_test || r.is_shared ? '' : `<button class="btn btn-sm btn-outline-primary" onclick="viewRoomUsers(${r.id})"><i class="fas fa-users"></i></button>`}
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteRoom(${r.id})" title="Удалить комнату">
                     <i class="fas fa-trash"></i>
@@ -1603,7 +1608,7 @@ function displayRooms(rooms) {
 function openRoomTimeDialog(roomId) {
     if (roomTimeRequest?.busy) return;
     const room = roomsCache?.find(r => Number(r.id) === Number(roomId));
-    if (!room || room.is_test || room.state === 'finished') return;
+    if (!room || room.is_test || room.duration_seconds === 0 || room.state === 'finished') return;
     roomTimeRequest = { roomId, key: crypto.randomUUID(), minutes: null, busy: false };
     document.getElementById('roomTimeName').textContent = `Комната «${room.name}» · ${Math.floor(room.duration_seconds / 60)} мин.`;
     document.getElementById('roomTimeMinutes').value = '15';

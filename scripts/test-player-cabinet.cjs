@@ -16,8 +16,8 @@ async function fixture(t,localMode=true){
  `CREATE TABLE visit_attempts (id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER,room_id INTEGER,scenario_id INTEGER,found BOOLEAN)`,
  `CREATE TABLE questions (id INTEGER PRIMARY KEY,scenario_id INTEGER,question_text TEXT,question_order INTEGER,is_active BOOLEAN)`,
  `CREATE TABLE question_answers (id INTEGER PRIMARY KEY AUTOINCREMENT,question_id INTEGER,room_user_id INTEGER,answer_text TEXT)`])await query(sql);
- const roomSync=async id=>{let room=(await query('SELECT * FROM rooms WHERE id=$1',[id])).rows[0];if(room?.state==='running'&&new Date(room.game_end_time)<=new Date()){await query("UPDATE rooms SET state='finished' WHERE id=$1",[id]);room={...room,state:'finished'};}return room;};
- const remainingSeconds=room=>room.state==='finished'?0:Math.max(0,Math.ceil((new Date(room.game_end_time)-new Date(room.state==='paused'?room.paused_at:Date.now()))/1000));
+ const roomSync=async id=>{let room=(await query('SELECT * FROM rooms WHERE id=$1',[id])).rows[0];if(room?.state==='running'&&room.game_end_time&&new Date(room.game_end_time)<=new Date()){await query("UPDATE rooms SET state='finished' WHERE id=$1",[id]);room={...room,state:'finished'};}return room;};
+ const {remainingSeconds}=require('../backend/services/roomTimer');
  const findTeams=async(name,password)=>{const teams=(await query('SELECT u.* FROM room_users u JOIN rooms r ON r.id=u.room_id WHERE u.username=$1 AND r.is_test=FALSE',[name])).rows;const matched=[];for(const team of teams)if(await bcrypt.compare(password,team.password))matched.push(team);return matched;};
  const store=createPlayerCabinet({query,transaction,localMode,roomSync,remainingSeconds,findTeams});await store.init();
  await query("INSERT INTO scenarios VALUES (1,'Demo',1),(2,'Paid',1)");await query("INSERT INTO questions VALUES (1,1,'Who?',1,TRUE),(2,2,'Why?',1,TRUE)");
@@ -162,6 +162,21 @@ test('admin timer controls preserve paused time, are idempotent and record every
  const after=await f.roomSync(run.room_id);assert.equal(after.duration_seconds,before.duration_seconds+900);assert.equal(new Date(after.game_end_time)-new Date(before.game_end_time),900000);assert.equal(after.paused_at,before.paused_at);
  await f.store.admin.control(organizer,run.room_id,adminBody({action:'resume'}));assert.equal((await f.store.catalog(f.account.account.id))[0].attempts_used,0);
  assert.equal((await f.store.admin.journal(organizer,{room_id:run.room_id})).length,4);
+});
+
+test('administrator controls keep an untimed shared room open through pause and resume until manual finish',async t=>{
+ const f=await fixture(t);const run=await f.start();
+ await f.query('UPDATE rooms SET duration_seconds=0,questions_delay_seconds=0 WHERE id=$1',[run.room_id]);
+ await f.store.admin.control(organizer,run.room_id,adminBody({action:'start'}));
+ let room=await f.roomSync(run.room_id);assert.equal(room.state,'running');assert.equal(room.game_end_time,null);
+ await f.store.admin.control(organizer,run.room_id,adminBody({action:'pause'}));
+ assert.equal((await f.roomSync(run.room_id)).state,'paused');
+ await f.store.admin.control(organizer,run.room_id,adminBody({action:'resume'}));
+ room=await f.roomSync(run.room_id);assert.equal(room.state,'running');assert.equal(room.game_end_time,null);
+ assert.equal((await f.store.shared.snapshot({id:run.room_user_id,room_id:run.room_id})).questions_access.is_open,true);
+ await rejected(f.store.admin.control(organizer,run.room_id,adminBody({action:'add_time',minutes:15})),400);
+ await f.store.admin.control(organizer,run.room_id,adminBody({action:'finish',confirmed:true}));
+ assert.equal((await f.roomSync(run.room_id)).state,'finished');
 });
 
 test('adding time to shared rooms preserves lobby, running and paused state without resetting question access',async t=>{

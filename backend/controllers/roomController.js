@@ -30,8 +30,10 @@ const createRoom = async (req, res) => {
       return res.status(400).json({ error: 'Scenario not found' });
     }
     
-    const questions_delay_seconds = newRoomQuestionDelay(duration_seconds ?? 7200, is_test === true);
-    const room = await Room.create({ name, scenario_id, created_by: req.user.id, duration_seconds, questions_delay_seconds, is_test: is_test === true });
+    const withoutTimer = req.body.timer_disabled === true && is_test !== true;
+    const roomDuration = withoutTimer ? 0 : duration_seconds;
+    const questions_delay_seconds = newRoomQuestionDelay(roomDuration ?? 7200, is_test === true || withoutTimer);
+    const room = await Room.create({ name, scenario_id, created_by: req.user.id, duration_seconds: roomDuration, questions_delay_seconds, is_test: is_test === true });
     
     if (!is_test && req.body.shared_room === true) {
       const invitation = await require('../services/playerRuntime').cabinet.shared.adminInvite(room.id, req.user);

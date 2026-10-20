@@ -183,16 +183,16 @@ const Room = {
         const room = await Room.getById(roomId);
         if (!room) throw new Error('Room not found');
 
-        const durationSeconds = room.duration_seconds || 3600;
+        const durationSeconds = Number(room.duration_seconds ?? 3600);
         const now = new Date();
-        const endTime = new Date(now.getTime() + durationSeconds * 1000);
+        const endTime = durationSeconds === 0 ? null : new Date(now.getTime() + durationSeconds * 1000).toISOString();
 
         const result = await query(
             `UPDATE rooms 
              SET game_start_time = $1, game_end_time = $2, paused_at = NULL,
                  halfway_paused = FALSE, state = 'running'
              WHERE id = $3 AND state = 'pending' RETURNING *`,
-            [now.toISOString(), endTime.toISOString(), roomId]
+            [now.toISOString(), endTime, roomId]
         );
 
         if (!result.rows[0]) throw new Error('Room cannot be started in its current state');
@@ -216,11 +216,11 @@ const Room = {
         const now = new Date();
         const pausedAt = new Date(room.paused_at || now);
         const remainingMs = Math.max(0, new Date(room.game_end_time) - pausedAt);
-        const endTime = new Date(now.getTime() + remainingMs);
+        const endTime = room.game_end_time == null ? null : new Date(now.getTime() + remainingMs).toISOString();
         const result = await query(
             `UPDATE rooms SET state = 'running', game_end_time = $2, paused_at = NULL
              WHERE id = $1 AND state = 'paused' RETURNING *`,
-            [roomId, endTime.toISOString()]
+            [roomId, endTime]
         );
 
         return result.rows[0] || null;

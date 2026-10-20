@@ -1114,8 +1114,8 @@ function renderTimer() {
     updateAnswerDeadlineNotice(remaining);
     if (!timerDisplay || !roomTimer) return;
 
-    if (roomState.room?.is_test) {
-        timerDisplay.textContent = '∞ Без ограничений';
+    if (roomState.room?.is_test || (roomState.room?.duration_seconds === 0 && ['running', 'paused'].includes(state))) {
+        timerDisplay.textContent = state === 'paused' ? 'Пауза · без таймера' : '∞ Без ограничений';
         roomTimer.style.display = 'block';
         timerDisplay.className = 'badge bg-success text-dark fs-6';
         return;
@@ -1163,7 +1163,7 @@ function updateAnswerDeadlineNotice(remaining) {
     const key = answerDeadlineKey();
     let dismissed = key && dismissedAnswerDeadlines.has(key);
     try { dismissed = dismissed || (key && gameStorage.getItem(key) === '1'); } catch (_) {}
-    notice.hidden = !key || dismissed || roomState?.room?.is_test ||
+    notice.hidden = !key || dismissed || roomState?.room?.is_test || roomState?.room?.duration_seconds === 0 ||
         !['running', 'paused'].includes(roomState?.state) || remaining <= 0 || remaining > 300;
 }
 
