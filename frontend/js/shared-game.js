@@ -7,7 +7,7 @@
   const inputs=new Map();let snapshot=null,notesEntry=null,submitting=false,rendering=false,controlling=false;
   const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const request=async(path,body,method)=>{const response=await window.gameNetwork.fetch('/api/game/shared'+path,{method:method||(body?'PATCH':'GET'),headers:{Authorization:'Bearer '+store.getItem('token'),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});const data=await response.json();if(!response.ok){const error=new Error(data.error||'Не удалось сохранить');error.data=data;throw error;}return data;};
-  session.onRoomFinished=()=>{window.gameNetwork.cancelReads();location.replace(access?.is_owner?'/profile':'/room-finished');};
+  session.onRoomFinished=identity=>{if(identity?.token)sessionStorage.setItem('detectum-room-result',JSON.stringify({token:identity.token,room_id:room.id}));window.gameNetwork.cancelReads();location.replace('/room-result');};
   session.onExpired=()=>{location.href=access?.invite_path||'/profile';};
   function entry(field,revision,status,kind,questionId){
     const item={field,revision:Number(revision),status,kind,questionId,dirty:false,busy:null,timer:null,version:0,conflict:false};
@@ -29,9 +29,9 @@
   window.displayQuestions=()=>renderQuestions();
   window.loadSharedQuestions=renderQuestions;
   window.submitAllAnswers=async()=>{
-    if(submitting)return;submitting=true;const status=document.getElementById('answers_global_status'),button=document.getElementById('submitAllAnswersBtn');if(button)button.disabled=true;
+    if(submitting)return;if(!confirm('Отправить ответы и завершить расследование? Изменить ответы после отправки будет нельзя.'))return;submitting=true;const status=document.getElementById('answers_global_status'),button=document.getElementById('submitAllAnswersBtn');if(button)button.disabled=true;
     try{for(const item of inputs.values()){await save(item);if(item.dirty)throw new Error('Сначала сохраните изменения и разрешите конфликты в бланке');}
-      await request('/answers',{answers:[...inputs.values()].map(item=>({question_id:item.questionId,text:item.field.value,revision:item.revision}))},'POST');if(status)status.textContent='Все ответы отправлены командой. Создатель может завершить дело досрочно.';await refresh();
+      await request('/answers',{finish:true,answers:[...inputs.values()].map(item=>({question_id:item.questionId,text:item.field.value,revision:item.revision}))},'POST');session.closeRoom();
     }catch(error){if(status)status.textContent=error.message;}finally{submitting=false;if(button)button.disabled=!!snapshot?.answers_submitted;}
   };
   function apply(state){

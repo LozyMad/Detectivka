@@ -85,11 +85,26 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
   async function submitAnswers(identity,body){
     if(!Array.isArray(body.answers)||body.answers.length>200)fail(400,'Некорректные ответы');
     await roomSync(identity.room_id);
-    return transaction(async q=>{const {link,room}=await lock(q,identity);if(link.answers_submitted)return {submitted:true};if(room.state!=='running')fail(409,'Отправить ответы можно только во время игры');if(!questionAccess(room).is_open)fail(403,'Вопросы ещё не открыты',{code:'QUESTIONS_LOCKED'});const questions=await activeQuestions(room,q);if(!questions.length)fail(409,'В деле пока нет вопросов');if(body.answers.length!==questions.length||new Set(body.answers.map(a=>Number(a.question_id))).size!==questions.length)fail(400,'Отправьте ответы на все вопросы одним бланком');
+    return transaction(async q=>{const {link,room}=await lock(q,identity);if(link.answers_submitted)return body.finish===true?finishSubmission(q,room):{submitted:true};if(room.state!=='running')fail(409,'Отправить ответы можно только во время игры');if(!questionAccess(room).is_open)fail(403,'Вопросы ещё не открыты',{code:'QUESTIONS_LOCKED'});const questions=await activeQuestions(room,q);if(!questions.length)fail(409,'В деле пока нет вопросов');if(body.answers.length!==questions.length||new Set(body.answers.map(a=>Number(a.question_id))).size!==questions.length)fail(400,'Отправьте ответы на все вопросы одним бланком');
       for(const question of questions){const answer=body.answers.find(a=>Number(a.question_id)===Number(question.id));if(!answer||typeof answer.text!=='string'||answer.text.length>10000||!Number.isInteger(answer.revision))fail(400,'Некорректный ответ');const draft=await one(q,'SELECT revision FROM shared_answer_drafts WHERE room_id=$1 AND question_id=$2',[room.id,question.id]);if(Number(draft?.revision||0)!==answer.revision)fail(409,'Кто-то изменил ответы. Обновите бланк перед отправкой');const existing=await one(q,'SELECT id FROM question_answers WHERE room_user_id=$1 AND question_id=$2',[link.room_user_id,question.id]);if(existing)await q('UPDATE question_answers SET answer_text=$1 WHERE id=$2',[answer.text,existing.id]);else await q('INSERT INTO question_answers (question_id,room_user_id,answer_text) VALUES ($1,$2,$3)',[question.id,link.room_user_id,answer.text]);}
-      await q('UPDATE shared_rooms SET answers_submitted=1 WHERE room_id=$1',[room.id]);return {submitted:true};
+      await q('UPDATE shared_rooms SET answers_submitted=1 WHERE room_id=$1',[room.id]);return body.finish===true?finishSubmission(q,room):{submitted:true};
     });
   }
-  return {init,provision,adminInvite,join,identity,authorize,activeQuestions,snapshot,saveNotes,saveDraft,submitAnswers,setFinalizer(fn){finalize=fn;},setScoring(service){scoring=service;}};
+  async function finishSubmission(q,room){
+    if(!['running','paused'].includes(room.state))fail(409,'Расследование ещё не запущено');
+    const elapsed=Math.max(0,Math.min(Number(room.duration_seconds),Number(room.duration_seconds)-Number(remainingSeconds(room))));
+    await q("UPDATE rooms SET state='finished',game_end_time=$1,paused_at=NULL WHERE id=$2",[now(),room.id]);
+    await finalize(room.id,q,elapsed);
+    return {submitted:true,finished:true};
+  }
+  async function result(identity){
+    const link=await authorize(identity);const room=await roomSync(link.room_id);
+    if(!room)fail(404,'Комната не найдена');
+    if(room.state!=='finished')fail(409,'Разбор доступен после завершения расследования');
+    if(!room.game_start_time)return {room:{id:room.id,name:room.name},cancelled:true,scoring:null,rating_rule:'Комната закрыта до запуска. Гонорар не рассчитывается.'};
+    await finalize(room.id);
+    return {room:{id:room.id,name:room.name},scoring:await scoring?.publicSummary(room.id)||null,ranked:false,rating_rule:'Гонорар зависит от качества ответов и количества поездок. Оценка каждого ответа — от 0 до 5.'};
+  }
+  return {init,provision,adminInvite,join,identity,authorize,activeQuestions,snapshot,saveNotes,saveDraft,submitAnswers,result,setFinalizer(fn){finalize=fn;},setScoring(service){scoring=service;}};
 }
 module.exports={createSharedRooms};

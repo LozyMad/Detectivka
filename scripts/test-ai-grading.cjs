@@ -77,9 +77,11 @@ test('rubric identifies all seven questions independently of order and freezes t
 
 test('a new untimed administrator demo room receives AI grading without a player purchase or owner run',async t=>{
  const f=await fixture(t,{adminUntimed:true});
- await f.finish();await f.scoring.aiReviews.tick();
+ assert.deepEqual((await f.scoring.publicSummary(1)).grades,[]);
+ await f.finish();assert.deepEqual((await f.scoring.publicSummary(1)).grades,[]);await f.scoring.aiReviews.tick();
  const summary=await f.scoring.publicSummary(1);
  assert.equal(f.calls(),1);assert.equal(summary.ai_review.status,'completed');assert.equal(summary.points,35);assert.equal(summary.grades.length,7);
+ assert.equal(summary.grades[0].correct_answer,rules[0].answer);assert.equal(summary.grades[0].answer_text,'Ответ команды');
 });
 
 test('Responses request matches the Yandex example and sends only answers and frozen rules', async () => {

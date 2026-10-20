@@ -190,7 +190,7 @@ app.use('/api/internet-cafe', internetCafeRoutes);
 app.use('/api/applications', applicationRoutes);
 
 // Player account pages share the same application shell.
-for (const route of ['/register','/account-login','/forgot-password','/reset-password','/profile','/catalog','/how-to-play','/room','/room-finished']) {
+for (const route of ['/register','/account-login','/forgot-password','/reset-password','/profile','/catalog','/how-to-play','/room','/room-finished','/room-result']) {
   app.get(route, (req,res) => { res.set('Cache-Control','no-store'); res.sendFile(path.join(__dirname,'../frontend/player.html')); });
 }
 

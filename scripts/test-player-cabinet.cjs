@@ -34,6 +34,44 @@ async function fixture(t,localMode=true){
 }
 const rejected=(promise,status)=>assert.rejects(promise,error=>error.status===status);
 
+test('sending a final answer sheet atomically finishes the room, consumes one attempt and publishes the team result',async t=>{
+ const f=await fixture(t);const run=await f.begin();const identity={id:run.room_user_id,room_id:run.room_id};
+ await rejected(f.store.shared.result(identity),409);
+ assert.deepEqual(await f.store.shared.submitAnswers(identity,{finish:true,answers:[{question_id:1,text:'Анна Лебедева',revision:0}]}),{submitted:true,finished:true});
+ assert.equal((await f.roomSync(run.room_id)).state,'finished');
+ const result=await f.store.shared.result(identity);assert.equal(result.scoring.fee,2000);
+ assert.equal(result.scoring.grades[0].answer_text,'Анна Лебедева');assert.equal(result.scoring.grades[0].correct_answer,'Анна Лебедева');
+ await f.store.shared.result(identity);assert.equal((await f.query('SELECT * FROM player_attempts')).rows.length,1);
+ await rejected(f.store.shared.result({...identity,id:identity.id+100}),403);
+ await rejected(f.store.shared.saveDraft(identity,{question_id:1,text:'Changed',revision:0}),403);
+});
+
+test('an invalid final answer sheet cannot finish the room or consume an attempt',async t=>{
+ const f=await fixture(t);const run=await f.begin();const identity={id:run.room_user_id,room_id:run.room_id};
+ await f.store.shared.saveDraft(identity,{question_id:1,text:'Saved',revision:0});
+ await rejected(f.store.shared.submitAnswers(identity,{finish:true,answers:[{question_id:1,text:'Stale',revision:0}]}),409);
+ assert.equal((await f.roomSync(run.room_id)).state,'running');assert.equal((await f.query('SELECT * FROM player_attempts')).rows.length,0);
+ assert.equal((await f.query('SELECT * FROM question_answers')).rows.length,0);
+});
+
+test('real HTTP: a finished team can read only its result, while gameplay and invalid identities remain blocked',async t=>{
+ const f=await fixture(t);const run=await f.begin();
+ const fs=require('node:fs'),vm=require('node:vm'),express=require('../backend/node_modules/express'),jwt=require('../backend/node_modules/jsonwebtoken');
+ const secret='result-route-test-secret';const dependencies={express,jsonwebtoken:jwt,'../models/user':{},'../models/room':{},'../services/roomTimer':{syncRoomTimer:f.roomSync},'../services/playerRuntime':{cabinet:f.store}};
+ function load(path){const module={exports:{}};vm.runInNewContext(fs.readFileSync(path,'utf8'),{module,process:{env:{JWT_SECRET:secret}},require:name=>{if(!(name in dependencies))throw Error('Unexpected dependency '+name);return dependencies[name];}});return module.exports;}
+ dependencies['../middleware/auth']=load('backend/middleware/auth.js');
+ const respond=(_req,res)=>res.json({ok:true});dependencies['../controllers/gameController']={visitLocation:respond,getActiveScenario:respond,getVisitedLocations:respond,roomEventsStream:respond};dependencies['../controllers/statsController']={getUserAttempts:respond};dependencies['../controllers/addressBookController']={getAddressBookSections:respond,getAddressBookEntries:respond};dependencies['./investigationBoard']=express.Router();dependencies['./sharedGame']=express.Router();
+ const app=express();app.use('/api/game',load('backend/routes/game.js'));app.use((e,_req,res,_next)=>res.status(e.status||500).json({error:e.message}));
+ const server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});t.after(()=>new Promise(resolve=>{server.close(resolve);server.closeAllConnections();}));
+ const token=id=>jwt.sign({room_user_id:id,room_id:run.room_id},secret,{expiresIn:'24h'});
+ const get=(path,auth=token(run.room_user_id))=>fetch('http://127.0.0.1:'+server.address().port+'/api/game/'+path,{headers:{Authorization:'Bearer '+auth}});
+ assert.equal((await get('shared/result')).status,409);
+ await f.store.shared.submitAnswers({id:run.room_user_id,room_id:run.room_id},{finish:true,answers:[{question_id:1,text:'Анна Лебедева',revision:0}]});
+ const result=await get('shared/result');assert.equal(result.status,200);assert.equal(result.headers.get('cache-control'),'no-store');assert.equal((await result.json()).scoring.grades[0].grade,5);
+ assert.equal((await get('scenario')).status,403);assert.equal((await get('shared/result',token(run.room_user_id+100))).status,403);
+ assert.equal((await get('shared/result','invalid')).status,403);assert.equal((await get('shared/result',jwt.sign({room_user_id:run.room_user_id,room_id:run.room_id},secret,{expiresIn:-1}))).status,403);
+});
+
 test('new and existing accounts receive the free demo in their library without an order or a used attempt',async t=>{
  const f=await fixture(t,false);
  await f.query("INSERT INTO player_products (id,scenario_id,title,description,cover,price,duration_seconds,difficulty,max_attempts) VALUES ('borrowed-time',1,'Время взаймы','Демо','/assets/landing/borrowed-time-case-cover-v1.webp',0,5400,2,3)");

@@ -7,13 +7,20 @@ const {
 } = require('../controllers/gameController');
 const { getUserAttempts } = require('../controllers/statsController');
 const { getAddressBookSections, getAddressBookEntries } = require('../controllers/addressBookController');
-const { authenticateToken, authenticateTokenQuery } = require('../middleware/auth');
+const { authenticateToken, authenticateTokenQuery, authenticateResultToken } = require('../middleware/auth');
 const investigationBoard = require('./investigationBoard');
 
 const router = express.Router();
 
 // SSE: токен в query (EventSource не шлёт заголовки), регистрируем до authenticateToken
 router.get('/room/:roomId/events', authenticateTokenQuery, roomEventsStream);
+
+router.get('/shared/result', authenticateResultToken, (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  Promise.resolve().then(() => require('../services/playerRuntime').cabinet.shared.result(req.roomUser))
+    .then(result => res.json(result)).catch(error => error.status
+      ? res.status(error.status).json({error: error.message, ...(error.data || {})}) : next(error));
+});
 
 router.use(authenticateToken);
 

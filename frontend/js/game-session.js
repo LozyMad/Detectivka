@@ -97,10 +97,11 @@
         },
         closeRoom() {
             if (expired) return;
+            const identity = { token: storage.getItem('token') };
             expired = true;
             session.clear();
             document.body.hidden = true;
-            if (session.onRoomFinished) session.onRoomFinished();
+            if (session.onRoomFinished) session.onRoomFinished(identity);
             else window.location.replace('/room-finished');
         },
         async checkResponse(response, options) {

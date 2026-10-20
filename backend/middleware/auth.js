@@ -4,7 +4,7 @@ const Room = require('../models/room');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-const authenticateToken = (req, res, next) => {
+const authenticate = (req, res, next, allowFinished = false) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -33,7 +33,7 @@ const authenticateToken = (req, res, next) => {
         const room=await require('../services/roomTimer').syncRoomTimer(payload.room_id);
         res.setHeader?.('Cache-Control','no-store');
         if(!room)return res.status(403).json({error:'Комната больше не существует',code:'AUTH_ROOM_MISSING'});
-        if(!room.is_test&&room.state==='finished')return res.status(403).json({error:'Игра в этой комнате завершена. Повторный вход закрыт.',code:'ROOM_FINISHED'});
+        if(!allowFinished&&!room.is_test&&room.state==='finished')return res.status(403).json({error:'Игра в этой комнате завершена. Повторный вход закрыт.',code:'ROOM_FINISHED'});
         req.roomUser = { id: payload.room_user_id, room_id: payload.room_id, username: payload.username, scenario_id: payload.scenario_id };
         return next();
       }
@@ -46,6 +46,10 @@ const authenticateToken = (req, res, next) => {
     }
   });
 };
+
+const authenticateToken = (req, res, next) => authenticate(req, res, next);
+// This token grants read access to the finished team's result only, never to gameplay.
+const authenticateResultToken = (req, res, next) => authenticate(req, res, next, true);
 
 /** Для SSE: токен из query (EventSource не шлёт заголовки) */
 const authenticateTokenQuery = (req, res, next) => {
@@ -137,6 +141,7 @@ const scenarioAccessRequired = async (req, res, next) => {
 
 module.exports = {
   authenticateToken,
+  authenticateResultToken,
   authenticateTokenQuery,
   generateToken,
   superAdminRequired,
