@@ -1,15 +1,16 @@
 'use strict';
-const FORMULA_VERSION=1, DEFAULT_MAX_FEE=2000, DEFAULT_STANDARD_TRIPS=20;
+const FORMULA_VERSION=2, DEFAULT_MAX_FEE=2000, DEFAULT_STANDARD_TRIPS=20;
 const fail=(status,message)=>{const e=new Error(message);e.status=status;throw e;};
 const now=()=>new Date().toISOString();
 const normalized=value=>String(value||'').toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
-function calculateFee({points,max_points,trips,max_fee=DEFAULT_MAX_FEE,standard_trips=DEFAULT_STANDARD_TRIPS}) {
+function calculateFee({points,max_points,trips,max_fee=DEFAULT_MAX_FEE,standard_trips=DEFAULT_STANDARD_TRIPS,formula_version=FORMULA_VERSION}) {
   for(const n of [points,max_points,trips,max_fee,standard_trips])if(!Number.isFinite(n)||!Number.isInteger(n)||n<0)fail(400,'Некорректные параметры расчёта');
-  if(max_fee<1||standard_trips<1||points>max_points)fail(400,'Некорректные параметры формулы');
+  if(max_fee<1||standard_trips<1||points>max_points||![1,2].includes(formula_version))fail(400,'Некорректные параметры формулы');
   const quality=max_points>0?points/max_points:0;
   const trip_factor=trips>0?Math.min(1,Math.sqrt(standard_trips/trips)):0;
-  const fee=Math.round(max_fee*quality*quality*trip_factor);
-  return {points,max_points,trips,max_fee,standard_trips,quality,trip_factor,fee,rating_points:Math.round(2000*quality*quality*trip_factor),formula_version:FORMULA_VERSION};
+  const answer_factor=formula_version===1?quality*quality:quality;
+  const fee=Math.round(max_fee*answer_factor*trip_factor);
+  return {points,max_points,trips,max_fee,standard_trips,quality,trip_factor,fee,rating_points:Math.round(2000*answer_factor*trip_factor),formula_version};
 }
 function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync,aiGrader}) {
   const bind=q=>(sql,params=[])=>{const values=[];const mapped=sql.replace(/\$(\d+)/g,(_,n)=>{values.push(params[Number(n)-1]);return '$'+values.length;});return q(mapped,values);};
@@ -121,7 +122,7 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     const latest=new Map(answers.map(a=>[Number(a.question_id),a.answer_text]));
     const grades=auto?questions.map(item=>({question_id:Number(item.id),grade:item.auto_answers.map(normalized).includes(normalized(latest.get(Number(item.id))))?5:0,comment:''})):null;
     const points=grades?grades.reduce((s,g)=>s+g.grade,0):null;
-    const calculation=grades?calculateFee({points,max_points:Number(saved.max_points),trips,max_fee:Number(saved.max_fee),standard_trips:Number(saved.standard_trips)}):null;
+    const calculation=grades?calculateFee({points,max_points:Number(saved.max_points),trips,max_fee:Number(saved.max_fee),standard_trips:Number(saved.standard_trips),formula_version:Number(saved.formula_version)||1}):null;
     for(const g of grades||[])await q('INSERT INTO player_answer_grades (room_id,question_id,grade,comment) VALUES ($1,$2,$3,$4) ON CONFLICT(room_id,question_id) DO NOTHING',[roomId,g.question_id,g.grade,g.comment]);
     await q('UPDATE player_room_scoring SET trips=$1,points=$2,fee=$3,review_status=$4,published_grades=$5,rating_points=$6,answers=$7 WHERE room_id=$8',[trips,points,calculation?.fee??null,auto?'graded':'pending_review',grades?JSON.stringify(grades):null,calculation?.rating_points??null,JSON.stringify(answers),roomId]);
     if(!auto)await aiReviews.enqueue(q,roomId,saved.revision,questions,questions.map(item=>({question_id:Number(item.id),answer_text:latest.get(Number(item.id))||''})));
@@ -134,7 +135,7 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     const grades=require('./yandexGrading').validateGrades({grades:result.grades},questions,answers);
     for(const g of grades)await q('INSERT INTO player_answer_grades (room_id,question_id,grade,comment) VALUES ($1,$2,$3,$4) ON CONFLICT(room_id,question_id) DO UPDATE SET grade=excluded.grade,comment=excluded.comment',[job.room_id,g.question_id,g.grade,g.comment+(g.needs_review?'\nНужна проверка: '+g.review_reason:'')]);
     const manual=grades.some(g=>g.needs_review);
-    const calculation=manual?null:calculateFee({points:grades.reduce((s,g)=>s+g.grade,0),max_points:Number(f.max_points),trips:Number(f.trips),max_fee:Number(f.max_fee),standard_trips:Number(f.standard_trips)});
+    const calculation=manual?null:calculateFee({points:grades.reduce((s,g)=>s+g.grade,0),max_points:Number(f.max_points),trips:Number(f.trips),max_fee:Number(f.max_fee),standard_trips:Number(f.standard_trips),formula_version:Number(f.formula_version)||1});
     if(!manual){
       const published=grades.map(({question_id,grade,comment})=>({question_id,grade,comment}));
       await q("UPDATE player_room_scoring SET points=$1,fee=$2,rating_points=$3,review_status='graded',published_grades=$4,reviewed_at=$5,revision=revision+1 WHERE room_id=$6",[calculation.points,calculation.fee,calculation.rating_points,JSON.stringify(published),now(),job.room_id]);
@@ -146,7 +147,7 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
   async function publicSummary(roomId){
     const f=await one(query,'SELECT * FROM player_room_scoring WHERE room_id=$1',[roomId]);if(!f)return null;
     const qs=JSON.parse(f.questions),published=f.published_grades?JSON.parse(f.published_grades):[];const answerMap=new Map(published.length?(await savedAnswers(query,f)).map(a=>[Number(a.question_id),a.answer_text]):[]);
-    const calculation=f.points==null||f.trips==null?null:calculateFee({points:Number(f.points),max_points:Number(f.max_points),trips:Number(f.trips),max_fee:Number(f.max_fee),standard_trips:Number(f.standard_trips)});
+    const calculation=f.points==null||f.trips==null?null:calculateFee({points:Number(f.points),max_points:Number(f.max_points),trips:Number(f.trips),max_fee:Number(f.max_fee),standard_trips:Number(f.standard_trips),formula_version:Number(f.formula_version)||1});
     return {formula_version:f.formula_version,legacy:f.formula_version===0,review_status:f.review_status,ai_review:await aiReviews.summary(roomId),revision:f.revision,points:f.points,max_points:f.max_points,trips:f.trips,max_fee:f.max_fee,standard_trips:f.standard_trips,fee:f.fee,quality:calculation?.quality??null,trip_factor:calculation?.trip_factor??null,rating_points:f.fee==null?null:(f.rating_points??calculation?.rating_points??Math.round(Number(f.fee)/Number(f.max_fee)*2000)),reviewed_at:f.reviewed_at,grades:published.map(g=>({question_id:g.question_id,question_text:qs.find(q=>Number(q.id)===g.question_id)?.question_text||'Вопрос',grade:g.grade,comment:g.comment,answer_text:answerMap.get(Number(g.question_id))||'',correct_answer:qs.find(q=>Number(q.id)===Number(g.question_id))?.ai_rule?.answer||qs.find(q=>Number(q.id)===Number(g.question_id))?.auto_answers?.[0]||null}))};
   }
   async function review(admin,id){
@@ -186,8 +187,8 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
           const rows=(await q('SELECT question_id,grade,comment FROM player_answer_grades WHERE room_id=$1 ORDER BY question_id',[id])).rows;
           const grades=questions.map(question=>rows.find(g=>Number(g.question_id)===Number(question.id)));if(grades.some(g=>!g))fail(400,'Перед публикацией оцените все вопросы');
           if(f.trips==null)fail(409,'Поездки ещё не зафиксированы');
-          calculation=calculateFee({points:grades.reduce((s,g)=>s+Number(g.grade),0),max_points:Number(f.max_points),trips:Number(f.trips),max_fee:Number(f.max_fee),standard_trips:Number(f.standard_trips)});
-          await q("UPDATE player_room_scoring SET points=$1,fee=$2,review_status='graded',published_grades=$3,reviewed_by=$4,reviewed_at=$5,formula_version=$6,rating_points=$7 WHERE room_id=$8",[calculation.points,calculation.fee,JSON.stringify(grades),admin.id,now(),FORMULA_VERSION,calculation.rating_points,id]);
+          calculation=calculateFee({points:grades.reduce((s,g)=>s+Number(g.grade),0),max_points:Number(f.max_points),trips:Number(f.trips),max_fee:Number(f.max_fee),standard_trips:Number(f.standard_trips),formula_version:Number(f.formula_version)||1});
+          await q("UPDATE player_room_scoring SET points=$1,fee=$2,review_status='graded',published_grades=$3,reviewed_by=$4,reviewed_at=$5,formula_version=$6,rating_points=$7 WHERE room_id=$8",[calculation.points,calculation.fee,JSON.stringify(grades),admin.id,now(),calculation.formula_version,calculation.rating_points,id]);
           await q("UPDATE player_runs SET score=$1,result_status='graded' WHERE room_id=$2 AND room_user_id=$3",[calculation.fee,id,f.room_user_id]);
         }
         await q('UPDATE player_room_scoring SET revision=revision+1 WHERE room_id=$1',[id]);return {ok:true,published:body.publish,revision:body.revision+1,calculation};

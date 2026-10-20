@@ -117,7 +117,7 @@
  }
  function loadReviews(){
   if(reviewLoaded){byId('review-refresh').click();return;}
-  reviewLoaded=true;const script=document.createElement('script');script.src='/js/player-reviews.js?v=workspace1';script.onerror=()=>{reviewLoaded=false;byId('review-error').textContent='Не удалось загрузить проверку. Откройте раздел повторно.';byId('review-error').hidden=false;};document.body.append(script);
+  reviewLoaded=true;const script=document.createElement('script');script.src='/js/player-reviews.js?v=linear-fee1';script.onerror=()=>{reviewLoaded=false;byId('review-error').textContent='Не удалось загрузить проверку. Откройте раздел повторно.';byId('review-error').hidden=false;};document.body.append(script);
  }
  function commandSearch(){
   const trigger=document.createElement('button');trigger.type='button';trigger.className='ws-command-trigger';trigger.setAttribute('aria-label','Найти раздел');trigger.innerHTML='<i class="fas fa-search" aria-hidden="true"></i><span>Найти раздел</span><kbd>Ctrl K</kbd>';

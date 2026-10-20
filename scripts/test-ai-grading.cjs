@@ -164,6 +164,17 @@ test('blank submissions use local zero grades without a paid request', async t =
   assert.equal(f.calls(), 0); assert.equal((await f.scoring.publicSummary(1)).points, 0);
 });
 
+test('AI publication respects the frozen fee version for both old and new rooms',async t=>{
+  for(const [version,fee] of [[1,1469],[2,1714]]){
+    const f=await fixture(t,{grade:async payload=>({grades:fullGrades(payload.questions).map((g,i)=>i===6?{...g,matched:[],grade:0}:g),usage:{}})});
+    await f.query('UPDATE player_room_scoring SET formula_version=$1 WHERE room_id=1',[version]);
+    await f.finish();await f.scoring.aiReviews.tick();
+    const summary=await f.scoring.publicSummary(1);
+    assert.equal(summary.points,30);assert.equal(summary.fee,fee);assert.equal(summary.rating_points,fee);assert.equal(summary.formula_version,version);
+    assert.equal((await f.query('SELECT score FROM player_runs WHERE room_id=1')).rows[0].score,fee);
+  }
+});
+
 test('feature flag and product scope preserve existing manual checking', async t => {
   for (const options of [{enabled:false}, {product:'paid'}]) {
     const f = await fixture(t, options); await f.finish(); await f.scoring.aiReviews.tick();
