@@ -387,7 +387,7 @@
     <link href="css/game-dossier.css?v=18" rel="stylesheet">
     <link href="css/investigation-board.css?v=32" rel="stylesheet">
     <link href="css/game-workspace.css?v=reconnect1" rel="stylesheet">
-    <link rel="stylesheet" href="/css/player-game.css?v=5">
+    <link rel="stylesheet" href="/css/player-game.css?v=mobile-timer1">
     <link rel="stylesheet" href="/css/game-tutorial.css?v=5">
 </head>
 <body class="game-container">
@@ -398,9 +398,10 @@
     </aside>
     <nav class="navbar navbar-dark bg-dark" id="gameNavbar">
         <div class="container">
-            <!-- Мобильная строка: логотип + кнопка сворачивания -->
-            <div class="d-md-none d-flex align-items-center justify-content-between w-100 py-1" style="min-height: 2.5rem;">
-                <span class="navbar-brand mb-0" style="line-height: 1;"><img class="game-brand-icon" src="/favicon.png?v=2" width="32" height="32" alt="">Детектум</span>
+            <!-- Мобильная строка: логотип, управление таймером и шторка -->
+            <div class="game-mobile-header d-md-none d-flex align-items-center justify-content-between w-100 py-1" style="min-height: 2.5rem;">
+                <span class="navbar-brand mb-0" style="line-height: 1;"><img class="game-brand-icon" src="/favicon.png?v=2" width="32" height="32" alt=""><span class="game-mobile-brand-name">Детектум</span></span>
+                <div id="mobileTimerControls" role="group" aria-label="Управление таймером расследования"></div>
                 <button class="btn btn-link text-light p-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-expanded="false" aria-controls="navbarCollapse" aria-label="Открыть параметры игры">
                     <i class="fas fa-chevron-down" id="navbarToggleIcon"></i>
                 </button>
@@ -778,7 +779,7 @@
     <script src="js/persist-inputs.js"></script>
     <div id="gameCopyToast" class="game-copy-toast" role="status" aria-live="polite" aria-atomic="true" hidden><span class="game-copy-toast-icon" aria-hidden="true">✓</span><span id="gameCopyToastMessage"></span><button id="gameCopyToastClose" type="button" aria-label="Закрыть уведомление">×</button></div>
     <script src="/js/player-game.js?v=3"></script>
-    <script src="/js/shared-game.js?v=reconnect1"></script>
+    <script src="/js/shared-game.js?v=mobile-timer1"></script>
     <dialog id="gameTutorial" class="game-tutorial" aria-labelledby="gameTutorialTitle" aria-describedby="gameTutorialText">
         <svg class="game-tutorial-shade" aria-hidden="true" focusable="false">
             <defs><mask id="gameTutorialMask" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">

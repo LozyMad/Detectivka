@@ -50,6 +50,21 @@
   }
   async function refresh(){try{const state=await request('/state');apply(state);if(document.body.classList.contains('board-open'))await window.investigationBoard?.refresh?.();return true;}catch(_){return false;}}
   let copyToastTimer;
+  function setupMobileTimerControls(bar){
+    const host=document.getElementById('mobileTimerControls');
+    const buttons=['shared-start','shared-pause'].map(id=>document.getElementById(id)).filter(Boolean);
+    if(!host||!buttons.length)return;
+    // Move the original buttons: state updates and owner-only handlers keep the same IDs.
+    const homes=buttons.map(button=>{const marker=document.createComment(button.id);bar.insertBefore(marker,button);return marker;});
+    const mobile=window.matchMedia('(max-width: 767.98px)');
+    const arrange=()=>buttons.forEach((button,index)=>{
+      if(mobile.matches)host.append(button);
+      else homes[index].after(button);
+    });
+    document.body.classList.add('has-mobile-timer-controls');
+    arrange();
+    mobile.addEventListener('change',arrange);
+  }
   function showCopiedToast(){
     const toast=document.getElementById('gameCopyToast');if(!toast)return;
     clearTimeout(copyToastTimer);toast.hidden=false;
@@ -61,9 +76,10 @@
     const invite=document.createElement('button');invite.type='button';invite.className='btn btn-outline-light btn-sm';invite.textContent='Пригласить друзей';invite.onclick=async()=>{const url=new URL(access?.invite_path||'/room',location.origin).href;try{await navigator.clipboard.writeText(url);showCopiedToast();}catch(_){prompt('Скопируйте ссылку для друзей',url);}};bar.append(invite);
     document.getElementById('gameCopyToastClose')?.addEventListener('click',()=>{clearTimeout(copyToastTimer);document.getElementById('gameCopyToast').hidden=true;});
     const control=async action=>{const response=await fetch('/api/player/games/'+encodeURIComponent(access.run_id)+'/control',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,confirmed:action==='finish'}),signal:AbortSignal.timeout(15000)});const data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось выполнить действие');await refresh();await window.refreshRoomState?.();};
-    if(access?.is_owner){for(const [id,label,action]of [['shared-start','Начать расследование','start'],['shared-pause','Пауза','pause'],['shared-finish','Завершить дело','finish']]){const button=document.createElement('button');button.type='button';button.id=id;button.className='btn btn-outline-light btn-sm';button.textContent=label;button.disabled=true;button.onclick=async()=>{const actual=action==='pause'&&snapshot?.room.state==='paused'?'resume':action;if(actual==='finish'&&!confirm('Ответы команды отправлены. Завершить дело и использовать одну попытку?'))return;controlling=true;button.disabled=true;try{await control(actual);if(actual==='finish')location.href='/profile';}catch(error){document.getElementById('shared-status').textContent=error.message;}finally{controlling=false;if(snapshot)apply(snapshot);}};bar.append(button);}}
+    if(access?.is_owner){for(const [id,label,action]of [['shared-start','Начать расследование','start'],['shared-pause','Пауза','pause'],['shared-finish','Завершить дело','finish']]){const button=document.createElement('button');button.type='button';button.id=id;button.className='btn btn-outline-light btn-sm';button.textContent=label;button.disabled=true;button.hidden=action==='pause';button.onclick=async()=>{const actual=action==='pause'&&snapshot?.room.state==='paused'?'resume':action;if(actual==='finish'&&!confirm('Ответы команды отправлены. Завершить дело и использовать одну попытку?'))return;controlling=true;button.disabled=true;try{await control(actual);if(actual==='finish')location.href='/profile';}catch(error){document.getElementById('shared-status').textContent=error.message;}finally{controlling=false;if(snapshot)apply(snapshot);}};bar.append(button);}}
     const feeInfo=document.createElement('button');feeInfo.type='button';feeInfo.className='btn btn-outline-light btn-sm';feeInfo.textContent='Гонорар';feeInfo.onclick=()=>{const f=snapshot?.scoring;if(!f)return;const popup=document.createElement('dialog');popup.className='shared-result-dialog';popup.innerHTML='<h2>Гонорар за расследование</h2><p>Максимальный гонорар: '+f.max_fee+'.</p><p>Каждый ответ оценивается от 0 до 5. Гонорар зависит от качества ответов и количества поездок.</p><p>Неверные адреса и повторные поездки учитываются. Повторное открытие материалов и страниц интернет-кафе поездкой не считается. Эти условия закреплены при создании комнаты.</p>';const close=document.createElement('button');close.className='btn btn-outline-light';close.textContent='Закрыть';close.onclick=()=>{popup.close();popup.remove();};popup.append(close);document.body.append(popup);popup.showModal();};bar.append(feeInfo);
     const message=document.createElement('span');message.id='shared-status';message.className='cabinet-game-message';bar.append(message);const navbar=document.getElementById('gameNavbar');const actions=document.getElementById('sharedGameActions');(actions||navbar)?.append(bar);if(navbar){const measure=()=>document.body.style.setProperty('--shared-navbar-height',navbar.offsetHeight+'px');measure();new ResizeObserver(measure).observe(navbar);}
+    setupMobileTimerControls(bar);
     const heading=document.getElementById('playerNotesTitle');if(heading)heading.textContent='Общие заметки команды';const label=document.querySelector('label[for=playerNotesText]');if(label)label.textContent='Общие заметки команды';
     const notes=document.getElementById('playerNotesText');if(notes){notes.placeholder='Общие заметки команды…';notesEntry=entry(notes,0,document.getElementById('playerNotesStatus'),'notes');}
     await refresh();if(document.getElementById('shared-start'))document.getElementById('shared-start').disabled=false;
