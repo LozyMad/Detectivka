@@ -6,6 +6,8 @@
   const limit = 3; // Leave room for SSE and navigation on HTTP/1.1.
   const queueLimit = 64;
   let suspended = false;
+  let serverConfirmed = false;
+  const isAvailable = () => navigator.onLine !== false || serverConfirmed;
 
   function abortError(message = 'Запрос отменён') {
     const error = new Error(message);
@@ -25,10 +27,15 @@
         if (job.settled) throw abortError();
         const response = await fetch(job.url, { ...job.options, signal: job.controller.signal });
         const body = await response.arrayBuffer();
+        if (job.settled) throw abortError();
         const buffered = new Response([204, 205, 304].includes(response.status) ? null : body, {
           status: response.status, statusText: response.statusText, headers: response.headers
         });
         await window.gameSession?.checkResponse(buffered, job.options);
+        if (!serverConfirmed && navigator.onLine === false) {
+          serverConfirmed = true;
+          window.dispatchEvent?.(new Event('detectum:network-restored'));
+        }
         return buffered;
       }).then(response => finish(job, null, response), error => finish(job, error));
     }
@@ -55,7 +62,7 @@
   function request(url, options = {}) {
     const method = (options.method || 'GET').toUpperCase();
     const read = method === 'GET' || method === 'HEAD';
-    if (suspended || navigator.onLine === false || (read && document.hidden)) {
+    if (suspended || (!isAvailable() && !(read && options.probe)) || (read && document.hidden)) {
       return Promise.reject(abortError('Обновление приостановлено'));
     }
     if (options.signal?.aborted) return Promise.reject(abortError());
@@ -67,7 +74,7 @@
 
     let job;
     const promise = new Promise((resolve, reject) => {
-      const { timeoutMs = 15000, ...fetchOptions } = options;
+      const { timeoutMs = 15000, probe, ...fetchOptions } = options;
       job = { url, read, options: fetchOptions, controller: new AbortController(), resolve, reject, settled: false };
       job.externalAbort = () => cancel(job, abortError());
       fetchOptions.signal?.addEventListener('abort', job.externalAbort, { once: true });
@@ -127,14 +134,14 @@
   }
 
   function resume() {
-    if (document.hidden || navigator.onLine === false) return false;
+    if (document.hidden) return false;
     suspended = false;
     pump();
     return true;
   }
   // Mobile browsers can return from a PDF/system screen without a pageshow event.
   document.addEventListener('visibilitychange', () => { if (document.hidden) cancelReads(); else resume(); });
-  window.addEventListener('offline', cancelReads);
+  window.addEventListener('offline', () => { serverConfirmed = false; cancelReads(); });
   window.addEventListener('online', resume);
   window.addEventListener('focus', resume);
   window.addEventListener('pagehide', () => {
@@ -142,6 +149,6 @@
     for (const job of [...active, ...queue]) cancel(job, abortError());
   });
   window.addEventListener('pageshow', resume);
-  window.gameNetwork = { fetch: request, poll, cancelReads, resume,
+  window.gameNetwork = { fetch: request, poll, cancelReads, resume, isAvailable,
     stats: () => ({ active: active.size, queued: queue.length, reads: reads.size }) };
 })();

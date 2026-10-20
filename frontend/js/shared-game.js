@@ -67,7 +67,7 @@
     const heading=document.getElementById('playerNotesTitle');if(heading)heading.textContent='Общие заметки команды';const label=document.querySelector('label[for=playerNotesText]');if(label)label.textContent='Общие заметки команды';
     const notes=document.getElementById('playerNotesText');if(notes){notes.placeholder='Общие заметки команды…';notesEntry=entry(notes,0,document.getElementById('playerNotesStatus'),'notes');}
     await refresh();if(document.getElementById('shared-start'))document.getElementById('shared-start').disabled=false;
-    const poll=window.gameNetwork.poll(refresh,3000);const update=()=>{if(!document.hidden&&navigator.onLine!==false&&!session.expired)poll.start();else poll.stop();};document.addEventListener('visibilitychange',update);window.addEventListener('online',update);window.addEventListener('offline',update);window.addEventListener('focus',update);window.addEventListener('pagehide',()=>poll.stop());window.addEventListener('pageshow',update);update();
+    const poll=window.gameNetwork.poll(refresh,3000);const update=()=>{if(!document.hidden&&window.gameNetwork.isAvailable()&&!session.expired)poll.start();else poll.stop();};document.addEventListener('visibilitychange',update);window.addEventListener('online',update);window.addEventListener('offline',update);window.addEventListener('focus',update);window.addEventListener('detectum:network-restored',update);window.addEventListener('pagehide',()=>poll.stop());window.addEventListener('pageshow',update);update();
     window.logout=()=>{session.clear();location.href=access?.is_owner?'/profile':'/';};
   });
 })();

@@ -121,6 +121,20 @@ test('focus and online events cannot resume hidden-page traffic or replay a muta
   assert.equal(b.api.stats().active, 0);
 });
 
+test('a read probe recovers from a false offline hint, without allowing an offline write probe', async () => {
+  const b = browser(() => new Response('{"ok":true}'));
+  b.sandbox.navigator.onLine = false;
+  assert.equal(await b.api.fetch('/answer', { method: 'POST', probe: true }).catch(e => e.name), 'AbortError');
+  assert.equal(b.calls.length, 0);
+  assert.deepEqual(await (await b.api.fetch('/state', { probe: true })).json(), { ok: true });
+  assert.equal(b.api.isAvailable(), true);
+  assert.deepEqual(await (await b.api.fetch('/directory')).json(), { ok: true });
+  assert.equal(b.sandbox.navigator.onLine, false);
+  b.window.emit('offline');
+  assert.equal(b.api.isAvailable(), false);
+  assert.equal(b.calls.length, 2);
+});
+
 test('poller never overlaps a slow task and old generations cannot restart it', async () => {
   const pending = deferred();
   const b = browser();

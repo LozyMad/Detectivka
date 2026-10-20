@@ -69,6 +69,21 @@ test('a failed question refresh preserves the existing form and typed answer', (
   assert.equal(b.element('questionsList').dataset.questionsLoadFailed, undefined);
 });
 
+test('a reachable API restores the timer even if the phone still reports offline', async () => {
+  const b = game(healthy);
+  b.sandbox.Event = Event;
+  b.window.dispatchEvent = event => b.window.emit(event.type);
+  b.sandbox.navigator.onLine = false;
+  b.run("backgroundReady=true;cachedScenarioName='Fixture';");
+  b.document.emit('pointerdown');
+  await flush(); await b.clock.advance(0);
+  assert.equal(b.api.isAvailable(), true);
+  assert.equal(b.run('roomState.state'), 'running');
+  assert.equal(b.element('timerDisplay').textContent, '2:00');
+  assert.equal(b.calls.filter(call => call.options.method && call.options.method !== 'GET').length, 0);
+  b.window.emit('pagehide'); await flush();
+});
+
 test('desktop workspace is available without a theme flag, including an old saved light preference', () => {
   const b = game(healthy);
   let wide = true, tall = true, touch = false;

@@ -44,6 +44,7 @@ let applicationReturnAddress = null;
 let playerRouteReady = false;
 let applicationRetry = null;
 let foregroundRefreshRequest = null;
+let foregroundProbeRequest = null;
 window.gameSession.onExpired = () => {
     savePlayerRoute();
     backgroundReady = false;
@@ -306,7 +307,7 @@ function stopRoomSSE() {
 }
 
 function backgroundAllowed() {
-    return backgroundReady && !pageSuspended && !document.hidden && navigator.onLine !== false && !!gameStorage.getItem('token');
+    return backgroundReady && !pageSuspended && !document.hidden && window.gameNetwork.isAvailable() && !!gameStorage.getItem('token');
 }
 
 function connectRoomSSE(roomId, token) {
@@ -373,9 +374,22 @@ function updateBackgroundState() {
 }
 
 function resumeGameForeground() {
-    if (document.hidden || navigator.onLine === false) { updateBackgroundState(); return; }
+    if (document.hidden) { updateBackgroundState(); return; }
     pageSuspended = false;
     window.gameNetwork.resume?.();
+    if (!window.gameNetwork.isAvailable()) {
+        updateBackgroundState();
+        const room = JSON.parse(gameStorage.getItem('room') || 'null');
+        const token = gameStorage.getItem('token');
+        // VPN changes can leave navigator.onLine=false even while our API is reachable.
+        // Probe a read only; never replay visits, saved answers or timer controls.
+        if (backgroundReady && room?.id && token && !foregroundProbeRequest) {
+            foregroundProbeRequest = window.gameNetwork.fetch(`${API_BASE}/room/${room.id}/state`, {
+                probe: true, cache: 'no-store', headers: { Authorization: `Bearer ${token}` }
+            }).catch(() => {}).finally(() => { foregroundProbeRequest = null; });
+        }
+        return;
+    }
     // Reconcile immediately rather than waiting for an old failed poll's backoff.
     roomStatePoll.stop();
     tripHistoryPoll.stop();
@@ -397,9 +411,10 @@ document.addEventListener('visibilitychange', resumeGameForeground);
 window.addEventListener('offline', updateBackgroundState);
 window.addEventListener('online', resumeGameForeground);
 window.addEventListener('focus', resumeGameForeground);
+window.addEventListener('detectum:network-restored', resumeGameForeground);
 window.addEventListener('pagehide', () => { pageSuspended = true; updateBackgroundState(); });
 window.addEventListener('pageshow', resumeGameForeground);
-document.addEventListener('pointerdown', () => { if (pageSuspended) resumeGameForeground(); });
+document.addEventListener('pointerdown', () => { if (pageSuspended || !window.gameNetwork.isAvailable()) resumeGameForeground(); });
 
 // Initialize game
 document.addEventListener('DOMContentLoaded', () => {
