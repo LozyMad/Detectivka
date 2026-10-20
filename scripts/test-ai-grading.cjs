@@ -50,6 +50,7 @@ async function fixture(t, options = {}) {
   await query('INSERT INTO player_runs VALUES ($1,$2,$3,1,10,1,NULL,NULL,$4)', ['run', 'account', options.product || 'borrowed-time', '2026-10-21']);
   await query('INSERT INTO shared_rooms VALUES (1,10)');
   for (const q of questions()) {
+    if(options.adminUntimed && q.id===101)q.question_text='Где находится подмастерье к и почему он перестал выходить на связь?';
     await query('INSERT INTO questions VALUES ($1,1,$2,TRUE,$3)', [q.id, q.question_text, q.id]);
     await query('INSERT INTO question_answers (question_id,room_user_id,answer_text) VALUES ($1,10,$2)', [q.id, options.empty ? '' : 'Ответ команды']);
   }
@@ -67,6 +68,8 @@ test('rubric identifies all seven questions independently of order and freezes t
   assert.ok(frozen.every(q => q.ai_rule.version === VERSION && q.ai_rule.items.reduce((s,i) => s+i.points,0) === 5));
   const narrow = questions(); narrow[5].question_text = rules[5].aliases[1];
   assert.equal(freezeRubric(narrow)[5].ai_rule.items.at(-1).id, 'defense');
+  const deployed = questions(); deployed[0].question_text = 'Где находится подмастерье к и почему он перестал выходить на связь?';
+  assert.equal(freezeRubric(deployed)[0].ai_rule.items.length, 5);
   const changed = questions(); changed[0].question_text = 'Другой вопрос'; assert.equal(freezeRubric(changed), null);
   const duplicate = questions(); duplicate[1] = duplicate[0]; assert.equal(freezeRubric(duplicate), null);
   const custom = questions(); custom[0].criteria = 'Авторская новая шкала'; assert.equal(freezeRubric(custom), null);
