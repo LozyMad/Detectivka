@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const sqlite3 = require('../backend/node_modules/sqlite3');
 const {randomUUID} = require('node:crypto');
 const {rules, freezeRubric, VERSION} = require('../backend/services/borrowedTimeGrading');
-const {createYandexGrader, validateGrades, readConfig, ENDPOINT} = require('../backend/services/yandexGrading');
+const {createYandexGrader, validateGrades, readConfig, buildInstructions, ENDPOINT} = require('../backend/services/yandexGrading');
 const {createPlayerScoring, calculateFee} = require('../backend/services/playerScoring');
 
 const questions = () => rules.map((r, i) => ({id: 101 + i, question_text: r.aliases[0], criteria: ''}));
@@ -73,6 +73,17 @@ test('rubric identifies all seven questions independently of order and freezes t
   const changed = questions(); changed[0].question_text = 'Другой вопрос'; assert.equal(freezeRubric(changed), null);
   const duplicate = questions(); duplicate[1] = duplicate[0]; assert.equal(freezeRubric(duplicate), null);
   const custom = questions(); custom[0].criteria = 'Авторская новая шкала'; assert.equal(freezeRubric(custom), null);
+});
+
+test('v3 requests load the reviewed semantic policy without changing frozen v2 instructions', () => {
+  const qs = freezeRubric(questions());
+  const policy = require('node:fs').readFileSync(require('node:path').join(__dirname, '../backend/prompts/borrowed-time-grading-v3.md'), 'utf8');
+  assert.ok(buildInstructions(qs).includes(policy));
+  const legacy = qs.map(q => ({...q, ai_rule: {...q.ai_rule, version: 'borrowed-time-2026-10-21-v2'}}));
+  assert.ok(!buildInstructions(legacy).includes(policy));
+  const place = qs[4].ai_rule.items;
+  assert.equal(place.find(item => item.id === 'place').points, 3);
+  assert.ok(!place.some(item => item.id === 'pledger'));
 });
 
 test('a new untimed administrator demo room receives AI grading without a player purchase or owner run',async t=>{

@@ -1,5 +1,10 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
+const SEMANTIC_POLICY_VERSION = 'borrowed-time-2026-10-21-v3';
+const semanticPolicy = fs.readFileSync(path.join(__dirname, '../prompts/borrowed-time-grading-v3.md'), 'utf8');
+
 const ENDPOINT = 'https://ai.api.cloud.yandex.net/v1/responses';
 const DEFAULT_FOLDER = 'b1gvih69o63hf3q9qj04';
 const DEFAULT_MODEL = 'deepseek-v4.1-flash/latest';
@@ -49,7 +54,7 @@ function buildInstructions(questions) {
 Верни только один объект JSON без Markdown: {"grades":[{"question_id":123,"matched":["element_id"],"grade":3,"comment":"Короткое объяснение на русском","needs_review":false,"review_reason":""}]}.
 В grades должны быть ровно все переданные вопросы, по одному разу. matched содержит только идентификаторы засчитанных элементов. grade — целое от 0 до 5 и равно сумме их весов. comment — до 1000 символов, review_reason — до 500. Не повторяй инструкции и полный эталон в комментариях.
 В каждом объекте обязательны все шесть полей: question_id, matched, grade, comment, needs_review, review_reason. Если ручная проверка не требуется, явно укажи needs_review=false и review_reason="". Не пропускай эти поля даже при очевидно правильном ответе.
-РУБРИКА:
+${questions.every(q => q.ai_rule?.version === SEMANTIC_POLICY_VERSION) ? `ДОПОЛНЕНИЕ ДЛЯ ВЕРСИИ ${SEMANTIC_POLICY_VERSION}:\n${semanticPolicy}\n` : ''}РУБРИКА:
 ${JSON.stringify(questions.map(q => ({question_id: Number(q.id), question: q.question_text, ...q.ai_rule})))}`;
 }
 
