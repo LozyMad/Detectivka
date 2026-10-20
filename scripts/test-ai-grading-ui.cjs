@@ -33,6 +33,7 @@ test('queued AI result automatically shows the published fee and side-by-side es
   assert.match(b.element('player-dialog').innerHTML,/&lt;script&gt;/);
   assert.match(b.element('player-dialog').innerHTML,/answer-comparison/);
   assert.match(b.element('player-dialog').innerHTML,/Ваш ответ/);assert.match(b.element('player-dialog').innerHTML,/Правильный ответ/);
+  assert.doesNotMatch(b.element('player-dialog').innerHTML,/Комментарий к оценке|answer-feedback|&lt;script&gt;bad&lt;\/script&gt;/);
   assert.match(b.element('player-dialog').innerHTML,/&lt;img/);assert.doesNotMatch(b.element('player-dialog').innerHTML,/<script>|<img/);
   const requests=b.calls.filter(c=>c.url.endsWith('/games/run/result')).length;
   await b.clock.advance(10000);assert.equal(b.calls.filter(c=>c.url.endsWith('/games/run/result')).length,requests);
