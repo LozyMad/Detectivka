@@ -379,3 +379,16 @@ html:root body.desktop-workspace.board-open :is(.board-timer,.board-tools) { fle
 @media (prefers-reduced-motion: reduce) {
     html:root body.game-container *, html:root body.game-container *::before, html:root body.game-container *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* PDF pages use the same renderer on phones and desktop, without browser plugins. */
+.game-pdf { width: 100%; min-width: 0; }
+.game-pdf-toolbar { display: flex; position: sticky; top: 0; z-index: 1; align-items: center; justify-content: center; gap: 12px; padding: 10px; background: #211911; border-bottom: 1px solid #66503d; color: #f0e5d5; }
+.game-pdf-toolbar button { min-height: 42px; min-width: 42px; padding: 8px 12px; border: 1px solid #8e694a; border-radius: 7px; background: #2d2117; color: #f0e5d5; font: inherit; cursor: pointer; }
+.game-pdf-toolbar button:disabled { opacity: .35; cursor: default; }
+.game-pdf-toolbar button:focus-visible { outline: 2px solid #e8ad7c; outline-offset: 2px; }
+.game-pdf-toolbar span { min-width: 58px; text-align: center; }
+.game-pdf-paper { overflow: auto; padding: 16px; text-align: center; }
+.game-pdf-paper canvas { display: block; max-width: none; margin: 0 auto; background: #fff; }
+.game-pdf-status { margin: 0; padding: 4px 12px; text-align: center; font-size: 12px; color: #c6b3a0; }
+.game-pdf-status:empty { display: none; }
+@media(max-width:600px) { .game-pdf-toolbar { gap: 8px; padding: 8px; font-size: 12px; } .game-pdf-toolbar button { padding: 8px; } }

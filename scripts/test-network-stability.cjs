@@ -97,6 +97,30 @@ test('navigation cancels all work; BFCache restore accepts fresh requests', asyn
   assert.equal(await next, 'TimeoutError');
 });
 
+test('mobile foreground events resume requests even when pageshow was not delivered', async () => {
+  for (const event of ['visibilitychange', 'online', 'focus']) {
+    const b = browser(() => new Response('{"ok":true}'));
+    b.window.emit('pagehide');
+    assert.equal(await b.api.fetch('/state').catch(error => error.name), 'AbortError');
+    if (event === 'visibilitychange') b.document.emit(event); else b.window.emit(event);
+    assert.deepEqual(await (await b.api.fetch('/state')).json(), { ok: true }, event);
+    assert.equal(b.calls.length, 1);
+    assert.equal(b.api.stats().active, 0);
+  }
+});
+
+test('focus and online events cannot resume hidden-page traffic or replay a mutation', async () => {
+  const b = browser(hanging);
+  const save = b.api.fetch('/answer', { method: 'POST' }).catch(error => error.name);
+  await flush(); b.window.emit('pagehide');
+  assert.equal(await save, 'AbortError');
+  b.document.hidden = true; b.window.emit('focus'); b.window.emit('online');
+  assert.equal(await b.api.fetch('/state').catch(error => error.name), 'AbortError');
+  b.document.hidden = false; b.document.emit('visibilitychange');
+  assert.equal(b.calls.filter(call => call.options.method === 'POST').length, 1);
+  assert.equal(b.api.stats().active, 0);
+});
+
 test('poller never overlaps a slow task and old generations cannot restart it', async () => {
   const pending = deferred();
   const b = browser();

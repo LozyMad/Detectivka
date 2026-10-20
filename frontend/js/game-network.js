@@ -126,13 +126,22 @@
     };
   }
 
-  document.addEventListener('visibilitychange', () => { if (document.hidden) cancelReads(); });
+  function resume() {
+    if (document.hidden || navigator.onLine === false) return false;
+    suspended = false;
+    pump();
+    return true;
+  }
+  // Mobile browsers can return from a PDF/system screen without a pageshow event.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) cancelReads(); else resume(); });
   window.addEventListener('offline', cancelReads);
+  window.addEventListener('online', resume);
+  window.addEventListener('focus', resume);
   window.addEventListener('pagehide', () => {
     suspended = true;
     for (const job of [...active, ...queue]) cancel(job, abortError());
   });
-  window.addEventListener('pageshow', () => { suspended = false; });
-  window.gameNetwork = { fetch: request, poll, cancelReads,
+  window.addEventListener('pageshow', resume);
+  window.gameNetwork = { fetch: request, poll, cancelReads, resume,
     stats: () => ({ active: active.size, queued: queue.length, reads: reads.size }) };
 })();

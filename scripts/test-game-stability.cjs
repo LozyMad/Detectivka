@@ -14,6 +14,61 @@ function game(fetchImpl) {
 const healthy = call => json(call.url.endsWith('/state') ? state : call.url.endsWith('/attempts') ?
   { attempts: [], choices_included: true } : { addresses: [] });
 
+test('returning from phone system settings without pageshow restores timer and failed panels', async () => {
+  const b = game(healthy);
+  b.run("backgroundReady=true;activePlayerPane='questions';cachedScenarioName='Fixture';loadQuestions=async()=>{window.questionsRetried=(window.questionsRetried||0)+1;};updateBackgroundState();");
+  await b.clock.advance(0);
+  b.window.emit('pagehide');
+  assert.equal(b.clock.jobs.size, 0);
+  b.element('questionsList').dataset.questionsLoadFailed = 'true';
+  b.element('questionsList').dataset.questionsLoaded = 'true';
+  b.document.emit('visibilitychange');
+  await b.clock.advance(0);
+  assert.equal(b.run('pageSuspended'), false);
+  assert.equal(b.run('roomState.state'), 'running');
+  assert.equal(b.window.questionsRetried, 1);
+  assert.equal(b.element('timerDisplay').textContent, '2:00');
+  assert.equal(b.sources.filter(source => !source.closed).length, 1);
+  b.window.emit('pagehide'); await flush();
+  assert.equal(b.clock.jobs.size, 0);
+});
+
+test('foreground recovery preserves a loaded answer form and never submits or clears drafts', async () => {
+  const b = game(healthy);
+  b.element('questionsList').dataset.questionsLoaded = 'true';
+  b.element('answer_7').value = 'Unsaved team draft';
+  b.run("backgroundReady=true;activePlayerPane='questions';cachedScenarioName='Fixture';loadQuestions=()=>{throw Error('Must not replace answers');};");
+  b.window.emit('pagehide'); b.window.emit('focus');
+  await b.clock.advance(0);
+  assert.equal(b.element('answer_7').value, 'Unsaved team draft');
+  assert.equal(b.calls.filter(call => call.options.method && call.options.method !== 'GET').length, 0);
+  assert.equal(b.run('pageSuspended'), false);
+  b.window.emit('pagehide'); await flush();
+});
+
+test('a user tap recovers a page when all mobile return notifications were missed', async () => {
+  const b = game(healthy);
+  b.run("backgroundReady=true;cachedScenarioName='Fixture';");
+  b.window.emit('pagehide');
+  b.document.emit('pointerdown');
+  await b.clock.advance(0);
+  assert.equal(b.run('pageSuspended'), false);
+  assert.equal(b.run('roomState.state'), 'running');
+  assert.match(b.element('timerDisplay').textContent, /2:00/);
+  b.window.emit('pagehide'); await flush();
+});
+
+test('a failed question refresh preserves the existing form and typed answer', () => {
+  const b = game(healthy);
+  b.element('questionsList').dataset.questionsLoaded = 'true';
+  b.element('questionsList').innerHTML = '<textarea>Unsaved answer</textarea>';
+  b.element('answer_7').value = 'Unsaved answer';
+  b.run('showQuestionsLoadError()');
+  assert.match(b.element('questionsList').innerHTML, /textarea/);
+  assert.equal(b.element('answer_7').value, 'Unsaved answer');
+  assert.equal(b.element('questionsList').dataset.questionsLoadFailed, undefined);
+});
+
 test('desktop workspace is available without a theme flag, including an old saved light preference', () => {
   const b = game(healthy);
   let wide = true, tall = true, touch = false;

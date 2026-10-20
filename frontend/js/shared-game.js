@@ -25,7 +25,7 @@
     originalDisplay(state.questions,room.scenario_id,undefined);
     for(const question of state.questions){const field=document.getElementById('answer_'+question.id);if(!field)continue;field.value=question.answer_text;const status=document.getElementById('draftStatus_'+question.id);inputs.set(Number(question.id),entry(field,question.revision,status,'draft',Number(question.id)));}
     apply(state);
-  }catch(error){const container=document.getElementById('questionsList');if(container)container.innerHTML='<p class="text-danger">'+escape(error.message)+'</p>';}finally{rendering=false;}}
+  }catch(error){window.showQuestionsLoadError();}finally{rendering=false;}}
   window.displayQuestions=()=>renderQuestions();
   window.loadSharedQuestions=renderQuestions;
   window.submitAllAnswers=async()=>{
@@ -67,7 +67,7 @@
     const heading=document.getElementById('playerNotesTitle');if(heading)heading.textContent='Общие заметки команды';const label=document.querySelector('label[for=playerNotesText]');if(label)label.textContent='Общие заметки команды';
     const notes=document.getElementById('playerNotesText');if(notes){notes.placeholder='Общие заметки команды…';notesEntry=entry(notes,0,document.getElementById('playerNotesStatus'),'notes');}
     await refresh();if(document.getElementById('shared-start'))document.getElementById('shared-start').disabled=false;
-    const poll=window.gameNetwork.poll(refresh,3000);const update=()=>{if(!document.hidden&&navigator.onLine!==false&&!session.expired)poll.start();else poll.stop();};document.addEventListener('visibilitychange',update);window.addEventListener('online',update);window.addEventListener('offline',update);window.addEventListener('pagehide',()=>poll.stop());window.addEventListener('pageshow',update);update();
+    const poll=window.gameNetwork.poll(refresh,3000);const update=()=>{if(!document.hidden&&navigator.onLine!==false&&!session.expired)poll.start();else poll.stop();};document.addEventListener('visibilitychange',update);window.addEventListener('online',update);window.addEventListener('offline',update);window.addEventListener('focus',update);window.addEventListener('pagehide',()=>poll.stop());window.addEventListener('pageshow',update);update();
     window.logout=()=>{session.clear();location.href=access?.is_owner?'/profile':'/';};
   });
 })();

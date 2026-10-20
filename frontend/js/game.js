@@ -42,6 +42,8 @@ let playerAddressBookView = 'full';
 let applicationReturnFocus = null;
 let applicationReturnAddress = null;
 let playerRouteReady = false;
+let applicationRetry = null;
+let foregroundRefreshRequest = null;
 window.gameSession.onExpired = () => {
     savePlayerRoute();
     backgroundReady = false;
@@ -370,11 +372,34 @@ function updateBackgroundState() {
     tripHistoryPoll.start();
 }
 
-document.addEventListener('visibilitychange', updateBackgroundState);
+function resumeGameForeground() {
+    if (document.hidden || navigator.onLine === false) { updateBackgroundState(); return; }
+    pageSuspended = false;
+    window.gameNetwork.resume?.();
+    // Reconcile immediately rather than waiting for an old failed poll's backoff.
+    roomStatePoll.stop();
+    tripHistoryPoll.stop();
+    updateBackgroundState();
+    if (!backgroundAllowed() || foregroundRefreshRequest) return;
+    const tasks = [refreshAvailableApplications()];
+    if (!cachedScenarioName) tasks.push(loadScenarioInfo());
+    if (activePlayerPane === 'addressbook') tasks.push(playerAddressBookSectionsLoaded ? loadPlayerAddressBookEntries() : loadPlayerAddressBookSectionsAndEntries());
+    const questions = document.getElementById('questionsList');
+    // Never replace a successfully loaded answer form or its unsaved drafts.
+    if (activePlayerPane === 'questions' && (questions?.dataset.questionsLoaded !== 'true' || questions?.dataset.questionsLoadFailed === 'true')) tasks.push(loadQuestions());
+    if (applicationRetry && document.getElementById('applicationOverlay')?.classList.contains('is-open')) {
+        const retry = applicationRetry; applicationRetry = null; tasks.push(retry());
+    }
+    foregroundRefreshRequest = Promise.allSettled(tasks).finally(() => { foregroundRefreshRequest = null; });
+}
+
+document.addEventListener('visibilitychange', resumeGameForeground);
 window.addEventListener('offline', updateBackgroundState);
-window.addEventListener('online', updateBackgroundState);
+window.addEventListener('online', resumeGameForeground);
+window.addEventListener('focus', resumeGameForeground);
 window.addEventListener('pagehide', () => { pageSuspended = true; updateBackgroundState(); });
-window.addEventListener('pageshow', () => { pageSuspended = false; updateBackgroundState(); });
+window.addEventListener('pageshow', resumeGameForeground);
+document.addEventListener('pointerdown', () => { if (pageSuspended) resumeGameForeground(); });
 
 // Initialize game
 document.addEventListener('DOMContentLoaded', () => {
@@ -1346,6 +1371,7 @@ function renderScenarioText(text, addressId = null) {
 }
 
 function clearApplicationPreview() {
+    window.gamePdfViewer?.close();
     document.getElementById('applicationPreview').replaceChildren();
     const zoom = document.getElementById('applicationZoomBtn');
     if (zoom) { zoom.hidden = true; zoom.setAttribute('aria-pressed', 'false'); zoom.textContent = 'Увеличить'; }
@@ -1361,6 +1387,7 @@ function cancelApplicationRequest() {
 }
 
 function closeApplicationFolder() {
+    applicationRetry = null;
     applicationRequestId++;
     cancelApplicationRequest();
     clearApplicationPreview();
@@ -1381,12 +1408,24 @@ function closeApplicationFolder() {
 }
 
 function showApplicationFiles() {
+    applicationRetry = null;
     cancelApplicationRequest();
     clearApplicationPreview();
     document.getElementById('applicationPreview').style.display = 'none';
     document.getElementById('applicationFiles').style.display = 'block';
     document.getElementById('applicationBackBtn').disabled = true;
     document.getElementById('applicationTitle').textContent = document.getElementById('applicationOverlay').dataset.title || 'Приложение';
+}
+
+function showApplicationLoadError(target, retry) {
+    applicationRetry = retry;
+    target.textContent = 'Не удалось загрузить материал. Проверьте соединение и попробуйте ещё раз.';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-outline-light mt-3';
+    button.textContent = 'Повторить загрузку';
+    button.addEventListener('click', () => { applicationRetry = null; retry(); });
+    target.append(button);
 }
 
 function showDocumentsLockedPopup() {
@@ -1447,7 +1486,7 @@ async function openApplicationFolder(addressId, number, fallbackUrl = '', briefi
         list.querySelectorAll('.application-file').forEach(button => button.addEventListener('click', () =>
             openApplicationFile(base, files[Number(button.dataset.fileIndex)], Number(button.dataset.fileIndex), token)));
     } catch (error) {
-        if (requestId === applicationRequestId) list.textContent = error.message;
+        if (requestId === applicationRequestId) showApplicationLoadError(list, () => openApplicationFolder(addressId, number, fallbackUrl, briefing));
     }
 }
 
@@ -1486,8 +1525,10 @@ async function openApplicationFile(base, file, index, token) {
                 download.download = download.dataset.filename = file.name || 'Материал.pdf';
                 download.hidden = false;
             }
+            await window.gamePdfViewer.open(blob, preview);
+            return;
         }
-        const viewer = document.createElement(file.type === 'application/pdf' ? 'iframe' : 'img');
+        const viewer = document.createElement('img');
         viewer.src = applicationObjectUrl;
         viewer.title = displayName;
         viewer.alt = displayName;
@@ -1499,7 +1540,10 @@ async function openApplicationFile(base, file, index, token) {
         }
         preview.append(viewer);
     } catch (error) {
-        if (requestId === applicationRequestId) preview.textContent = error.message;
+        if (requestId === applicationRequestId) {
+            if (file.type === 'application/pdf') window.gamePdfViewer?.close();
+            showApplicationLoadError(preview, () => openApplicationFile(base, file, index, gameStorage.getItem('token')));
+        }
     }
 }
 
@@ -1673,6 +1717,18 @@ async function loadPlayerAddressBookEntries() {
 let questionsGate = null;
 let questionsLoadRequest = null;
 
+function showQuestionsLoadError() {
+    const container = document.getElementById('questionsList');
+    if (!container) return;
+    if (container.dataset.questionsLoaded === 'true' && container.dataset.questionsLocked !== 'true') {
+        const status = document.getElementById('answers_global_status');
+        if (status) status.textContent = 'Связь прервалась. Ваш текст остаётся в бланке. Не закрывайте страницу до восстановления соединения.';
+        return;
+    }
+    container.dataset.questionsLoadFailed = 'true';
+    container.innerHTML = '<p class="text-muted">Связь прервалась. Восстановим бланк после возвращения соединения.</p><button type="button" class="btn btn-outline-light" onclick="loadQuestions()">Повторить загрузку</button>';
+}
+
 function setQuestionsAccess(access, state) {
     if (!access) return;
     questionsGate = { ...access, state, updatedAt: performance.now() };
@@ -1682,6 +1738,8 @@ function setQuestionsAccess(access, state) {
 function showQuestionsLock() {
     const container = document.getElementById('questionsList');
     if (!container || !questionsGate || questionsGate.is_open) return false;
+    delete container.dataset.questionsLoadFailed;
+    container.dataset.questionsLoaded = 'true';
     if (container.dataset.questionsLocked !== 'true') {
         container.dataset.questionsLocked = 'true';
         container.innerHTML = '<section class="questions-locked" aria-labelledby="questionsLockedTitle"><i class="fas fa-lock" aria-hidden="true"></i><h2 id="questionsLockedTitle">Вопросы откроются через</h2><p class="questions-countdown" id="questionsUnlockCountdown" role="timer" aria-label="До открытия вопросов"></p><p id="questionsUnlockHint"></p></section>';
@@ -1720,7 +1778,7 @@ async function fetchQuestions() {
         
         const storedRoom = JSON.parse(gameStorage.getItem('room') || 'null');
         if (storedRoom?.shared && window.loadSharedQuestions) return await window.loadSharedQuestions();
-        if (questionsListElement.dataset.questionsLocked !== 'true') questionsListElement.innerHTML = '<p class="text-muted text-center">Загрузка вопросов...</p>';
+        if (questionsListElement.dataset.questionsLoaded !== 'true' && questionsListElement.dataset.questionsLocked !== 'true') questionsListElement.innerHTML = '<p class="text-muted text-center">Загрузка вопросов...</p>';
         
         const roomUser = JSON.parse(gameStorage.getItem('roomUser') || 'null');
         let scenarioId;
@@ -1768,10 +1826,7 @@ async function fetchQuestions() {
         }
     } catch (error) {
         console.error('Error loading questions:', error);
-        const questionsListElement = document.getElementById('questionsList');
-        if (questionsListElement) {
-            questionsListElement.innerHTML = '<p class="text-muted text-center">Ошибка загрузки вопросов</p>';
-        }
+        showQuestionsLoadError();
     }
 }
 
@@ -1827,6 +1882,8 @@ function updateAnswerDraftStatus() {
 }
 
 function displayQuestions(questions, scenarioId, roomUser) {
+    delete document.getElementById('questionsList').dataset.questionsLoadFailed;
+    document.getElementById('questionsList').dataset.questionsLoaded = 'true';
     const container = document.getElementById('questionsList');
     container.dataset.questionsLocked = 'false';
     

@@ -136,20 +136,22 @@ test('player sidebar shows the briefing first with no trips and opens the shared
 test('PDF files expose a download action that is cleared when leaving the preview', async () => {
   const b = browser(() => new Response(pdf, { headers: { 'Content-Type': 'application/pdf' } }));
   b.load('frontend/js/game-session.js'); b.load('frontend/js/game.js');
-  let viewer;
-  b.document.createElement = tag => ({ tagName: tag.toUpperCase() });
-  b.element('applicationPreview').append = element => { viewer = element; };
+  let rendered, closed = 0;
+  b.window.gamePdfViewer = { async open(blob, host) { rendered = { blob, host }; }, close() { closed++; } };
   await b.run("openApplicationFile('/api/applications/game/scenarios/12/briefing', {id:'file.pdf', name:'Брифинг.pdf', type:'application/pdf'}, 0, 'fixture-token')");
-  assert.equal(viewer.tagName, 'IFRAME');
+  assert.equal(rendered.host, b.element('applicationPreview'));
+  assert.equal(rendered.blob.type, 'application/pdf');
+  assert.deepEqual(Buffer.from(await rendered.blob.arrayBuffer()), pdf);
   assert.equal(b.element('applicationDownloadBtn').hidden, false);
   assert.equal(b.element('applicationDownloadBtn').dataset.filename, 'Брифинг.pdf');
-  assert.equal(b.element('applicationDownloadBtn').href, viewer.src);
   assert.equal(b.element('applicationDownloadBtn').download, 'Брифинг.pdf');
-  assert.match(viewer.src, /^blob:/);
+  assert.match(b.element('applicationDownloadBtn').href, /^blob:/);
+  const closes = closed;
   b.run('showApplicationFiles()');
   assert.equal(b.element('applicationDownloadBtn').hidden, true);
   assert.equal(b.element('applicationDownloadBtn').dataset.filename, undefined);
   assert.equal(b.run('applicationObjectUrl'), null);
+  assert.ok(closed > closes, 'leaving the preview releases the PDF worker/render task');
 });
 
 test('a blocked document request shows the start-game popup instead of files without expiring the session',async()=>{
