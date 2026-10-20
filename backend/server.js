@@ -1,4 +1,5 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '.env.ai') });
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -234,6 +235,7 @@ database.init().then(async () => {
   await require('./services/addressBookRevision').updateAddressBook();
   await require('./services/playerRuntime').cabinet.init();
   await require('./services/playerCatalogSeed').seedCatalog();
+  require('./services/playerRuntime').cabinet.scoring.aiReviews.start();
   await require('./services/borisBlogRevision').updateDefaultBorisBlogs();
   // РАДИКАЛЬНАЯ инициализация вариантов выбора для ВСЕХ адресов
   try {

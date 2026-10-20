@@ -13,9 +13,9 @@ function validName(value) { if (typeof value !== 'string' || value.trim().length
 function validEmail(value) { const email = emailValue(value); if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail(400, 'Укажите корректный email'); return email; }
 const publicAccount = account => ({ id: account.id, username: account.username, email: account.email, created_at: account.created_at });
 
-function createPlayerCabinet({ query, transaction, localMode = false, postgres = false, roomSync, remainingSeconds, findTeams }) {
+function createPlayerCabinet({ query, transaction, localMode = false, postgres = false, roomSync, remainingSeconds, findTeams, aiGrader }) {
   const shared = require('./sharedRooms').createSharedRooms({query,transaction,postgres,roomSync,remainingSeconds});
-  const scoring=require('./playerScoring').createPlayerScoring({query,transaction,roomSync});
+  const scoring=require('./playerScoring').createPlayerScoring({query,transaction,roomSync,aiGrader});
   const one = async (q, sql, values = []) => (await q(sql, values)).rows[0];
   const insertSession = async (q, accountId) => {
     const token = crypto.randomBytes(32).toString('base64url');
