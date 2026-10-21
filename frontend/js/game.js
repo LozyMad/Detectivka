@@ -1926,7 +1926,6 @@ function displayQuestions(questions, scenarioId, roomUser) {
     
     const bulkControlsHtml = `
         <div class="text-center mt-4">
-            <p class="text-muted mb-3">Проверка ответов займёт не больше минуты.</p>
             <button class="btn" id="submitAllAnswersBtn" onclick="submitAllAnswers()">
                 <i class="fas fa-paper-plane me-1"></i>${roomState?.room?.shared || roomState?.room?.is_shared ? 'Отправить ответы и получить гонорар' : 'Отправить все ответы'}
             </button>
