@@ -2,7 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const semanticPolicies = Object.fromEntries(['v3', 'v4'].map(version => [
+const semanticPolicies = Object.fromEntries(['v3', 'v4', 'v5'].map(version => [
   `borrowed-time-2026-10-21-${version}`,
   fs.readFileSync(path.join(__dirname, `../prompts/borrowed-time-grading-${version}.md`), 'utf8')
 ]));

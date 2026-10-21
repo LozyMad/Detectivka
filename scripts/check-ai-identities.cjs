@@ -8,17 +8,17 @@ dotenv.config({path:path.join(root,'backend/.env.ai')});
 const {rules,freezeRubric,VERSION}=require('../backend/services/borrowedTimeGrading');
 const {createYandexGrader,readConfig}=require('../backend/services/yandexGrading');
 const samples=[
-  {question:6,answer:'Владелец часов',expected:0},
+  {question:6,answer:'Владелец часов',expected:3},
+  {question:6,answer:'Владелец часов: разозлился на Марека за то, что тот заложил его часы, и отомстил пожаром.',expected:5},
+  {question:6,answer:'Владелец часов Longines',expected:0},
+  {question:6,answer:'Владелец часов, Томаш',expected:0},
+  {question:6,answer:'Мровец или Томаш',expected:0},
   {question:6,answer:'Он',expected:0},
   {question:6,answer:'Часовщик',expected:0},
-  {question:6,answer:'Кто-то из клиентов',expected:0},
   {question:6,answer:'Мровец',expected:3},
-  {question:6,answer:'Константин Мровец',expected:3},
   {question:6,answer:'Хозяин фирмы Практик',expected:3},
-  {question:6,answer:'Владелец заложенных Мареком Rolex',expected:3},
   {question:6,answer:'Личность поджигателя не установили. Поджёг, чтобы отомстить Мареку за залог клиентских Rolex.',expected:2},
   {question:2,answer:'Начальник Томаша дал денег, сам Томаш поручился.',expected:5},
-  {question:2,answer:'Дал Хованец, кто поручился — не знаю.',expected:3},
   {question:2,answer:'Одолжил Томаш, поручился его начальник.',expected:0}
 ];
 async function main(){

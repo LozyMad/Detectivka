@@ -9,7 +9,7 @@ dotenv.config({path: path.join(root, 'backend/.env')});
 dotenv.config({path: path.join(root, 'backend/.env.ai')});
 const {rules, freezeRubric, VERSION} = require('../backend/services/borrowedTimeGrading');
 const {createYandexGrader, readConfig} = require('../backend/services/yandexGrading');
-const fixtures = require('./fixtures/borrowed-time-grading-v4.json');
+const fixtures = require('./fixtures/borrowed-time-grading-v5.json');
 
 async function main() {
   const selection = process.argv.find(arg => arg.startsWith('--case='))?.slice(7);

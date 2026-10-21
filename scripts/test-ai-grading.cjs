@@ -75,15 +75,18 @@ test('rubric identifies all seven questions independently of order and freezes t
   const custom = questions(); custom[0].criteria = 'Авторская новая шкала'; assert.equal(freezeRubric(custom), null);
 });
 
-test('requests load their own frozen semantic policy, preserving v3 and v2 rooms', () => {
+test('requests load their own frozen semantic policy, preserving v4, v3 and v2 rooms', () => {
   const qs = freezeRubric(questions());
-  const policy = require('node:fs').readFileSync(require('node:path').join(__dirname, '../backend/prompts/borrowed-time-grading-v4.md'), 'utf8');
+  const policy = require('node:fs').readFileSync(require('node:path').join(__dirname, '../backend/prompts/borrowed-time-grading-v5.md'), 'utf8');
   assert.ok(buildInstructions(qs).includes(policy));
   const legacy = qs.map(q => ({...q, ai_rule: {...q.ai_rule, version: 'borrowed-time-2026-10-21-v2'}}));
   assert.ok(!buildInstructions(legacy).includes(policy));
   const v3Policy=require('node:fs').readFileSync(require('node:path').join(__dirname,'../backend/prompts/borrowed-time-grading-v3.md'),'utf8');
   const v3=qs.map(q=>({...q,ai_rule:{...q.ai_rule,version:'borrowed-time-2026-10-21-v3'}}));
   assert.ok(buildInstructions(v3).includes(v3Policy));assert.ok(!buildInstructions(v3).includes(policy));
+  const v4Policy=require('node:fs').readFileSync(require('node:path').join(__dirname,'../backend/prompts/borrowed-time-grading-v4.md'),'utf8');
+  const v4=qs.map(q=>({...q,ai_rule:{...q.ai_rule,version:'borrowed-time-2026-10-21-v4'}}));
+  assert.ok(buildInstructions(v4).includes(v4Policy));assert.ok(!buildInstructions(v4).includes(policy));
   const place = qs[4].ai_rule.items;
   assert.equal(place.find(item => item.id === 'place').points, 3);
   assert.ok(!place.some(item => item.id === 'pledger'));
