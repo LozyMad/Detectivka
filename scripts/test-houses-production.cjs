@@ -36,6 +36,7 @@ async function fullBrowserTest(){
   assert.equal(credentials.username,'admin');assert.ok(credentials.password);
   console.log('::add-mask::'+credentials.password);
   if(process.env.HOUSES_E2E_RECOVERY)state=JSON.parse(decrypt(process.env.HOUSES_E2E_RECOVERY));
+  delete state.report.failure;
   process.env.HOUSES_ADMIN_PASSWORD=credentials.password;
   await main('login');delete process.env.HOUSES_ADMIN_PASSWORD;
   await main('preflight');
@@ -49,10 +50,14 @@ async function fullBrowserTest(){
     await adminPage.locator('#adminLoginForm button[type=submit]').click();await adminPage.waitForURL(/\/admin(?:#|$)/,{timeout:30000});
     credentials.password='';
     await adminPage.locator('.sidebar [data-tab=houses]').click();
-    if(!state.houses.length){
+    if(state.houses.length<2||state.houses.some(h=>h.teams.length<3)){
       const prefix='Проверка игры · '+new Date().toLocaleDateString('ru-RU',{timeZone:'Asia/Yerevan'});
       for(let n=0;n<2;n++){
-        if(n)await adminPage.locator('[data-house-action=back]').click();
+        const back=adminPage.locator('[data-house-action=back]');if(await back.isVisible())await back.click();
+        let entry=state.houses[n];
+        if(entry){
+          await adminPage.locator('.houses-card').filter({hasText:entry.name}).locator('[data-house-action=open]').click();
+        }else{
         await adminPage.locator('[data-house-action=create]').click();
         const modal=adminPage.locator('.houses-dialog[open]');
         const name=prefix+' · '+(n+1);
@@ -60,9 +65,10 @@ async function fullBrowserTest(){
         await modal.locator('[name=questions_immediate]').check();
         await modal.locator('[name=format]').selectOption(n?'offline':'online');
         const created=adminPage.waitForResponse(r=>r.url()===base+'/api/houses'&&r.request().method()==='POST'&&r.status()===201);
-        await modal.locator('button[type=submit]').click();const entry={id:(await(await created).json()).id,name,teams:[]};state.houses.push(entry);save();
+        await modal.locator('button[type=submit]').click();entry={id:(await(await created).json()).id,name,teams:[]};state.houses.push(entry);save();
         await modal.waitFor({state:'hidden'});
-        for(let k=0;k<3;k++){
+        }
+        for(let k=entry.teams.length;k<3;k++){
           await adminPage.locator('[data-house-action=add-team]').click();
           const dialog=adminPage.locator('.houses-dialog[open]'),password='Check-'+randomUUID().slice(0,12),teamName='Тест '+(n+1)+' · Агентство '+(k+1);
           await dialog.locator('[name=name]').fill(teamName);await dialog.locator('[name=password]').fill(password);await dialog.locator('[name=participants]').fill(String(3+k));

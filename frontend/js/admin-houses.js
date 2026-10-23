@@ -18,9 +18,11 @@
     const signature=JSON.stringify({path,body,method});
     if(retry&&retry.signature!==signature)throw new Error('Повторите последнее действие кнопкой над списком: сервер мог уже принять его.');
     const op=retry||{path,method,signature,body:{...body,request_key:crypto.randomUUID(),...(current&&selected?{revision:body.revision??current.house.revision}:{})}};
-    mutating=true;retry=op;
+    mutating=true;retry=op;++sequence;
     try{
-      const data=await request(op.path,{method:op.method,body:JSON.stringify(op.body)});retry=null;message('');return data;
+      const data=await request(op.path,{method:op.method,body:JSON.stringify(op.body)});
+      if(current&&selected&&op.path.startsWith('/'+selected)&&Number.isInteger(op.body.revision))current.house.revision=Math.max(Number(current.house.revision),op.body.revision+1);
+      retry=null;message('');return data;
     }catch(error){if(error.status&&error.status<500)retry=null;message(error.name==='TimeoutError'?'Сервер не ответил вовремя. Повторите последнее действие.':error.message);throw error;}
     finally{mutating=false;$('houses-retry').hidden=!retry;}
   }
@@ -48,6 +50,7 @@
     setTimeout(tick,3000);
   }
   async function load(){
+    if(mutating)return;
     init();const seq=++sequence;
     try{
       if(selected){
@@ -64,7 +67,7 @@
   async function refreshDetail(){
     if(!selected||!current||mutating)return;
     const id=selected,seq=sequence;
-    try{const data=await request('/'+encodeURIComponent(id));if(selected!==id||seq!==sequence||mutating)return;current=data;updateDetail();}
+    try{const data=await request('/'+encodeURIComponent(id));if(selected!==id||seq!==sequence||mutating||Number(data.house.revision)<Number(current.house.revision))return;current=data;updateDetail();}
     catch(error){message(error.message);}
   }
   function renderDetail(){
