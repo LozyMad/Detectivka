@@ -40,7 +40,7 @@ async function fullBrowserTest(){
   await main('login');delete process.env.HOUSES_ADMIN_PASSWORD;
   await main('preflight');
   const {chromium}=require('playwright');
-  const browser=await chromium.launch({headless:true});
+  const browser=await chromium.launch({headless:true,...(process.env.HOUSES_BROWSER_CHANNEL?{channel:process.env.HOUSES_BROWSER_CHANNEL}:{})});
   const adminContext=await browser.newContext({viewport:{width:1440,height:1000}}),adminPage=await adminContext.newPage();
   const players=[];
   try{

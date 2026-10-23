@@ -27,15 +27,17 @@ jobs:
         with:
           node-version: '22'
       - name: Install isolated browser test runtime
+        timeout-minutes: 3
         run: |
-          npm install --prefix "$RUNNER_TEMP/house-browser" --no-package-lock playwright
-          "$RUNNER_TEMP/house-browser/node_modules/.bin/playwright" install --with-deps chromium
+          google-chrome --version
+          npm install --prefix "$RUNNER_TEMP/house-browser" --no-package-lock --fetch-retries=1 --fetch-timeout=30000 playwright
       - name: Test two houses and six agencies through the published site
         env:
           DEPLOY_SECRET: ${{ secrets.DETEKTUM }}
           HOUSES_E2E_CREDENTIALS: ${{ inputs.credentials }}
           HOUSES_E2E_RECOVERY: ${{ inputs.recovery }}
           HOUSES_E2E_STATE: ${{ runner.temp }}/houses-e2e-state.json
+          HOUSES_BROWSER_CHANNEL: chrome
           NODE_PATH: ${{ runner.temp }}/house-browser/node_modules
         run: node scripts/test-houses-production.cjs full
       - name: Save test report and screenshots
