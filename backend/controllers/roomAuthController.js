@@ -31,6 +31,11 @@ const roomLogin = async (req, res) => {
       if (user) room = await Room.getById(user.room_id);
     }
     if (!user || !room || room.is_test) return res.status(401).json({ error: 'Неверное название команды или пароль' });
+    if(room.is_shared){
+      const houses=require('../services/playerRuntime').cabinet.houses;
+      const member=await houses.membership(room.id);
+      if(member)return res.json(await houses.join(member.public_id,{room_id:room.id,password}));
+    }
 
     room=await require('../services/roomTimer').syncRoomTimer(room.id,room);
     if(!room)return res.status(404).json({error:'Комната больше не существует'});

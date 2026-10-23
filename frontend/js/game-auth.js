@@ -36,6 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (response.ok) {
+                if(data.finished){
+                    sessionStorage.setItem('detectum-room-result',JSON.stringify({token:data.token,room_id:data.room.id}));
+                    window.location.href='/room-result';return;
+                }
                 session.saveLogin(data);
                 
                 showMessage('Успешный вход в игру! Перенаправление...', 'success');

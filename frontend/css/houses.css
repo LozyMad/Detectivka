@@ -1,0 +1,39 @@
+.house-entry{min-height:100vh}
+.house-entry .header-inner{min-height:76px}
+.house-lobby{box-sizing:border-box;width:min(540px,calc(100% - 40px));margin:40px auto;padding:0}
+.house-entry-card{margin:0;padding:32px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#261b14,var(--panel) 65%);box-shadow:0 24px 70px #0004}
+.house-entry h1{font-size:clamp(28px,4vw,36px);line-height:1.2;margin:12px 0 18px}
+.house-case{color:var(--gold);font-size:14px;font-weight:650;margin-bottom:8px}
+.house-muted{font-size:12px;color:var(--muted);line-height:1.6}
+.house-entry #house-state{padding:12px 14px;border-left:2px solid var(--accent);background:#d35c2b0a;border-radius:0 6px 6px 0;font-size:12px;color:#d7c7b8}
+.house-entry form{display:grid;gap:10px;margin-top:24px;border-top:1px solid var(--line);padding-top:24px}
+.house-entry label{font-weight:650;font-size:12px}
+.house-entry input,.house-entry select{box-sizing:border-box;width:100%;min-width:0;min-height:48px;padding:12px 14px;background:#100c09;border:1px solid #554032;border-radius:7px;color:var(--text);font:inherit;box-shadow:inset 0 1px 3px #0002}
+.house-entry input:focus,.house-entry select:focus{border-color:var(--accent)}
+.house-entry form p{margin:0 0 12px}
+.house-entry form .button{width:100%;min-height:48px;justify-content:space-between;padding-inline:24px}
+.house-error{color:#ffb0a3;white-space:pre-line}
+.house-entry [hidden],.houses-workspace [hidden]{display:none!important}
+.houses-toolbar,.houses-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:20px}
+.houses-toolbar h2{margin:0 auto 0 0}
+.houses-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.houses-card{padding:22px;border:1px solid var(--ws-border,#524135);border-radius:12px;background:var(--ws-surface,#231e19);min-width:0}
+.houses-card h3{font-size:20px;overflow-wrap:anywhere}
+.houses-muted{color:var(--ws-muted,#b5a99e);font-size:13px}
+.houses-meta{display:flex;flex-wrap:wrap;gap:8px 22px;margin:12px 0 20px}
+.houses-clock{font-size:30px;font-variant-numeric:tabular-nums;font-weight:700}
+.houses-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}
+.houses-fields label{display:grid;gap:7px;font-weight:600;font-size:14px}
+.houses-fields .houses-wide{grid-column:1/-1}
+.houses-fields label.houses-check{display:flex;gap:10px;align-items:center}
+.houses-table{width:100%;white-space:nowrap}
+.houses-table th,.houses-table td{padding:14px 12px!important;vertical-align:middle}
+.houses-table td:nth-child(2){white-space:normal;min-width:140px;overflow-wrap:anywhere}
+.houses-table .btn{margin:2px}
+.houses-dialog{width:min(660px,calc(100vw - 32px));max-height:90vh;overflow:auto;background:#231e19;color:#eee5dc;border:1px solid #6a5140;border-radius:16px;padding:28px}
+.houses-dialog::backdrop{background:#000a}
+.houses-dialog h2{font-size:24px;margin:0 0 16px}
+.houses-error{white-space:pre-line}
+.houses-workspace details>summary{cursor:pointer;font-weight:650;padding:12px 0}
+@media(max-width:600px){.house-lobby{margin-block:24px}.house-entry .header-inner{min-height:68px;gap:16px}.house-entry .header-inner .button{font-size:11px;min-height:36px;padding:8px 14px}.house-entry-card{padding:24px 20px}.houses-fields{grid-template-columns:1fr}.houses-controls .btn{flex-grow:1}.houses-dialog{padding:20px}.houses-card{padding:18px}}
+@media(max-height:760px) and (min-width:601px){.house-lobby{margin-block:24px}.house-entry-card{padding:26px 30px}.house-entry form{margin-top:18px;padding-top:18px}}

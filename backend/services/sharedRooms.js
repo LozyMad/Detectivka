@@ -8,6 +8,7 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
   const one=async(q,sql,params=[]) => (await q(sql,params)).rows[0];
   let finalize=async()=>{};
   let scoring=null;
+  let houses=null;
   async function init(){
     try {await query('ALTER TABLE rooms ADD COLUMN questions_delay_seconds INTEGER NOT NULL DEFAULT 0 CHECK (questions_delay_seconds >= 0)');}catch(e){if(e.code!=='42701'&&!String(e.message).includes('duplicate column'))throw e;}
     try {await query(`ALTER TABLE rooms ADD COLUMN is_shared ${postgres?'BOOLEAN NOT NULL DEFAULT FALSE':'INTEGER NOT NULL DEFAULT 0'}`);}catch(e){if(e.code!=='42701'&&!String(e.message).includes('duplicate column'))throw e;}
@@ -22,6 +23,7 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
     await q('UPDATE rooms SET is_shared=TRUE,halfway_paused=TRUE WHERE id=$1',[room.id]);if(scoring)await scoring.capture(q,room.id,productId);return record;
   }
   async function adminInvite(roomId,admin){
+    if(await houses?.membership(roomId))fail(409,'Используйте ссылку дома: агентство защищено паролем');
     return transaction(async q=>{
       await q('UPDATE rooms SET name=name WHERE id=$1',[roomId]);
       const room=await one(q,'SELECT * FROM rooms WHERE id=$1',[roomId]);
@@ -41,6 +43,7 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
   async function join(inviteToken,account=null){
     if(typeof inviteToken!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(inviteToken))fail(404,'Ссылка комнаты недействительна');
     const shared=await one(query,'SELECT * FROM shared_rooms WHERE invite_token=$1',[inviteToken]);if(!shared)fail(404,'Ссылка комнаты недействительна');
+    if(await houses?.membership(shared.room_id))fail(403,'Войдите по ссылке игры с паролем агентства');
     return identity(shared.room_id,account);
   }
   async function identity(roomId,account=null){
@@ -103,8 +106,11 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
     if(room.state!=='finished')fail(409,'Разбор доступен после завершения расследования');
     if(!room.game_start_time)return {room:{id:room.id,name:room.name},cancelled:true,scoring:null,rating_rule:'Комната закрыта до запуска. Гонорар не рассчитывается.'};
     await finalize(room.id);
-    return {room:{id:room.id,name:room.name},scoring:await scoring?.publicSummary(room.id)||null,ranked:false,rating_rule:'Гонорар зависит от качества ответов и количества поездок. Оценка каждого ответа — от 0 до 5.'};
+    const membership=await houses?.membership(room.id);
+    const summary=await scoring?.publicSummary(room.id)||null;
+    const awaiting=!!membership&&membership.house_state!=='finished';
+    return {room:{id:room.id,name:room.name},scoring:awaiting&&summary?{...summary,grades:[]}:summary,awaiting_house_finish:awaiting,ranked:false,rating_rule:awaiting?'Ваше расследование завершено. Разбор ответов откроется после общего завершения игры.':'Гонорар зависит от качества ответов и количества поездок. Оценка каждого ответа — от 0 до 5.'};
   }
-  return {init,provision,adminInvite,join,identity,authorize,activeQuestions,snapshot,saveNotes,saveDraft,submitAnswers,result,setFinalizer(fn){finalize=fn;},setScoring(service){scoring=service;}};
+  return {init,provision,adminInvite,join,identity,authorize,activeQuestions,snapshot,saveNotes,saveDraft,submitAnswers,result,setFinalizer(fn){finalize=fn;},setScoring(service){scoring=service;},setHouses(service){houses=service;}};
 }
 module.exports={createSharedRooms};

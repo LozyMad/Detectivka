@@ -661,6 +661,8 @@ function switchTab(tabName) {
     } else if (tabName === 'rooms') {
         loadRooms(true);
         ensureRoomScenarioOptions();
+    } else if (tabName === 'houses') {
+        window.adminHouses?.load();
     } else if (tabName === 'answers') {
         populateAnswersRoomSelect();
     } else if (tabName === 'permissions') {

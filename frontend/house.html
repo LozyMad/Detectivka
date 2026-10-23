@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0c0908">
+  <title>Вход в игру — Детектум</title>
+  <link rel="icon" href="/favicon.ico?v=2">
+  <link rel="stylesheet" href="/css/player.css?v=room-history1">
+  <link rel="stylesheet" href="/css/houses.css?v=3">
+  <script defer src="/js/game-session.js?v=house1"></script>
+  <script defer src="/js/house.js?v=3"></script>
+</head>
+<body class="house-entry">
+  <a class="skip" href="#house-login">К форме входа</a>
+  <header class="player-header">
+    <div class="shell header-inner">
+      <a class="brand" href="/">ДЕТЕКТУМ<span>Детективные расследования</span></a>
+      <a class="button secondary small" href="/">На главную</a>
+    </div>
+  </header>
+  <main class="house-lobby">
+    <section class="house-entry-card">
+      <p class="eyebrow">Вход в игру</p>
+      <h1 id="house-name">Открываем игру…</h1>
+      <p id="house-case" class="house-case"></p>
+      <p id="house-state" role="status"></p>
+      <form id="house-login" hidden>
+        <label for="house-team">Ваше агентство</label>
+        <select id="house-team" name="room_id" autocomplete="username" required></select>
+        <label for="house-password">Пароль агентства</label>
+        <input id="house-password" name="password" type="password" autocomplete="current-password" required maxlength="72">
+        <p class="house-muted">Пароль выдаёт организатор</p>
+        <button type="submit" class="button" id="house-enter">Войти в игру <span aria-hidden="true">→</span></button>
+      </form>
+      <p id="house-error" class="house-error" role="alert" hidden></p>
+      <button type="button" class="button secondary" id="house-reload" hidden>Попробовать снова</button>
+    </section>
+  </main>
+</body>
+</html>

@@ -19,6 +19,18 @@ const router = express.Router();
 
 router.use(authenticateToken);
 router.use(adminRequired);
+router.use(async (req,res,next) => {
+  try {
+    if (['GET','HEAD'].includes(req.method)) return next();
+    let roomId=Number(req.path.split('/')[1]);
+    if (req.path.startsWith('/users/')) {
+      const row=(await require('../services/playerDatabase').query('SELECT room_id FROM room_users WHERE id=$1',[Number(req.path.split('/')[2])])).rows[0];
+      roomId=row?.room_id;
+    }
+    if(roomId && await require('../services/playerRuntime').cabinet.houses.membership(roomId))return res.status(409).json({error:'Управляйте агентством через его дом'});
+    next();
+  } catch(error) { next(error); }
+});
 
 router.post('/:room_id/invite', (req,res,next)=> {
   require('../services/playerRuntime').cabinet.shared.adminInvite(Number(req.params.room_id),req.user)

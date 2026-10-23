@@ -103,7 +103,12 @@ const listRooms = async (req, res) => {
     const currentRooms = await Promise.all(rooms.map(room =>
       room.state === 'running' && !room.is_test ? syncRoomTimer(room.id, room) : room
     ));
-    res.json({ rooms: currentRooms });
+    const visibleRooms=[];
+    for(const room of currentRooms){
+      if(room.is_shared&&await require('../services/playerRuntime').cabinet.houses.membership(room.id))continue;
+      visibleRooms.push(room);
+    }
+    res.json({ rooms: visibleRooms });
   } catch (error) {
     console.error('List rooms error:', error);
     res.status(500).json({ error: 'Internal server error' });

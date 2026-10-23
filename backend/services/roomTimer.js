@@ -1,4 +1,5 @@
 const Room = require('../models/room');
+let houseSynchronizer = null;
 
 function remainingSeconds(room, now = new Date()) {
   if (!room || room.is_test || !room.game_end_time) return null;
@@ -11,6 +12,10 @@ function remainingSeconds(room, now = new Date()) {
 }
 
 async function syncRoomTimer(roomId, room = null) {
+  if (houseSynchronizer) {
+    const houseRoom = await houseSynchronizer(roomId, room);
+    if (houseRoom) return houseRoom;
+  }
   const current = room || await Room.getById(roomId);
   if (!current || current.is_test || current.state !== 'running' || !current.game_end_time) return current;
 
@@ -30,4 +35,4 @@ async function syncRoomTimer(roomId, room = null) {
   return current;
 }
 
-module.exports = { remainingSeconds, syncRoomTimer };
+module.exports = { remainingSeconds, syncRoomTimer, setHouseSynchronizer(fn) { houseSynchronizer = fn; } };

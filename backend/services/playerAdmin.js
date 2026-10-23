@@ -2,6 +2,7 @@
 const fail = (status, message) => { const error = new Error(message); error.status = status; throw error; };
 const now = () => new Date().toISOString();
 function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync, remainingSeconds, finalizeRoom, scoring}) {
+  let houses=null;
   // Renumber repeated parameters: SQLite binds by occurrence, PostgreSQL by number.
   const execute=(q,sql,params=[])=>{const values=[];const mapped=sql.replace(/\$(\d+)/g,(_,n)=>{values.push(params[Number(n)-1]);return '$'+values.length;});return q(mapped,values);};
   const query=(sql,params)=>execute(rawQuery,sql,params);
@@ -58,7 +59,8 @@ function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync
     if(state&&!['pending','running','paused','finished'].includes(state))fail(400,'Неизвестный статус');
     await settleRooms(admin);
     const rows=(await query(`SELECT r.id,r.name,r.state,r.duration_seconds,r.game_end_time,r.paused_at,s.name AS title,a.username AS owner_name,a.id AS owner_id,h.answers_submitted,g.attempt_number,g.score,g.result_status FROM rooms r JOIN shared_rooms h ON h.room_id=r.id JOIN scenarios s ON s.id=r.scenario_id LEFT JOIN player_accounts a ON a.id=h.owner_account_id LEFT JOIN player_runs g ON g.room_id=r.id AND g.is_owner=1 WHERE (${roomScope(admin)}) AND ($2='' OR r.state=$2) ORDER BY r.id DESC`,[admin.id,state])).rows;
-    const found=rows.filter(r=>(r.name+' '+r.title+' '+(r.owner_name||'')).toLocaleLowerCase('ru').includes(p.search.toLocaleLowerCase('ru')));
+    const ordinary=[];for(const row of rows)if(!await houses?.membership(row.id))ordinary.push(row);
+    const found=ordinary.filter(r=>(r.name+' '+r.title+' '+(r.owner_name||'')).toLocaleLowerCase('ru').includes(p.search.toLocaleLowerCase('ru')));
     return {items:found.slice(p.offset,p.offset+p.limit).map(r=>({...r,answers_submitted:!!r.answers_submitted,remaining_seconds:remainingSeconds(r)})),total:found.length,page:p.page,pages:Math.max(1,Math.ceil(found.length/p.limit))};
   }
   async function room(admin,id) {
@@ -107,6 +109,7 @@ function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync
     });
   }
   async function control(admin,id,body={}) {
+    if(await houses?.membership(id))fail(409,'Управляйте временем агентства через дом');
     staff(admin);const action=body.action;if(!['start','pause','resume','add_time','finish'].includes(action))fail(400,'Неизвестное действие');mutation(body);
     if(action==='finish'&&body.confirmed!==true)fail(400,'Подтвердите завершение комнаты');
     const minutes=action==='add_time'?body.minutes:0;if(action==='add_time'&&(!Number.isInteger(minutes)||minutes<1||minutes>240))fail(400,'Можно добавить от 1 до 240 минут');
@@ -151,6 +154,6 @@ function createPlayerAdmin({query:rawQuery, transaction:rawTransaction, roomSync
     staff(admin);
     return (await query(`SELECT j.id,j.admin_name,j.action,j.account_id,j.room_id,j.reason,j.payload,j.created_at FROM player_admin_audit j WHERE ($2='' OR j.account_id=$2) AND ($3=0 OR j.room_id=$3) AND (${superAdmin(admin)?'1=1':"EXISTS (SELECT 1 FROM rooms r WHERE r.id=j.room_id AND r.created_by=$1) OR (j.action='scoring_settings' AND j.admin_id=$1)"}) ORDER BY j.created_at DESC,j.id DESC LIMIT 100`,[admin.id,filters.account_id||'',Number(filters.room_id)||0])).rows.map(j=>({...j,payload:JSON.parse(j.payload)}));
   }
-  return {init,players,player,rooms,room,grant,control,journal};
+  return {init,players,player,rooms,room,grant,control,journal,setHouses(service){houses=service;}};
 }
 module.exports={createPlayerAdmin};

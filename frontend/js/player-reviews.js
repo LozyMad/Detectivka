@@ -47,5 +47,6 @@
   const path='/reviews/'+form.dataset.room,signature=path+JSON.stringify(body);if(!pending.has(signature))pending.set(signature,crypto.randomUUID());body.request_key=pending.get(signature);const buttons=[...form.querySelectorAll('[type=submit]')];buttons.forEach(b=>b.disabled=true);
   try{const result=await api(path,body);pending.delete(signature);message('review-notice',publish?'Гонорар опубликован: '+result.calculation.fee.toLocaleString('ru-RU')+'.':'Черновик сохранён. Игрок пока не видит эти изменения.');await open(Number(form.dataset.room),false);await loadList();}catch(error){message('review-error',error.message);}finally{buttons.forEach(b=>b.disabled=false);}
  });
+ window.adminReviews={open};
  await loadList();const room=Number(new URLSearchParams(location.search).get('room'));if(Number.isSafeInteger(room)&&room>0)await open(room,false);
 })();
