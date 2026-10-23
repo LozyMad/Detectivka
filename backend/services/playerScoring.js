@@ -94,7 +94,7 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     await q('UPDATE scenarios SET name=name WHERE id=$1',[room.scenario_id]);
     const saved=await one(q,'SELECT * FROM scenario_scoring_settings WHERE scenario_id=$1',[room.scenario_id]);
     const criteria=(await q('SELECT question_id,criteria FROM scenario_question_criteria WHERE scenario_id=$1',[room.scenario_id])).rows;
-    const product=productId||owner?.product_id?await one(q,'SELECT id,rubric FROM player_products WHERE id=$1',[productId||owner.product_id]):room.duration_seconds===0?await one(q,"SELECT id,rubric FROM player_products WHERE scenario_id=$1 AND id='borrowed-time'",[room.scenario_id]):null;
+    const product=productId||owner?.product_id?await one(q,'SELECT id,rubric FROM player_products WHERE id=$1',[productId||owner.product_id]):await one(q,"SELECT id,rubric FROM player_products WHERE scenario_id=$1 AND id='borrowed-time'",[room.scenario_id]);
     const rubric=product?.rubric?JSON.parse(product.rubric):[];
     let questions=(await q('SELECT id,question_text FROM questions WHERE scenario_id=$1 AND is_active=TRUE ORDER BY question_order,id',[room.scenario_id])).rows.map(item=>({...item,criteria:criteria.find(c=>Number(c.question_id)===Number(item.id))?.criteria||'',auto_answers:rubric.find(r=>Number(r.question_id)===Number(item.id))?.answers||null}));
     if(aiReviews.enabled&&product?.id==='borrowed-time'&&!preserveLegacy)questions=require('./borrowedTimeGrading').freezeRubric(questions)||questions;
@@ -144,6 +144,35 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     return manual?'needs_review':'completed';
   }
   async function savedAnswers(q,f){return f.answers!=null?JSON.parse(f.answers):(await q('SELECT question_id,answer_text FROM question_answers WHERE room_user_id=$1 ORDER BY id',[f.room_user_id])).rows;}
+  async function missingAiQuestions(q,room,f){
+    if(!aiReviews.enabled||!f||room.is_test||room.state!=='finished'||!room.game_start_time||f.review_status!=='pending_review'||f.formula_version===0||f.trips==null||f.answers==null||f.fee!=null||f.published_grades!=null)return null;
+    if(await one(q,'SELECT room_id FROM player_ai_reviews WHERE room_id=$1',[room.id]))return null;
+    if(await one(q,'SELECT question_id FROM player_answer_grades WHERE room_id=$1 LIMIT 1',[room.id]))return null;
+    if(!await one(q,"SELECT id FROM player_products WHERE scenario_id=$1 AND id='borrowed-time'",[room.scenario_id]))return null;
+    const questions=JSON.parse(f.questions);
+    if(!questions.length)return null;
+    if(questions.every(item=>item.ai_rule))return questions;
+    if(questions.some(item=>item.ai_rule))return null;
+    return require('./borrowedTimeGrading').freezeRubric(questions);
+  }
+  async function startAiReview(admin,id,body={}){
+    await roomAccess(admin,id);mutation(body);
+    return transaction(async q=>{
+      await q('UPDATE rooms SET name=name WHERE id=$1',[id]);const room=await roomAccess(admin,id,q);
+      return audit(q,admin,'review_ai_start',id,null,body,{revision:body.revision},async()=>{
+        const f=await one(q,'SELECT * FROM player_room_scoring WHERE room_id=$1',[id]);
+        if(!f)fail(404,'Результат комнаты не найден');
+        if(Number(f.revision)!==body.revision)fail(409,'Проверка изменилась. Обновите страницу');
+        const questions=await missingAiQuestions(q,room,f);
+        if(!questions)fail(409,'ИИ-проверку нельзя запустить: она уже создана, есть оценки или для этих вопросов нет правил');
+        const answers=await savedAnswers(q,f),latest=new Map(answers.map(a=>[Number(a.question_id),a.answer_text]));
+        const revision=Number(f.revision)+1;
+        await q('UPDATE player_room_scoring SET questions=$1,revision=$2 WHERE room_id=$3',[JSON.stringify(questions),revision,id]);
+        await aiReviews.enqueue(q,id,revision,questions,questions.map(item=>({question_id:Number(item.id),answer_text:latest.get(Number(item.id))||''})));
+        return {ok:true,revision,status:'queued',rubric_version:questions[0].ai_rule.version};
+      });
+    });
+  }
   async function publicSummary(roomId){
     const f=await one(query,'SELECT * FROM player_room_scoring WHERE room_id=$1',[roomId]);if(!f)return null;
     const qs=JSON.parse(f.questions),published=f.published_grades?JSON.parse(f.published_grades):[];const answerMap=new Map(published.length?(await savedAnswers(query,f)).map(a=>[Number(a.question_id),a.answer_text]):[]);
@@ -159,7 +188,7 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     const scenario=await one(query,'SELECT name FROM scenarios WHERE id=$1',[r.scenario_id]);
     const owner=await one(query,'SELECT a.username,g.id AS run_id FROM player_runs g JOIN player_accounts a ON a.id=g.account_id WHERE g.room_id=$1 AND g.is_owner=1 ORDER BY g.created_at,g.id LIMIT 1',[id]);
     const aiJob=await one(query,'SELECT status,result,error_code,rubric_version,model_uri,attempts FROM player_ai_reviews WHERE room_id=$1',[id]);
-    return {room:{id:r.id,name:r.name,title:scenario?.name,owner_name:owner?.username||null},...(await publicSummary(id)),ai_details:aiJob?{...aiJob,result:aiJob.result?JSON.parse(aiJob.result):null}:null,settings_revision:f.settings_revision,questions:JSON.parse(f.questions).map(q=>({id:Number(q.id),question_text:q.question_text,criteria:q.criteria||(q.ai_rule?require('./borrowedTimeGrading').describeRule(q.ai_rule):''),answer_text:latest.get(Number(q.id))||'',grade:grades.find(g=>Number(g.question_id)===Number(q.id))?.grade??null,comment:grades.find(g=>Number(g.question_id)===Number(q.id))?.comment||''}))};
+    return {room:{id:r.id,name:r.name,title:scenario?.name,owner_name:owner?.username||null},...(await publicSummary(id)),ai_start_available:!!(await missingAiQuestions(query,r,f)),ai_details:aiJob?{...aiJob,result:aiJob.result?JSON.parse(aiJob.result):null}:null,settings_revision:f.settings_revision,questions:JSON.parse(f.questions).map(q=>({id:Number(q.id),question_text:q.question_text,criteria:q.criteria||(q.ai_rule?require('./borrowedTimeGrading').describeRule(q.ai_rule):''),answer_text:latest.get(Number(q.id))||'',grade:grades.find(g=>Number(g.question_id)===Number(q.id))?.grade??null,comment:grades.find(g=>Number(g.question_id)===Number(q.id))?.comment||''}))};
   }
   async function reviews(admin,filters={}){
     staff(admin);const status=String(filters.status||'pending_review');if(!['pending_review','graded','all'].includes(status))fail(400,'Неизвестный статус проверки');
@@ -209,6 +238,6 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     const rows=(await query("SELECT f.questions FROM player_room_scoring f JOIN rooms r ON r.id=f.room_id WHERE r.state<>'finished'")).rows;
     return rows.some(r=>JSON.parse(r.questions).some(q=>Number(q.id)===Number(questionId)));
   }
-  return {init,capture,complete,needsFinalize,conditions,frozenQuestions,publicSummary,settingsList,settings,saveSettings,reviews,review,saveReview,firstRuns,rankings,questionInOpenRoom,aiReviews,setFinalizer:fn=>{finalize=fn;}};
+  return {init,capture,complete,needsFinalize,conditions,frozenQuestions,publicSummary,settingsList,settings,saveSettings,reviews,review,saveReview,startAiReview,firstRuns,rankings,questionInOpenRoom,aiReviews,setFinalizer:fn=>{finalize=fn;}};
 }
 module.exports={createPlayerScoring,calculateFee,FORMULA_VERSION};

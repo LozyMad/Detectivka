@@ -18,4 +18,5 @@ router.put('/scoring/settings/:id',wrap(async(req,res)=>res.json(await cabinet.s
 router.get('/scoring/reviews',wrap(async(req,res)=>res.json(await cabinet.scoring.reviews(req.user,req.query))));
 router.get('/scoring/reviews/:id',wrap(async(req,res)=>res.json(await cabinet.scoring.review(req.user,Number(req.params.id)))));
 router.post('/scoring/reviews/:id',wrap(async(req,res)=>res.json(await cabinet.scoring.saveReview(req.user,Number(req.params.id),req.body))));
+router.post('/scoring/reviews/:id/start-ai',wrap(async(req,res)=>res.json(await cabinet.scoring.startAiReview(req.user,Number(req.params.id),req.body))));
 module.exports=router;

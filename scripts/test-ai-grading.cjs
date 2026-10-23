@@ -12,6 +12,7 @@ const answersFor = qs => qs.map(q => ({question_id: q.id, answer_text: q.ai_rule
 const config = {enabled: true, apiKey: 'test-key-never-log', folder: 'b1gvih69o63hf3q9qj04', modelUri: 'gpt://test/deepseek-v4.1-flash/latest'};
 
 async function fixture(t, options = {}) {
+  const administratorRoom = options.adminUntimed || Number.isSafeInteger(options.adminDuration);
   const db = new sqlite3.Database(':memory:');
   const query = (sql, params = []) => new Promise((resolve, reject) => db.all(sql, params, (e, rows) => e ? reject(e) : resolve({rows})));
   let pending = Promise.resolve();
@@ -30,6 +31,7 @@ async function fixture(t, options = {}) {
     'CREATE TABLE shared_rooms (room_id INTEGER,room_user_id INTEGER)',
     'CREATE TABLE player_runs (id TEXT,account_id TEXT,product_id TEXT,room_id INTEGER,room_user_id INTEGER,is_owner INTEGER,score INTEGER,result_status TEXT,created_at TEXT)',
     'CREATE TABLE player_products (id TEXT PRIMARY KEY,rubric TEXT,price INTEGER,scenario_id INTEGER)',
+    'CREATE TABLE player_accounts (id TEXT PRIMARY KEY,username TEXT)',
     'CREATE TABLE questions (id INTEGER PRIMARY KEY,scenario_id INTEGER,question_text TEXT,is_active BOOLEAN,question_order INTEGER)',
     'CREATE TABLE question_answers (id INTEGER PRIMARY KEY,question_id INTEGER,room_user_id INTEGER,answer_text TEXT)',
     'CREATE TABLE visit_attempts (id INTEGER PRIMARY KEY,user_id INTEGER,room_id INTEGER)',
@@ -55,8 +57,8 @@ async function fixture(t, options = {}) {
     await query('INSERT INTO question_answers (question_id,room_user_id,answer_text) VALUES ($1,10,$2)', [q.id, options.empty ? '' : 'Ответ команды']);
   }
   await query('INSERT INTO visit_attempts VALUES (1,10,1)');
-  if(options.adminUntimed){await query('ALTER TABLE rooms ADD COLUMN duration_seconds INTEGER');await query('UPDATE rooms SET duration_seconds=0 WHERE id=1');await query('DELETE FROM player_runs');}
-  await transaction(q => scoring.capture(q, 1, options.adminUntimed?null:options.product || 'borrowed-time'));
+  if(administratorRoom){await query('ALTER TABLE rooms ADD COLUMN duration_seconds INTEGER');await query('UPDATE rooms SET duration_seconds=$1 WHERE id=1',[options.adminDuration??0]);await query('DELETE FROM player_runs');}
+  await transaction(q => scoring.capture(q, 1, administratorRoom?null:options.product || 'borrowed-time'));
   const finish = () => transaction(async q => { await q("UPDATE rooms SET state='finished' WHERE id=1"); return scoring.complete(q, 1); });
   t.after(async () => { scoring.aiReviews.stop(); await new Promise(resolve => db.close(resolve)); });
   return {query, transaction, scoring, finish, grader, calls: () => calls, time: () => time, advance: ms => {time += ms;}};
@@ -99,6 +101,72 @@ test('a new untimed administrator demo room receives AI grading without a player
  const summary=await f.scoring.publicSummary(1);
  assert.equal(f.calls(),1);assert.equal(summary.ai_review.status,'completed');assert.equal(summary.points,35);assert.equal(summary.grades.length,7);
  assert.equal(summary.grades[0].correct_answer,rules[0].answer);assert.equal(summary.grades[0].answer_text,'Ответ команды');
+});
+
+test('a timed administrator room receives AI grading without a player purchase or owner run',async t=>{
+ const f=await fixture(t,{adminDuration:5400});
+ await f.finish();await f.scoring.aiReviews.tick();
+ const summary=await f.scoring.publicSummary(1);
+ assert.equal(f.calls(),1,'Timed administrator rooms must enqueue the AI review');
+ assert.equal(summary.ai_review.status,'completed');assert.equal(summary.points,35);assert.equal(summary.grades.length,7);
+ assert.equal(summary.grades[0].correct_answer,rules[0].answer);
+});
+
+async function withoutAiRules(f,change=items=>items){
+ const saved=(await f.query('SELECT questions FROM player_room_scoring WHERE room_id=1')).rows[0];
+ const questions=change(JSON.parse(saved.questions).map(({ai_rule,...question})=>question));
+ await f.query('UPDATE player_room_scoring SET questions=$1 WHERE room_id=1',[JSON.stringify(questions)]);
+}
+const organizer={id:1,is_admin:true,admin_level:'super_admin'};
+const startBody=(revision=0)=>({request_key:randomUUID(),revision,reason:'Восстановление пропущенной проверки'});
+
+test('organizer can recover a missed AI job using frozen answers and fee conditions exactly once',async t=>{
+ let sent;
+ const f=await fixture(t,{adminDuration:5400,grade:async payload=>{sent=payload;return {grades:fullGrades(payload.questions),usage:{}};}});
+ await withoutAiRules(f);await f.query('UPDATE player_room_scoring SET formula_version=1,max_fee=777 WHERE room_id=1');await f.finish();
+ assert.equal((await f.scoring.review(organizer,1)).ai_start_available,true);
+ await f.query("UPDATE question_answers SET answer_text='Изменённый ответ после завершения'");
+ const body=startBody(),first=await f.scoring.startAiReview(organizer,1,body);
+ assert.equal(first.status,'queued');assert.equal(first.revision,1);
+ assert.equal((await f.scoring.review(organizer,1)).ai_start_available,false);
+ await f.scoring.aiReviews.tick();
+ const summary=await f.scoring.publicSummary(1);
+ assert.equal(summary.points,35);assert.equal(summary.fee,777);assert.equal(summary.formula_version,1);
+ assert.ok(sent.answers.every(a=>a.answer_text==='Ответ команды'));
+ assert.deepEqual(await f.scoring.startAiReview(organizer,1,body),first);
+ assert.equal(f.calls(),1);assert.equal((await f.query('SELECT * FROM player_ai_reviews')).rows.length,1);
+ assert.equal((await f.query("SELECT * FROM player_admin_audit WHERE action='review_ai_start'")).rows.length,1);
+});
+
+test('AI recovery enforces organizer access and revision and never starts in an unfinished room',async t=>{
+ const f=await fixture(t,{adminDuration:5400});await withoutAiRules(f);
+ await assert.rejects(f.scoring.startAiReview({id:1,is_admin:false},1,startBody()),e=>e.status===403);
+ await assert.rejects(f.scoring.startAiReview({id:2,is_admin:true,admin_level:'admin'},1,startBody()),e=>e.status===404);
+ await assert.rejects(f.scoring.startAiReview(organizer,1,startBody()),e=>e.status===409);
+ await f.finish();await assert.rejects(f.scoring.startAiReview(organizer,1,startBody(5)),e=>e.status===409);
+ assert.equal((await f.query('SELECT * FROM player_ai_reviews')).rows.length,0);
+ assert.equal((await f.query('SELECT * FROM player_admin_audit')).rows.length,0);
+});
+
+test('AI recovery preserves manual drafts, custom criteria, disabled AI and other scenarios',async t=>{
+ for(const mode of ['draft','criteria','disabled','other']){
+  const f=await fixture(t,{adminDuration:5400,...(mode==='disabled'?{enabled:false}:{}),...(mode==='other'?{product:'paid'}:{})});
+  await withoutAiRules(f,items=>{if(mode==='criteria')items[0].criteria='Особая авторская шкала';return items;});await f.finish();
+  if(mode==='draft')await f.scoring.saveReview(organizer,1,{...startBody(),publish:false,grades:[{question_id:101,grade:2,comment:'Ручной черновик'}]});
+  const before=(await f.query('SELECT * FROM player_room_scoring')).rows[0];
+  assert.equal((await f.scoring.review(organizer,1)).ai_start_available,false);
+  await assert.rejects(f.scoring.startAiReview(organizer,1,startBody(Number(before.revision))),e=>e.status===409);
+  assert.deepEqual((await f.query('SELECT * FROM player_room_scoring')).rows[0],before);
+  assert.equal((await f.query('SELECT * FROM player_ai_reviews')).rows.length,0);
+ }
+});
+
+test('AI recovery cannot duplicate a queued job or replace published grades',async t=>{
+ const f=await fixture(t,{adminDuration:5400});await f.finish();
+ await assert.rejects(f.scoring.startAiReview(organizer,1,startBody()),e=>e.status===409);
+ await f.scoring.aiReviews.tick();const before=await f.scoring.publicSummary(1);
+ await assert.rejects(f.scoring.startAiReview(organizer,1,startBody(before.revision)),e=>e.status===409);
+ assert.deepEqual(await f.scoring.publicSummary(1),before);assert.equal(f.calls(),1);
 });
 
 test('Responses request matches the Yandex example and sends only answers and frozen rules', async () => {
