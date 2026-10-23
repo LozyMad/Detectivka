@@ -1,0 +1,47 @@
+name: Test game houses on production
+
+on:
+  workflow_dispatch:
+    inputs:
+      credentials:
+        description: AES-GCM encrypted test login; plaintext credentials must never be entered here
+        required: true
+      recovery:
+        description: Optional encrypted recovery state from a previous run
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-game-house-test
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated browser test runtime
+        run: |
+          npm install --prefix "$RUNNER_TEMP/house-browser" --no-package-lock playwright
+          "$RUNNER_TEMP/house-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Test two houses and six agencies through the published site
+        env:
+          DEPLOY_SECRET: ${{ secrets.DETEKTUM }}
+          HOUSES_E2E_CREDENTIALS: ${{ inputs.credentials }}
+          HOUSES_E2E_RECOVERY: ${{ inputs.recovery }}
+          HOUSES_E2E_STATE: ${{ runner.temp }}/houses-e2e-state.json
+          NODE_PATH: ${{ runner.temp }}/house-browser/node_modules
+        run: node scripts/test-houses-production.cjs full
+      - name: Save test report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-houses-production-report
+          path: output/game-houses-production-report/
+          retention-days: 7
