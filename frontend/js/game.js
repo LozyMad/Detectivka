@@ -40,6 +40,9 @@ let activePlayerPane = 'game';
 let playerAddressBookView = 'full';
 let applicationReturnFocus = null;
 let applicationReturnAddress = null;
+let applicationBoardSource = null;
+let applicationFolderSource = null;
+let applicationFolderReady = false;
 let playerRouteReady = false;
 let applicationRetry = null;
 let foregroundRefreshRequest = null;
@@ -1400,6 +1403,11 @@ function cancelApplicationRequest() {
 }
 
 function closeApplicationFolder() {
+    applicationBoardSource = null;
+    applicationFolderSource = null;
+    applicationFolderReady = false;
+    const boardButton = document.getElementById('applicationBoardBtn');
+    if (boardButton) { boardButton.disabled = true; boardButton.hidden = true; }
     applicationRetry = null;
     applicationRequestId++;
     cancelApplicationRequest();
@@ -1428,6 +1436,20 @@ function showApplicationFiles() {
     document.getElementById('applicationFiles').style.display = 'block';
     document.getElementById('applicationBackBtn').disabled = true;
     document.getElementById('applicationTitle').textContent = document.getElementById('applicationOverlay').dataset.title || 'Приложение';
+    setApplicationBoardSource(applicationFolderSource, applicationFolderReady);
+}
+
+function setApplicationBoardSource(source, ready) {
+    applicationBoardSource = source;
+    const button = document.getElementById('applicationBoardBtn');
+    if (!button) return;
+    button.textContent = 'На доску';
+    button.hidden = !ready || !source || !window.investigationBoard || !gameStorage.getItem('roomUser');
+    button.disabled = button.hidden;
+    if (button.hidden) return;
+    window.investigationBoard.findApplication(source).then(note => {
+        if (applicationBoardSource === source) button.textContent = note ? 'Найти на доске' : 'На доску';
+    }).catch(() => { /* Pinning will check the current board again. */ });
 }
 
 function showApplicationLoadError(target, retry) {
@@ -1456,13 +1478,17 @@ function handleDocumentsLock(data, requestId) {
     return true;
 }
 
-async function openApplicationFolder(addressId, number, fallbackUrl = '', briefing = false) {
+async function openApplicationFolder(addressId, number, fallbackUrl = '', briefing = false, fileId = '') {
     const scenarioId = roomState?.room?.scenario_id || roomState?.scenario_id || applicationScenarioId;
     const token = gameStorage.getItem('token');
     if (!scenarioId || !token) return;
     const requestId = ++applicationRequestId;
+    applicationFolderSource = briefing ? { briefing: true } : { address_id: Number(addressId), number: Number(number) };
+    applicationFolderReady = false;
+    setApplicationBoardSource(applicationFolderSource, false);
     const overlay = document.getElementById('applicationOverlay');
     overlay.dataset.title = briefing ? 'Брифинг дела' : `Приложение ${number}`;
+    if (overlay.classList.contains('is-open')) applicationReturnAddress = { addressId, number, briefing };
     if (!overlay.classList.contains('is-open')) {
         overlay.dataset.previousOverflow = document.body.style.overflow;
         applicationReturnFocus = document.activeElement;
@@ -1491,6 +1517,8 @@ async function openApplicationFolder(addressId, number, fallbackUrl = '', briefi
         if (!response.ok) throw new Error(data.error || 'Не удалось открыть приложение');
         if (requestId !== applicationRequestId) return;
         const files = data.application.files || [];
+        applicationFolderReady = true;
+        setApplicationBoardSource(applicationFolderSource, true);
         list.innerHTML = files.length ? files.map((file, index) => `
             <button type="button" class="application-file" data-file-index="${index}">
                 <i class="fas ${file.type === 'application/pdf' ? 'fa-file-pdf' : 'fa-file-image'}" aria-hidden="true"></i>
@@ -1498,13 +1526,22 @@ async function openApplicationFolder(addressId, number, fallbackUrl = '', briefi
             </button>`).join('') : 'В этой папке пока нет файлов';
         list.querySelectorAll('.application-file').forEach(button => button.addEventListener('click', () =>
             openApplicationFile(base, files[Number(button.dataset.fileIndex)], Number(button.dataset.fileIndex), token)));
+        if (fileId) {
+            const index = files.findIndex(file => file.id === fileId);
+            if (index < 0) {
+                list.textContent = 'Этот файл больше не доступен в приложении.';
+                setApplicationBoardSource(null, false);
+            } else await openApplicationFile(base, files[index], index, token);
+        }
     } catch (error) {
-        if (requestId === applicationRequestId) showApplicationLoadError(list, () => openApplicationFolder(addressId, number, fallbackUrl, briefing));
+        if (requestId === applicationRequestId) showApplicationLoadError(list, () => openApplicationFolder(addressId, number, fallbackUrl, briefing, fileId));
     }
 }
 
 async function openApplicationFile(base, file, index, token) {
     const requestId = ++applicationRequestId;
+    const boardSource = applicationFolderSource ? { ...applicationFolderSource, file_id: file.id } : null;
+    setApplicationBoardSource(boardSource, false);
     cancelApplicationRequest();
     const controller = applicationController = new AbortController();
     const preview = document.getElementById('applicationPreview');
@@ -1529,6 +1566,7 @@ async function openApplicationFile(base, file, index, token) {
         }
         const blob = await response.blob();
         if (requestId !== applicationRequestId) return;
+        setApplicationBoardSource(boardSource, true);
         clearApplicationPreview();
         applicationObjectUrl = URL.createObjectURL(blob);
         if (file.type === 'application/pdf') {
@@ -1567,6 +1605,15 @@ document.addEventListener('click', event => {
     openApplicationFolder(link.dataset.addressId, link.dataset.number, link.dataset.fallbackUrl || '', link.dataset.briefing === 'true');
 });
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('applicationBoardBtn')?.addEventListener('click', async () => {
+        const button = document.getElementById('applicationBoardBtn');
+        if (button.disabled || !applicationBoardSource || !window.investigationBoard) return;
+        const source = applicationBoardSource;
+        button.disabled = true;
+        try { await window.investigationBoard.openFromApplication(source); }
+        catch (error) { alert(error.message); }
+        finally { if (applicationBoardSource === source) button.disabled = false; }
+    });
     document.getElementById('applicationZoomBtn')?.addEventListener('click', toggleApplicationImageZoom);
     document.getElementById('applicationCloseBtn')?.addEventListener('click', closeApplicationFolder);
     document.getElementById('applicationBackBtn')?.addEventListener('click', () => { applicationRequestId++; showApplicationFiles(); });
@@ -1585,7 +1632,7 @@ function toggleApplicationImageZoom() {
 document.addEventListener('keydown', event => {
     const overlay = document.getElementById('applicationOverlay');
     if (!overlay?.classList.contains('is-open')) return;
-    if (event.key === 'Escape') closeApplicationFolder();
+    if (event.key === 'Escape') { event.preventDefault(); closeApplicationFolder(); }
     if (event.key === 'Tab') {
         const controls = [...overlay.querySelectorAll('button:not(:disabled), a[href], iframe')].filter(element => element.getClientRects().length);
         if (!controls.length) return;

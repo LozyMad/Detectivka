@@ -3,6 +3,7 @@ const Room = require('../models/room');
 const Address = require('../models/address');
 const AddressBook = require('../models/addressBook');
 const Board = require('../models/investigationBoard');
+const applications = require('../services/scenarioApplications');
 const { db, query } = require('../config/database');
 
 const router = express.Router();
@@ -27,7 +28,7 @@ router.use(wrap(async (req, res, next) => {
     : await new Promise((resolve, reject) => db.get(memberSql, memberParams,
       (error, row) => error ? reject(error) : resolve(row)));
   if (!member) return res.status(403).json({ error: 'Игрок не состоит в этой комнате' });
-  req.boardRoom = { id: room.id, scenarioId: room.scenario_id };
+  req.boardRoom = { id: room.id, scenarioId: room.scenario_id, state: room.state, isTest: room.is_test };
   next();
 }));
 
@@ -99,13 +100,63 @@ router.post('/notes/free', wrap(async (req, res) => {
   res.status(201).json({ note });
 }));
 
+router.post('/notes/application', wrap(async (req, res) => {
+  const body = req.body || {};
+  const briefing = body.briefing === true;
+  const addressId = briefing ? 0 : positiveId(body.address_id);
+  const number = briefing ? 0 : positiveId(body.number);
+  const fileId = body.file_id == null ? '' : body.file_id;
+  const fields = noteFields(body);
+  if (addressId === null || number === null || !fields || typeof fileId !== 'string' || fileId.length > 200 || /[\\/\x00-\x1f]/.test(fileId)) {
+    return res.status(400).json({ error: 'Некорректное приложение, цвет или текст заметки' });
+  }
+  if (!req.boardRoom.isTest && req.boardRoom.state === 'pending') {
+    return res.status(409).json({ code: 'GAME_NOT_STARTED', error: 'Сначала начните расследование' });
+  }
+  const [roomId, scenarioId] = context(req);
+  if (!briefing && !await hasVisited(req, addressId)) {
+    return res.status(403).json({ error: 'Сначала посетите это место в игре' });
+  }
+  const application = briefing ? await applications.getBriefing(scenarioId)
+    : await applications.get(scenarioId, addressId, number);
+  if (!application) return res.status(404).json({ error: 'Приложение не найдено' });
+  const file = fileId ? application.files.find(item => item.id === fileId) : null;
+  if (fileId && !file) return res.status(404).json({ error: 'Файл не найден в приложении' });
+  const existing = await Board.findByApplication(roomId, scenarioId, addressId, number, fileId);
+  if (existing) return res.status(409).json({ error: 'Это приложение уже на доске', note: existing });
+  let location = 'Начальные материалы';
+  if (!briefing) {
+    const address = await Address.getById(scenarioId, addressId);
+    if (!address) return res.status(404).json({ error: 'Место не найдено в сценарии' });
+    location = '';
+    try {
+      await AddressBook.ensureSeeded();
+      location = (await AddressBook.findNamesByAddress(address)).filter(Boolean).join(' / ');
+    } catch (error) { console.error('Board application location lookup:', error); }
+  }
+  try {
+    const note = await Board.createFreeNote({ room_id: roomId, scenario_id: scenarioId,
+      title: file ? file.name.replace(/\.(?:png|jpe?g|webp|pdf)$/i, '') : briefing ? 'Брифинг дела' : `Приложение ${number}`,
+      address_label: file ? `${briefing ? 'Брифинг дела' : `Приложение ${number}`}${location ? ' · ' + location : ''}` : location,
+      application_address_id: addressId, application_number: number,
+      application_file_id: fileId, application_file_type: file?.type || '', ...fields });
+    res.status(201).json({ note });
+  } catch (error) {
+    if (error.code === '23505' || error.code === 'SQLITE_CONSTRAINT') {
+      const note = await Board.findByApplication(roomId, scenarioId, addressId, number, fileId);
+      if (note) return res.status(409).json({ error: 'Это приложение уже на доске', note });
+    }
+    throw error;
+  }
+}));
+
 router.patch('/notes/:id', wrap(async (req, res) => {
   const id = positiveId(req.params.id);
   const fields = noteFields(req.body);
   if (!id || !fields) return res.status(400).json({ error: 'Некорректные данные заметки' });
   const existing = await Board.getNote(...context(req), id);
   if (!existing) return res.status(404).json({ error: 'Стикер не найден' });
-  if (Number(existing.address_id) < 0) {
+  if (Number(existing.address_id) < 0 && existing.application_number == null) {
     const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
     if (!title || title.length > 120) return res.status(400).json({ error: 'Название должно быть от 1 до 120 символов' });
     fields.title = title;

@@ -19,6 +19,12 @@
   const threadSegments = new Map();
   const $ = id => document.getElementById(id);
   const noteById = id => state.notes.find(note => Number(note.id) === Number(id));
+  const isApplication = note => note?.application_number != null;
+  const noteHeight = note => note?.application_file_id && note.application_file_type === 'application/pdf' ? 440 : 300;
+  const matchesApplication = (note, source) => isApplication(note) &&
+    Number(note.application_address_id) === (source.briefing ? 0 : Number(source.address_id)) &&
+    Number(note.application_number) === (source.briefing ? 0 : Number(source.number)) &&
+    (note.application_file_id || '') === (source.file_id || '');
   const escape = value => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
@@ -61,7 +67,7 @@
     state.width = Math.max(2400, Math.ceil(viewportWidth / state.zoom) + 1,
       ...state.notes.map(note => Number(note.x) + 450));
     state.height = Math.max(1600, Math.ceil(viewportHeight / state.zoom) + 1,
-      ...state.notes.map(note => Number(note.y) + 420));
+      ...state.notes.map(note => Number(note.y) + noteHeight(note) + 120));
     $('boardCanvas').style.width = `${state.width * state.zoom}px`;
     $('boardCanvas').style.height = `${state.height * state.zoom}px`;
     // Render at screen size: iPad Safari can ignore CSS zoom for explicitly styled text.
@@ -95,23 +101,28 @@
 
   function renderNotes() {
     if (!state.notes.length) {
-      $('boardNotes').innerHTML = '<div class="board-empty">Доска пока пуста.<br>Создайте стикер или прикрепите место из игры.</div>';
+      window.boardApplicationPreviews?.render([]);
+      $('boardNotes').innerHTML = '<div class="board-empty">Доска пока пуста.<br>Создайте стикер, прикрепите место или приложение из игры.</div>';
       return;
     }
     $('boardNotes').innerHTML = state.notes.map(note => {
       const tilt = noteTilt(note.id);
-      return `<article class="investigation-note ${state.pendingLink === Number(note.id) ? 'is-connecting' : ''}"
-        data-id="${Number(note.id)}" data-color="${paperColor(note.color)}" tabindex="0" role="button"
-        aria-label="Выбрать стикер: ${escape(note.title)}" aria-pressed="${state.pendingLink === Number(note.id)}"
+      return `<article class="investigation-note ${isApplication(note) ? 'board-application' : ''} ${note.application_file_id ? 'board-file' : ''} ${state.pendingLink === Number(note.id) ? 'is-connecting' : ''}"
+        data-id="${Number(note.id)}" data-color="${paperColor(note.color)}" data-file-type="${escape(note.application_file_type || '')}" tabindex="0" role="button"
+        aria-label="${isApplication(note) ? 'Открыть' : 'Выбрать стикер:'} ${escape(note.title)}" aria-pressed="${state.pendingLink === Number(note.id)}"
         style="left:${scaledLength(note.x)};top:${scaledLength(note.y)};--note-tilt:${tilt}deg">
           <button type="button" class="board-note-edit" title="Редактировать стикер" aria-label="Редактировать стикер: ${escape(note.title)}">⋯</button>
           <span class="board-note-body">
+            ${note.application_file_id ? `<span class="board-file-preview" data-board-preview-id="${Number(note.id)}" data-file-id="${escape(note.application_file_id)}"><span>Загрузка превью…</span></span>` :
+              isApplication(note) ? '<span class="board-application-kind"><i class="far fa-folder-open" aria-hidden="true"></i> Материалы дела</span>' : ''}
             <strong class="board-note-title">${escape(note.title)}</strong>
             ${note.address_label ? `<small class="board-note-address">${escape(note.address_label)}</small>` : ''}
-            <span class="board-note-comment">${escape(note.comment || 'Без заметки')}</span>
+            ${!note.application_file_id ? `<span class="board-note-comment">${escape(note.comment || (isApplication(note) ? 'Открыть материалы →' : 'Без заметки'))}</span>` : ''}
           </span>
+          ${isApplication(note) ? '<button type="button" class="board-application-link" title="Соединить с другой карточкой"><i class="fas fa-project-diagram" aria-hidden="true"></i> Связать</button>' : ''}
         </article>`;
     }).join('');
+    window.boardApplicationPreviews?.render(state.notes);
   }
 
   function renderFasteners() {
@@ -244,8 +255,8 @@
     const viewport = $('boardViewport');
     const x = note ? Number(note.x) + 150 : state.notes.length
       ? (Math.min(...state.notes.map(n => Number(n.x))) + Math.max(...state.notes.map(n => Number(n.x))) + 300) / 2 : state.width / 2;
-    const y = note ? Number(note.y) + 150 : state.notes.length
-      ? (Math.min(...state.notes.map(n => Number(n.y))) + Math.max(...state.notes.map(n => Number(n.y))) + 300) / 2 : state.height / 2;
+    const y = note ? Number(note.y) + noteHeight(note) / 2 : state.notes.length
+      ? (Math.min(...state.notes.map(n => Number(n.y))) + Math.max(...state.notes.map(n => Number(n.y) + noteHeight(n)))) / 2 : state.height / 2;
     viewport.scrollLeft = x * state.zoom - viewport.clientWidth / 2;
     viewport.scrollTop = y * state.zoom - viewport.clientHeight / 2;
   }
@@ -255,7 +266,7 @@
     let zoom = 1;
     if (state.notes.length) {
       const width = Math.max(...state.notes.map(n => Number(n.x))) - Math.min(...state.notes.map(n => Number(n.x))) + 380;
-      const height = Math.max(...state.notes.map(n => Number(n.y))) - Math.min(...state.notes.map(n => Number(n.y))) + 380;
+      const height = Math.max(...state.notes.map(n => Number(n.y) + noteHeight(n))) - Math.min(...state.notes.map(n => Number(n.y))) + 80;
       zoom = Math.min(1, viewport.clientWidth / width, viewport.clientHeight / height);
     }
     changeZoom(zoom);
@@ -286,11 +297,11 @@
   function openDialog({ note = null, trip = null, free = false }) {
     state.editing = note;
     state.trip = trip;
-    state.free = free || !!note && Number(note.address_id) < 0;
+    state.free = free || !!note && Number(note.address_id) < 0 && !isApplication(note);
     const title = note?.title || (trip?.locationNames || []).filter(Boolean).join(' / ') ||
       (trip ? `Место: район ${trip.district}, дом ${trip.houseNumber}` : '');
     const address = note?.address_label || (trip ? `Район ${trip.district}, дом ${trip.houseNumber}${trip.apartment ? `, кв./офис ${trip.apartment}` : ''}` : '');
-    $('boardNoteHeading').textContent = note ? 'Стикер на доске' : state.free ? 'Новый стикер' : 'Новое место на доске';
+    $('boardNoteHeading').textContent = isApplication(note) ? 'Приложение на доске' : note ? 'Стикер на доске' : state.free ? 'Новый стикер' : 'Новое место на доске';
     $('boardNoteTitle').textContent = title;
     $('boardNoteTitle').hidden = state.free;
     $('boardNoteTitleInputWrap').hidden = !state.free;
@@ -328,6 +339,42 @@
       return;
     }
     openDialog({ trip });
+  }
+
+  async function findApplication(source) {
+    await load();
+    return state.notes.find(note => matchesApplication(note, source)) || null;
+  }
+
+  async function openFromApplication(source) {
+    let note = await findApplication(source);
+    if (!note) {
+      state.revision++;
+      try {
+        ({ note } = await request('/notes/application', { method: 'POST',
+          body: JSON.stringify({ ...source, color: 'blue', comment: '' }) }));
+      } catch (error) {
+        if (error.status !== 409 || !error.data?.note) throw error;
+        note = error.data.note;
+      }
+      state.revision++;
+      if (!noteById(note.id)) state.notes.push(note);
+      render();
+    }
+    closeApplicationFolder();
+    clearSelection();
+    $('board-tab').click();
+    await show(note.id);
+    status('Приложение на доске');
+    return note;
+  }
+
+  function activateNote(id) {
+    const note = noteById(id);
+    if (state.connecting) return;
+    if (isApplication(note) && !state.pendingLink) {
+      openApplicationFolder(note.application_address_id, note.application_number, '', Number(note.application_number) === 0, note.application_file_id || '');
+    } else selectNote(id);
   }
 
   async function saveDialog(event) {
@@ -492,7 +539,7 @@
       const { note, element, noteX, noteY } = gesture;
       element.style.transform = `translate3d(${(note.x - noteX) * state.zoom}px, ${(note.y - noteY) * state.zoom}px, 0) rotate(var(--note-tilt))`;
       // Grow the cork only when needed, rather than forcing board layout on every move.
-      if (Number(note.x) + 450 > state.width || Number(note.y) + 420 > state.height) updateDimensions();
+      if (Number(note.x) + 450 > state.width || Number(note.y) + noteHeight(note) + 120 > state.height) updateDimensions();
       moveThreads(Number(note.id));
     }
     function flushNoteFrame(paint = true) {
@@ -529,7 +576,7 @@
     }
     viewport.addEventListener('pointerdown', event => {
       if (event.button !== 0) return;
-      if (!pointers.size && event.target.closest('.board-note-edit, .board-thread-segment')) return;
+      if (!pointers.size && event.target.closest('.board-note-edit, .board-application-link, .board-thread-segment')) return;
       event.preventDefault();
       pointers.set(event.pointerId, point(event));
       viewport.setPointerCapture(event.pointerId);
@@ -603,7 +650,7 @@
         completed?.element?.classList.remove('is-dragging');
         if (completed && !cancelled) {
           if (!completed.moved) {
-            if (completed.note) selectNote(Number(completed.note.id));
+            if (completed.note) activateNote(Number(completed.note.id));
             else clearSelection();
           } else if (completed.note) {
             const note = completed.note;
@@ -638,12 +685,15 @@
     });
     document.addEventListener('keydown', event => {
       if (event.key !== 'Escape') return;
+      if (event.defaultPrevented || $('applicationOverlay')?.classList.contains('is-open')) return;
       if (!$('boardNoteOverlay').hidden) closeDialog();
       else if (state.pendingLink) {
         clearSelection();
       } else if ($('board').classList.contains('active')) leaveBoard();
     });
     $('boardNotes').addEventListener('click', event => {
+      const linkButton = event.target.closest('.board-application-link');
+      if (linkButton) { selectNote(Number(linkButton.closest('.investigation-note').dataset.id)); return; }
       const button = event.target.closest('.board-note-edit');
       if (button) { clearSelection(); openDialog({ note: noteById(button.closest('.investigation-note').dataset.id) }); }
     });
@@ -651,7 +701,7 @@
       if (event.target.classList.contains('investigation-note') && (event.key === 'Enter' || event.key === ' ')) {
         event.preventDefault();
         const id = Number(event.target.dataset.id);
-        selectNote(id);
+        activateNote(id);
       }
     });
     $('boardThreads').addEventListener('click', onThreadClick);
@@ -671,6 +721,8 @@
   }
 
   window.investigationBoard = { show, openFromTrip, hide: clearSelection };
+  window.investigationBoard.hide = () => { clearSelection(); window.boardApplicationPreviews?.clear(); };
+  Object.assign(window.investigationBoard, { findApplication, openFromApplication });
   window.investigationBoard.refresh = async () => { if (state.editing || state.pendingLink || state.connecting || positionDrain || pendingPositions.size || document.querySelector('.is-dragging')) return; return load(true); };
   document.addEventListener('DOMContentLoaded', init);
 })();

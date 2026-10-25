@@ -43,6 +43,7 @@ const init = async () => {
     if (DB_TYPE === 'postgresql') {
       // Для PostgreSQL используем готовую инициализацию
       await initMainDatabase();
+      await require('../services/investigationBoardSchema').init({ db, query, postgres: true });
       await enquiries.init();
       return;
     }
@@ -292,6 +293,7 @@ const init = async () => {
       });
     });
   });
+    await require('../services/investigationBoardSchema').init({ db, query, postgres: false });
     await enquiries.init();
   } catch (error) {
     console.error('Error initializing database:', error);

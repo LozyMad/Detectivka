@@ -42,7 +42,17 @@ async function findByAddress(roomId, scenarioId, addressId) {
   return note || null;
 }
 
-function nextPosition(notes) {
+async function findByApplication(roomId, scenarioId, addressId, number, fileId = '') {
+  const [note] = await all(`SELECT * FROM investigation_notes WHERE room_id = ${postgres ? '$1' : '?'}
+    AND scenario_id = ${postgres ? '$2' : '?'} AND application_address_id = ${postgres ? '$3' : '?'}
+    AND application_number = ${postgres ? '$4' : '?'} AND application_file_id = ${postgres ? '$5' : '?'}`,
+    [roomId, scenarioId, addressId, number, fileId]);
+  return note || null;
+}
+
+const noteHeight = note => note.application_file_id && note.application_file_type === 'application/pdf' ? 440 : 300;
+
+function nextPosition(notes, data) {
   // A grid starts near the centre; occupied cells are skipped without stacking notes.
   const stepX = 330;
   const stepY = 320;
@@ -53,7 +63,8 @@ function nextPosition(notes) {
         const x = 950 + col * stepX;
         const y = 600 + row * stepY;
         if (x < 100 || y < 100) continue;
-        if (notes.every(note => Math.abs(note.x - x) >= 280 || Math.abs(note.y - y) >= 270)) {
+        if (notes.every(note => x + 320 <= note.x || Number(note.x) + 320 <= x ||
+          y + noteHeight(data) + 20 <= note.y || Number(note.y) + noteHeight(note) + 20 <= y)) {
           return { x, y };
         }
       }
@@ -64,11 +75,14 @@ function nextPosition(notes) {
 
 async function createNote(data) {
   const { notes } = await list(data.room_id, data.scenario_id);
-  const position = nextPosition(notes);
+  const position = nextPosition(notes, data);
   const values = [data.room_id, data.scenario_id, data.address_id, data.title,
-    data.address_label, data.comment, data.color, position.x, position.y];
+    data.address_label, data.comment, data.color, position.x, position.y,
+    data.application_address_id ?? null, data.application_number ?? null,
+    data.application_file_id || '', data.application_file_type || ''];
   const result = await run(`INSERT INTO investigation_notes
-    (room_id, scenario_id, address_id, title, address_label, comment, color, x, y)
+    (room_id, scenario_id, address_id, title, address_label, comment, color, x, y,
+      application_address_id, application_number, application_file_id, application_file_type)
     VALUES (${marks(values.length)})${postgres ? ' RETURNING id' : ''}`, values);
   return getNote(data.room_id, data.scenario_id, result.id);
 }
@@ -78,9 +92,12 @@ async function createFreeNote(data) {
     const { notes } = await list(data.room_id, data.scenario_id);
     const addressId = Math.min(0, ...notes.map(note => Number(note.address_id))) - 1;
     try {
-      return await createNote({ ...data, address_id: addressId, address_label: '' });
+      return await createNote({ ...data, address_id: addressId,
+        address_label: data.application_number != null ? data.address_label : '' });
     } catch (error) {
       if (error.code !== '23505' && error.code !== 'SQLITE_CONSTRAINT') throw error;
+      if (data.application_number != null && await findByApplication(data.room_id, data.scenario_id,
+        data.application_address_id, data.application_number, data.application_file_id)) throw error;
     }
   }
   throw new Error('Не удалось создать стикер. Попробуйте ещё раз.');
@@ -89,7 +106,7 @@ async function createFreeNote(data) {
 async function updateNote(roomId, scenarioId, id, { comment, color, title }) {
   const target = await getNote(roomId, scenarioId, id);
   if (!target) return null;
-  const free = Number(target.address_id) < 0;
+  const free = Number(target.address_id) < 0 && target.application_number == null;
   const sql = postgres
     ? `UPDATE investigation_notes SET comment = $1, color = $2, ${free ? 'title = $3, ' : ''}updated_at = CURRENT_TIMESTAMP WHERE room_id = $${free ? 4 : 3} AND scenario_id = $${free ? 5 : 4} AND id = $${free ? 6 : 5}`
     : `UPDATE investigation_notes SET comment = ?, color = ?, ${free ? 'title = ?, ' : ''}updated_at = CURRENT_TIMESTAMP WHERE room_id = ? AND scenario_id = ? AND id = ?`;
@@ -132,4 +149,4 @@ async function deleteLink(roomId, scenarioId, id) {
   return result.changes > 0;
 }
 
-module.exports = { list, getNote, findByAddress, createNote, createFreeNote, updateNote, moveNote, deleteNote, createLink, findLink, deleteLink };
+module.exports = { list, getNote, findByAddress, findByApplication, createNote, createFreeNote, updateNote, moveNote, deleteNote, createLink, findLink, deleteLink };

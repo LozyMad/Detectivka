@@ -17,12 +17,44 @@
         resize = null;
         clearTimeout(resizeTimer);
     }
+    function getLibrary() {
+        library ||= deadline(import('/vendor/pdfjs/pdf.mjs?v=6.4.299&attempt=' + (++loadAttempt))).catch(error => { library = null; throw error; });
+        return library;
+    }
+    // Independent render tasks let board thumbnails coexist with the full viewer.
+    async function thumbnail(blob, signal) {
+        let task, render;
+        const abort = () => { render?.cancel(); ignore(task?.destroy()); };
+        signal?.addEventListener('abort', abort, { once: true });
+        try {
+            const pdfjs = await getLibrary();
+            signal?.throwIfAborted();
+            pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
+            task = pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()),
+                cMapUrl: '/vendor/pdfjs/cmaps/', cMapPacked: true, standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
+                wasmUrl: '/vendor/pdfjs/wasm/', isEvalSupported: false, enableXfa: false });
+            signal?.throwIfAborted();
+            const pdf = await deadline(task.promise);
+            const page = await pdf.getPage(1);
+            signal?.throwIfAborted();
+            const base = page.getViewport({ scale: 1 });
+            const viewport = page.getViewport({ scale: Math.min(800 / base.width, 1200 / base.height) });
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height);
+            render = page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport });
+            await deadline(render.promise);
+            signal?.throwIfAborted();
+            return await new Promise((resolve, reject) => canvas.toBlob(result => result ? resolve(result) : reject(new Error('Не удалось создать превью')), 'image/png'));
+        } finally {
+            signal?.removeEventListener('abort', abort);
+            await task?.destroy().catch(() => {});
+        }
+    }
     async function open(blob, host) {
         close();
         const current = generation;
         host.textContent = 'Готовим документ…';
-        library ||= deadline(import('/vendor/pdfjs/pdf.mjs?v=6.4.299&attempt=' + (++loadAttempt))).catch(error => { library = null; throw error; });
-        const pdfjs = await library;
+        const pdfjs = await getLibrary();
         if (current !== generation) return;
         pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.mjs';
         const data = new Uint8Array(await blob.arrayBuffer());
@@ -81,5 +113,5 @@
         resize.observe(host);
         try { await render(); } catch (error) { if (error.name !== 'RenderingCancelledException') throw error; }
     }
-    window.gamePdfViewer = { open, close };
+    window.gamePdfViewer = { open, close, thumbnail };
 })();

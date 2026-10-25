@@ -385,8 +385,8 @@
     <link href="css/design-system.css?v=6" rel="stylesheet">
     <link href="css/dark-interface.css?v=3" rel="stylesheet">
     <link href="css/game-dossier.css?v=18" rel="stylesheet">
-    <link href="css/investigation-board.css?v=32" rel="stylesheet">
-    <link href="css/game-workspace.css?v=reconnect1" rel="stylesheet">
+    <link href="css/investigation-board.css?v=applications1" rel="stylesheet">
+    <link href="css/game-workspace.css?v=applications1" rel="stylesheet">
     <link rel="stylesheet" href="/css/player-game.css?v=mobile-timer1">
     <link rel="stylesheet" href="/css/game-tutorial.css?v=5">
 </head>
@@ -727,6 +727,7 @@
             <div class="application-header">
                 <button type="button" id="applicationBackBtn" disabled aria-label="Назад к файлам">← Назад</button>
             <strong id="applicationTitle">Приложение</strong>
+            <button type="button" id="applicationBoardBtn" hidden disabled>На доску</button>
             <button type="button" id="applicationZoomBtn" aria-pressed="false" hidden>Увеличить</button>
             <a id="applicationDownloadBtn" class="application-download" hidden>Скачать PDF</a>
                 <button type="button" id="applicationCloseBtn" aria-label="Закрыть">✕</button>
@@ -773,9 +774,10 @@
         <button type="button" class="answer-deadline-action" onclick="openQuestionsFromDeadlineNotice()">Перейти к вопросам <span aria-hidden="true">→</span></button>
     </aside>
 
-    <script src="js/game-pdf.js?v=1"></script>
-    <script src="js/game.js?v=grading-minute2"></script>
-    <script src="js/investigation-board.js?v=shared2"></script>
+    <script src="js/game-pdf.js?v=board-previews1"></script>
+    <script src="js/game.js?v=board-applications1"></script>
+    <script src="js/board-application-previews.js?v=1"></script>
+    <script src="js/investigation-board.js?v=applications1"></script>
     <script src="js/persist-inputs.js"></script>
     <div id="gameCopyToast" class="game-copy-toast" role="status" aria-live="polite" aria-atomic="true" hidden><span class="game-copy-toast-icon" aria-hidden="true">✓</span><span id="gameCopyToastMessage"></span><button id="gameCopyToastClose" type="button" aria-label="Закрыть уведомление">×</button></div>
     <script src="/js/player-game.js?v=3"></script>
