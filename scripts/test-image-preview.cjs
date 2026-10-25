@@ -47,6 +47,12 @@ async function test() {
   assert.deepEqual(fs.readFileSync(file), original, 'the original image remains intact');
   assert.equal(warnings.length, 0);
   assert.equal(service.previewWidth('invalid', 2400), 2400);
+  const board = await service.imagePreview(file, 960, 85);
+  const reader = await serviceRequire('sharp')(file).rotate().resize({ width: 960, withoutEnlargement: true }).webp({ quality: 90, alphaQuality: 100, effort: 4 }).toBuffer();
+  assert.equal((await serviceRequire('sharp')(board.path).metadata()).width, 960);
+  assert.ok(fs.statSync(board.path).size <= reader.length, 'board thumbnails are lighter than the reader image at the same size');
+  assert.deepEqual(fs.readFileSync(file), original);
+  assert.equal((await service.imagePreview(file, 960, 85)).path, board.path);
   console.log('PASS: startup without sharp, native-load failure, original fallback, concurrent WebP preview');
 }
 

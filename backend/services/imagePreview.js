@@ -24,34 +24,36 @@ function previewWidth(value, fallback = 1920) {
   return widths.includes(Number(value)) ? Number(value) : fallback;
 }
 
-async function imagePreview(file, width = 1920) {
+async function imagePreview(file, width = 1920, quality = 90) {
+  width = previewWidth(width);
+  quality = quality === 85 ? 85 : 90;
   const original = { path: file, type: `image/${path.extname(file).slice(1).replace('jpg', 'jpeg')}` };
   const optimizer = getImageOptimizer();
   if (!optimizer) return original;
   try {
     const stat = await fs.stat(file);
     const key = crypto.createHash('sha256')
-      .update(`v1:${file}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}:${previewWidth(width)}`)
+      .update(`${quality === 85 ? 'board-v1' : 'v1'}:${file}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}:${width}`)
       .digest('hex');
     const destination = path.join(directory, `${key}.webp`);
     try {
       const cached = await fs.stat(destination);
-      return cached.size < stat.size ? { path: destination, type: 'image/webp' } : original;
+      return quality === 85 || cached.size < stat.size ? { path: destination, type: 'image/webp' } : original;
     } catch (error) { if (error.code !== 'ENOENT') throw error; }
     if (!pending.has(key)) {
       const build = (async () => {
         const image = optimizer(file, { limitInputPixels: 40_000_000 });
         const metadata = await image.metadata();
         if (metadata.pages > 1) return original;
-        const buffer = await image.rotate().resize({ width: previewWidth(width), withoutEnlargement: true })
-          .webp({ quality: 90, alphaQuality: 100, effort: 4 }).toBuffer();
+        const buffer = await image.rotate().resize({ width, withoutEnlargement: true })
+          .webp({ quality, alphaQuality: 100, effort: 4 }).toBuffer();
         await fs.mkdir(directory, { recursive: true });
         const temporary = `${destination}.${crypto.randomUUID()}.tmp`;
         try {
           await fs.writeFile(temporary, buffer);
           await fs.rename(temporary, destination);
         } finally { await fs.rm(temporary, { force: true }).catch(() => {}); }
-        return buffer.length < stat.size ? { path: destination, type: 'image/webp' } : original;
+        return quality === 85 || buffer.length < stat.size ? { path: destination, type: 'image/webp' } : original;
       })();
       pending.set(key, build);
     }

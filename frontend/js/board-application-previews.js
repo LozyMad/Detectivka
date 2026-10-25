@@ -2,8 +2,8 @@
 // Only visible cards load previews, with at most two downloads/renders at once.
 (() => {
   const cache = new Map(), pending = new Map(), failures = new Map();
-  let observer, notes = [], active = 0, generation = 0;
-  const key = note => [note.scenario_id, note.application_address_id, note.application_number, note.application_file_id].join(':');
+  let observer, notes = [], active = 0, generation = 0, memoryToken = null;
+  const key = note => ['v2-960-q85', note.scenario_id, note.application_address_id, note.application_number, note.application_file_id].join(':');
   const hosts = note => document.querySelectorAll(`[data-board-preview-id="${Number(note.id)}"]`);
   const boardVisible = () => !document.hidden && document.getElementById('board')?.classList.contains('active');
 
@@ -11,6 +11,8 @@
     for (const host of hosts(note)) {
       if (host.dataset.fileId !== note.application_file_id) continue;
       if (!url) { host.textContent = message; continue; }
+      if (host.firstElementChild?.tagName === 'IMG' && host.firstElementChild.src === url) continue;
+      host.classList?.remove('is-loading');
       const image = document.createElement('img');
       image.onload = () => window.investigationBoard?.filePreviewReady?.(note.id, image.naturalWidth / image.naturalHeight);
       image.src = url; image.alt = note.title; image.draggable = false; image.decoding = 'async';
@@ -18,13 +20,18 @@
     }
   }
 
-  function clear() {
+  function pause() {
     generation++;
     observer?.disconnect();
     for (const item of pending.values()) item.controller.abort();
     pending.clear();
+    failures.clear();
+  }
+
+  function clear() {
+    pause();
     for (const url of cache.values()) URL.revokeObjectURL(url);
-    cache.clear(); failures.clear(); notes = [];
+    cache.clear(); notes = [];
   }
 
   function schedule(note) {
@@ -44,12 +51,17 @@
       item.started = true; active++;
       (async () => {
         const note = item.note, signal = item.controller.signal;
+        const stored = await window.boardPreviewCache?.get(id);
+        if (signal.aborted || item.generation !== generation) return;
+        if (stored) {
+          const url = URL.createObjectURL(stored); remember(id, url); paint(note, url); return;
+        }
         const scenario = Number(note.scenario_id);
         if (!Number.isSafeInteger(scenario) || scenario < 1) throw new Error('Нет сценария');
         const base = `/api/applications/game/scenarios/${scenario}` + (Number(note.application_number) === 0
           ? '/briefing' : `/addresses/${Number(note.application_address_id)}/${Number(note.application_number)}`);
         const pdf = note.application_file_type === 'application/pdf';
-        const response = await window.gameNetwork.fetch(`${base}/files/${encodeURIComponent(note.application_file_id)}${pdf ? '' : '?preview=1&width=800'}`, {
+        const response = await window.gameNetwork.fetch(`${base}/files/${encodeURIComponent(note.application_file_id)}${pdf ? '' : '?preview=board'}`, {
           cache: 'no-store', timeoutMs: 60000, signal,
           headers: { Authorization: `Bearer ${gameStorage.getItem('token')}` }
         });
@@ -59,10 +71,9 @@
         else if (!blob.type.startsWith('image/')) throw new Error('Не изображение');
         if (signal.aborted || item.generation !== generation) return;
         const url = URL.createObjectURL(blob);
-        cache.set(id, url);
-        // Keep memory bounded on large boards; visible images retain their pixels.
-        while (cache.size > 40) { const first = cache.keys().next().value; URL.revokeObjectURL(cache.get(first)); cache.delete(first); }
+        remember(id, url);
         paint(note, url);
+        window.boardPreviewCache?.put(id, blob);
       })().catch(() => {
         if (!item.controller.signal.aborted && item.generation === generation) {
           failures.set(id, Date.now() + 30000);
@@ -76,7 +87,15 @@
     }
   }
 
+  function remember(id, url) {
+    cache.set(id, url);
+    // Keep decoded images bounded; the persistent cache can restore evicted items.
+    while (cache.size > 40) { const first = cache.keys().next().value; URL.revokeObjectURL(cache.get(first)); cache.delete(first); }
+  }
+
   function render(currentNotes) {
+    const token = gameStorage.getItem('token');
+    if (memoryToken !== token) { clear(); memoryToken = token; }
     notes = currentNotes.filter(note => note.application_file_id);
     observer?.disconnect();
     if (!boardVisible()) return;
@@ -95,9 +114,8 @@
     }
   }
 
-  window.boardApplicationPreviews = { render, clear };
-  function suspend() { const current = notes; clear(); notes = current; }
-  document.addEventListener('visibilitychange', () => { if (document.hidden) suspend(); else render(notes); });
-  window.addEventListener('pagehide', suspend);
+  window.boardApplicationPreviews = { render, pause, clear };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); else render(notes); });
+  window.addEventListener('pagehide', pause);
   window.addEventListener('pageshow', () => render(notes));
 })();

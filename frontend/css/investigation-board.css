@@ -246,6 +246,7 @@ body.board-open #board {
 .board-file .board-note-body { height: auto; overflow: visible; }
 .board-file-preview { display: flex; align-items: center; justify-content: center; width: 100%; height: var(--file-media-height); margin: 0; overflow: hidden; background: transparent; color: #675a47; text-align: center; font: calc(12px * var(--board-zoom, 1))/1.3 Arial, sans-serif; }
 .board-file-preview img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.board-file-preview.is-loading { background: #eee5d3; color: #67553b; border: 1px solid #bba887; }
 .board-file-caption { display: block; height: calc(105px * var(--board-zoom, 1)); padding: calc(10px * var(--board-zoom, 1)) calc(12px * var(--board-zoom, 1)); background: #fffaf0; }
 .board-file-caption .board-application-link { position: static; display: inline-block; margin-top: calc(8px * var(--board-zoom, 1)); }
 .investigation-note.board-file .board-note-title { font-size: calc(14px * var(--board-zoom, 1)); -webkit-line-clamp: 1; }

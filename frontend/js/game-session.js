@@ -76,6 +76,8 @@
         clearRoute() { const name = routeKey(); if (name) sessionStorage.removeItem(name); },
         invalidate() {
             if (expired) return;
+            window.boardApplicationPreviews?.clear();
+            window.boardPreviewCache?.clearSession();
             expired = true;
             const token = storage.getItem('token');
             storage.removeItem('token');
@@ -83,6 +85,8 @@
             session.onExpired?.();
         },
         clear() {
+            window.boardApplicationPreviews?.clear();
+            window.boardPreviewCache?.clearSession();
             const token = storage.getItem('token');
             if (isTest) {
                 authKeys.forEach(name => sessionStorage.removeItem(name));

@@ -219,8 +219,9 @@ router.get('/game/scenarios/:scenarioId/addresses/:addressId/:number/files/:file
 });
 
 async function sendApplicationFile(req, res, next, file) {
-    const preview = req.query.preview === '1' && file.type.startsWith('image/')
-      ? await imagePreview(file.path, previewWidth(req.query.width, 2400))
+    const board = req.query.preview === 'board';
+    const preview = (board || req.query.preview === '1') && file.type.startsWith('image/')
+      ? await imagePreview(file.path, board ? 960 : previewWidth(req.query.width, 2400), board ? 85 : 90)
       : { path: file.path, type: file.type };
     res.setHeader('Content-Type', preview.type);
     res.setHeader('Content-Disposition', 'inline');

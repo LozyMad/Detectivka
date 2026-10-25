@@ -274,7 +274,7 @@ test('preview downloads are bounded, authenticated and canceled on leaving the b
   await flush();
   assert.equal(b.calls.length, 2);
   assert.equal(new Headers(b.calls[0].options.headers).get('Authorization'), 'Bearer fixture-token');
-  assert.match(b.calls[0].url, /preview=1&width=800/);
+  assert.match(b.calls[0].url, /preview=board/);
   waiting[0].resolve(new Response(new Uint8Array([1]), { headers: { 'Content-Type': 'image/jpeg' } }));
   await flush();
   assert.equal(b.calls.length, 3);

@@ -223,7 +223,10 @@ async function test() {
   assert.equal(board.state.pendingLink, null, 'a second pushpin tap cancels selection');
   board.state.notes[0].color = 'orange';
   board.state.notes[1].color = 'mint';
+  const beforeHide = element('boardNotes').innerHTML;
   board.hide();
+  assert.equal(element('boardNotes').innerHTML, beforeHide, 'leaving the board preserves loaded card DOM');
+  await tap(fastenerTarget);
   assert.match(element('boardNotes').innerHTML, /data-id="10" data-color="yellow"/);
   assert.match(element('boardNotes').innerHTML, /data-id="11" data-color="green"/);
   assert.equal(board.state.notes[0].color, 'orange', 'rendering preserves saved legacy notes');

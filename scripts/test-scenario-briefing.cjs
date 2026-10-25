@@ -115,6 +115,23 @@ test('briefing and regular address applications coexist without changing visit r
   assert.equal((await request('/game/scenarios/12/addresses/50/1', fixture.playerToken)).status, 200);
 });
 
+test('board thumbnails use the fixed 960px quality-85 profile while reader and source downloads keep their own quality', async t => {
+  const { fixture, request } = await setup(t);
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a8YQAAAAASUVORK5CYII=', 'base64');
+  await fixture.applications.saveBriefing(12, [{ originalname: 'Фото.png', buffer: png, size: png.length }]);
+  const id = (await fixture.applications.getBriefing(12)).files[0].id;
+  const url = `/game/scenarios/12/briefing/files/${id}`;
+  const board = await request(url + '?preview=board&width=1&quality=1', fixture.playerToken);
+  assert.equal(board.status, 200); await board.arrayBuffer();
+  assert.deepEqual(fixture.imagePreviewCalls[0], { width: 960, quality: 85 });
+  const reader = await request(url + '?preview=1', fixture.playerToken);
+  assert.equal(reader.status, 200); await reader.arrayBuffer();
+  assert.deepEqual(fixture.imagePreviewCalls[1], { width: 2400, quality: 90 });
+  const original = await request(url, fixture.playerToken);
+  assert.deepEqual(Buffer.from(await original.arrayBuffer()), png);
+  assert.equal(fixture.imagePreviewCalls.length, 2);
+});
+
 test('player sidebar shows the briefing first with no trips and opens the shared viewer', async () => {
   const b = browser(call => new Response(JSON.stringify(call.url.endsWith('/available') ?
     { scenario_id: 12, addresses: [], briefing: { file_count: 1 } } : { application: { files: [{ id: 'briefing.pdf', name: 'Брифинг.pdf', type: 'application/pdf' }] } })));

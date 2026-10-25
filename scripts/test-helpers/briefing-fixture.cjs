@@ -17,6 +17,7 @@ function briefingFixture() {
   const applications = load('backend/services/scenarioApplications.js', {}, path.join(root, 'services'));
   let addressLookups = 0;
   const visits = [];
+  const imagePreviewCalls = [];
   base.rooms.set(14, { id: 14, name: 'Проверка брифинга', scenario_id: 12, state: 'running', remaining: 7200 });
   base.rooms.set(16, { id: 16, name: 'Другое дело', scenario_id: 13, state: 'running' });
   const router = load('backend/routes/applications.js', {
@@ -30,13 +31,15 @@ function briefingFixture() {
       get(sql, values, callback) { callback(null, visits.includes(Number(values[3])) ? { visited: 1 } : null); }
     } },
     '../services/scenarioApplications': applications,
-    '../services/imagePreview': { previewWidth: () => 2400, imagePreview: async file => ({ path: file, type: 'image/png' }) },
+    '../services/imagePreview': { previewWidth: () => 2400, imagePreview: async (file, width, quality) => {
+      imagePreviewCalls.push({ width, quality }); return { path: file, type: 'image/png' };
+    } },
     '../middleware/auth': { authenticateToken: base.authenticateToken }
   });
   base.app.use('/api/applications', router);
   base.app.use((error, req, res, next) => { console.error(error); res.status(500).json({ error: 'Fixture error' }); });
   const token = payload => base.jwt.sign(payload, base.secret, { expiresIn: '1h' });
-  return { ...base, root, applications, visits, get addressLookups() { return addressLookups; },
+  return { ...base, root, applications, visits, imagePreviewCalls, get addressLookups() { return addressLookups; },
     adminToken: token({ id: 99 }), playerToken: token({ room_user_id: 15, room_id: 14 }),
     otherPlayerToken: token({ room_user_id: 17, room_id: 16 }),
     cleanup: () => fs.promises.rm(root, { recursive: true, force: true }) };

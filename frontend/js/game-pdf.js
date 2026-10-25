@@ -44,7 +44,7 @@
             render = page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport });
             await deadline(render.promise);
             signal?.throwIfAborted();
-            return await new Promise((resolve, reject) => canvas.toBlob(result => result ? resolve(result) : reject(new Error('Не удалось создать превью')), 'image/png'));
+            return await new Promise((resolve, reject) => canvas.toBlob(result => result ? resolve(result) : reject(new Error('Не удалось создать превью')), 'image/webp', .85));
         } finally {
             signal?.removeEventListener('abort', abort);
             await task?.destroy().catch(() => {});

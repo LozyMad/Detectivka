@@ -121,7 +121,7 @@
         style="left:${scaledLength(note.x)};top:${scaledLength(note.y)};--note-tilt:${tilt}deg;${note.application_file_id ? `--file-width:${scaledLength(noteWidth(note))};--file-media-height:${scaledLength(fileMediaHeight(note))};--file-card-height:${scaledLength(noteHeight(note))}` : ''}">
           <button type="button" class="board-note-edit" title="Редактировать стикер" aria-label="Редактировать стикер: ${escape(note.title)}">⋯</button>
           <span class="board-note-body">
-            ${note.application_file_id ? `<span class="board-file-preview" data-board-preview-id="${Number(note.id)}" data-file-id="${escape(note.application_file_id)}"><span>Загрузка превью…</span></span>
+            ${note.application_file_id ? `<span class="board-file-preview is-loading" data-board-preview-id="${Number(note.id)}" data-file-id="${escape(note.application_file_id)}"><span>Загрузка превью…</span></span>
               <span class="board-file-caption">${title}${address}${linkButton}</span>` :
               `${isApplication(note) ? '<span class="board-application-kind"><i class="far fa-folder-open" aria-hidden="true"></i> Материалы дела</span>' : ''}
               ${title}${address}<span class="board-note-comment">${escape(note.comment || (isApplication(note) ? 'Открыть материалы →' : 'Без заметки'))}</span>`}
@@ -283,7 +283,8 @@
 
   async function show(focusId) {
     try {
-      await load();
+      await load(true);
+      window.boardApplicationPreviews?.render(state.notes);
       requestAnimationFrame(() => {
         if (focusId) { state.fitView = false; centerOn(noteById(focusId)); }
         else if (!state.centred) fitNotes();
@@ -728,7 +729,10 @@
   }
 
   window.investigationBoard = { show, openFromTrip, hide: clearSelection };
-  window.investigationBoard.hide = () => { clearSelection(); window.boardApplicationPreviews?.clear(); };
+  window.investigationBoard.hide = () => {
+    if (state.pendingLink) clearSelection();
+    window.boardApplicationPreviews?.pause();
+  };
   Object.assign(window.investigationBoard, { findApplication, openFromApplication });
   window.investigationBoard.filePreviewReady = (id, ratio) => {
     const note = noteById(id);
