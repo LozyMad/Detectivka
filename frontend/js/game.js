@@ -6,7 +6,6 @@ let roomTimerInterval = null;
 let tripCount = 0;
 let tripHistory = [];
 let receivedApplications = new Map();
-let receivedApplicationAddresses = new Map();
 let scenarioBriefing = null;
 let applicationScenarioId = null;
 const collapsedTripKeys = new Set();
@@ -801,7 +800,6 @@ async function refreshAvailableApplications() {
         if (!response.ok) throw new Error('Не удалось загрузить приложения');
         const data = await response.json();
         receivedApplications = new Map((data.addresses || []).map(item => [Number(item.address_id), item.applications || []]));
-        receivedApplicationAddresses = new Map((data.addresses || []).map(item => [Number(item.address_id), item]));
         scenarioBriefing = data.briefing || null;
         applicationScenarioId = Number(data.scenario_id) || null;
         updateTripHistory();
@@ -815,10 +813,10 @@ function updateReceivedApplications() {
     if (!target) return;
     const items = [];
     for (const [addressId, applications] of receivedApplications) {
-        const address = receivedApplicationAddresses.get(addressId) || {};
-        const label = `${address.district || ''} · Дом ${address.house_number || ''}${address.apartment ? ', кв. ' + address.apartment : ''}`;
+        const trip = tripHistory.find(item => Number(item.address_id) === addressId);
+        const locationName = (Array.isArray(trip?.locationNames) ? trip.locationNames : []).filter(Boolean).join(' / ');
         for (const app of applications) {
-            items.push({ ...app, addressId, address: label });
+            items.push({ ...app, addressId, locationName });
         }
     }
     items.sort((a, b) => a.number - b.number);
@@ -830,11 +828,11 @@ function updateReceivedApplications() {
     }
     const briefing = scenarioBriefing ? `<button type="button" class="received-application scenario-application-link" data-briefing="true">
         <i class="far fa-file-alt" aria-hidden="true"></i> Брифинг дела
-        <small>Начальные материалы · ${Number(scenarioBriefing.file_count) || 0} файл(ов)</small>
+        <small>Начальные материалы</small>
     </button>` : '';
     target.innerHTML = briefing + items.map(app => `<button type="button" class="received-application scenario-application-link" data-address-id="${app.addressId}" data-number="${app.number}">
         <i class="far fa-folder-open" aria-hidden="true"></i> Приложение ${app.number}
-        <small>${escapeHtmlPlayer(app.address)} · ${app.file_count} файл(ов)</small>
+        ${app.locationName ? `<small>${escapeHtmlPlayer(app.locationName)}</small>` : ''}
     </button>`).join('');
 }
 
