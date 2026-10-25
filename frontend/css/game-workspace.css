@@ -201,12 +201,19 @@ html:root body.game-container #playerAddressBookActiveLabel { color: var(--work-
 html:root body.game-container .board-toolbar { background: #17110ef0; border-bottom-color: var(--work-border); box-shadow: none; }
 /* A slightly darker cutout of the original pin sits above the threads. */
 html:root body.game-container .board-note-fastener { filter: brightness(.9); }
+html:root body.game-container .board-note-fastener.board-file-fastener { filter: brightness(.9) drop-shadow(calc(1px * var(--board-zoom, 1)) calc(3px * var(--board-zoom, 1)) calc(2px * var(--board-zoom, 1)) #210c0780); }
 html:root body.game-container .board-tools .board-create { background: var(--work-action); color: var(--work-on-action); border-color: var(--work-action); box-shadow: none; }
 html:root body.game-container #boardNoteOverlay { background: #080605d9; backdrop-filter: blur(12px); }
 html:root body.game-container #boardNoteOverlay .board-note-dialog { width: min(520px,100%); min-height: 0; padding: 28px; background: var(--work-panel) !important; color: var(--work-text); border: 1px solid #715847; border-radius: 14px; filter: none; box-shadow: 0 25px 90px #0008; animation: workspace-dialog-in .22s ease-out; }
 html:root body.game-container #boardNoteOverlay h2 { font-size: 26px; color: var(--work-text) !important; margin: 0 30px 18px 0; }
 html:root body.game-container #boardNoteOverlay .board-note-place { color: var(--work-accent); font: 600 17px/1.3 'Source Sans Pro','Segoe UI',sans-serif; }
 html:root body.game-container #boardNoteOverlay .board-note-address { color: var(--work-muted) !important; font-size: 13px; margin: 8px 0 24px; }
+html:root body.game-container #boardNoteOverlay .board-note-source { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+html:root body.game-container #boardNoteOverlay .board-note-source-text { flex: 1; min-width: 0; }
+html:root body.game-container #boardNoteOverlay .board-note-source .board-note-address { margin-bottom: 0; }
+html:root body.game-container #boardNoteOverlay .board-note-open { flex: none; padding: 8px 12px; min-height: 42px; border: 1px solid var(--work-border); border-radius: 8px; background: var(--work-input); color: var(--work-text); font-size: 13px; white-space: nowrap; }
+html:root body.game-container #boardNoteOverlay .board-note-open:hover { border-color: var(--work-accent); color: var(--work-accent); }
+html:root body.game-container .board-note-overlay:not([hidden]) ~ .application-overlay { z-index: 3100; }
 html:root body.game-container #boardNoteOverlay :is(label,legend) { color: var(--work-muted); font: 400 13px/1.5 'Source Sans Pro','Segoe UI',sans-serif; }
 html:root body.game-container #boardNoteOverlay :is(#boardNoteTitleInput,#boardNoteComment) { background: var(--work-input); color: var(--work-text); border: 1px solid var(--work-border); border-radius: 8px; padding: 12px; font: 400 16px/1.5 'Source Sans Pro','Segoe UI',sans-serif; }
 html:root body.game-container #boardNoteOverlay #boardNoteComment { min-height: 120px; }

@@ -385,8 +385,8 @@
     <link href="css/design-system.css?v=6" rel="stylesheet">
     <link href="css/dark-interface.css?v=3" rel="stylesheet">
     <link href="css/game-dossier.css?v=18" rel="stylesheet">
-    <link href="css/investigation-board.css?v=preview-cache3" rel="stylesheet">
-    <link href="css/game-workspace.css?v=file-list-pins2" rel="stylesheet">
+    <link href="css/investigation-board.css?v=card-comments4" rel="stylesheet">
+    <link href="css/game-workspace.css?v=card-comments4" rel="stylesheet">
     <link rel="stylesheet" href="/css/player-game.css?v=mobile-timer1">
     <link rel="stylesheet" href="/css/game-tutorial.css?v=5">
 </head>
@@ -658,14 +658,19 @@
         <form id="boardNoteForm" class="board-note-dialog" role="dialog" aria-modal="true" aria-labelledby="boardNoteHeading">
             <button type="button" id="boardNoteClose" class="board-note-close" aria-label="Закрыть">×</button>
             <h2 id="boardNoteHeading">Новый стикер</h2>
-            <strong id="boardNoteTitle" class="board-note-place"></strong>
-            <label id="boardNoteTitleInputWrap" for="boardNoteTitleInput" hidden>Название стикера
-                <input id="boardNoteTitleInput" type="text" maxlength="120" placeholder="Например, Главная улика" required>
-            </label>
-            <p id="boardNoteAddress" class="board-note-address"></p>
-            <label for="boardNoteComment">Ваша заметка</label>
+            <div class="board-note-source">
+                <div class="board-note-source-text">
+                    <strong id="boardNoteTitle" class="board-note-place"></strong>
+                    <label id="boardNoteTitleInputWrap" for="boardNoteTitleInput" hidden>Название стикера
+                        <input id="boardNoteTitleInput" type="text" maxlength="120" placeholder="Например, Главная улика" required>
+                    </label>
+                    <p id="boardNoteAddress" class="board-note-address"></p>
+                </div>
+                <button type="button" id="boardNoteOpen" class="board-note-open" hidden>Открыть файл</button>
+            </div>
+            <label id="boardNoteCommentLabel" for="boardNoteComment">Ваша заметка</label>
             <textarea id="boardNoteComment" maxlength="4000" rows="6" placeholder="Наблюдение, улика или гипотеза..."></textarea>
-            <fieldset class="board-color-picker">
+            <fieldset id="boardNoteColorPicker" class="board-color-picker">
                 <legend>Цвет стикера</legend>
                 <div id="boardColorOptions" class="board-color-options"></div>
             </fieldset>
@@ -778,7 +783,7 @@
     <script src="js/game.js?v=file-list-pins2"></script>
     <script src="js/board-preview-cache.js?v=1"></script>
     <script src="js/board-application-previews.js?v=preview-cache3"></script>
-    <script src="js/investigation-board.js?v=preview-cache3"></script>
+    <script src="js/investigation-board.js?v=card-comments4"></script>
     <script src="js/persist-inputs.js"></script>
     <div id="gameCopyToast" class="game-copy-toast" role="status" aria-live="polite" aria-atomic="true" hidden><span class="game-copy-toast-icon" aria-hidden="true">✓</span><span id="gameCopyToastMessage"></span><button id="gameCopyToastClose" type="button" aria-label="Закрыть уведомление">×</button></div>
     <script src="/js/player-game.js?v=3"></script>

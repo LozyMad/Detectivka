@@ -1,6 +1,8 @@
 # File cards on the investigation board
 
-Individual files use their own preview as the card surface. A compact cream caption underneath contains the file title, source and link action. The image is fitted without cropping; portrait and landscape cards keep the preview's aspect ratio. File cards stay within 300 × 410 board pixels so new cards can be placed without overlap.
+Individual files use their own preview as the card surface. A compact cream caption underneath contains the file title, source and comment excerpt. The image is fitted without cropping; portrait and landscape cards keep the preview's aspect ratio. File cards stay within 300 × 410 board pixels so new cards can be placed without overlap.
+
+Tapping any card selects it for connecting or removing a thread. Applications open from the three-dot menu, beside the title and source. That menu edits the comment without offering a sticker color; existing colors remain stored. Opening a file keeps the comment form behind the viewer so closing the viewer restores unsaved text. The separate application pin casts a small shadow onto its file.
 
 `frontend/assets/board/pushpin-red-clean-v1.webp` is a separate transparent red pin for file cards. It replaces the polygon-clipped layer taken from the blue note image, which included visible paper fragments. Existing location-note artwork is retained.
 

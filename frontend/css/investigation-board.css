@@ -238,9 +238,6 @@ body.board-open #board {
 .board-application-kind { display: flex; align-items: center; gap: calc(7px * var(--board-zoom, 1)); margin-bottom: calc(12px * var(--board-zoom, 1)); color: #69583e; font: 600 calc(12px * var(--board-zoom, 1))/1.2 Arial, sans-serif; }
 .board-application .board-note-title { -webkit-line-clamp: 2; }
 .board-application .board-note-comment { -webkit-line-clamp: 2; }
-.board-application-link { position: absolute; bottom: calc(28px * var(--board-zoom, 1)); left: calc(38px * var(--board-zoom, 1)); padding: calc(5px * var(--board-zoom, 1)) calc(9px * var(--board-zoom, 1)); border: 1px solid #a48c69; border-radius: 4px; background: #fff9e8; color: #403424; font: 600 calc(12px * var(--board-zoom, 1))/1.3 Arial, sans-serif; cursor: pointer; }
-.board-application-link:hover { background: #fff; }
-.board-application-link:focus-visible { outline: 3px solid #8d5126; outline-offset: 2px; }
 .board-file { width: var(--file-width); height: var(--file-card-height); padding: calc(29px * var(--board-zoom, 1)) 0 0; transform-origin: 50% calc(150px * var(--board-zoom, 1)); filter: var(--note-shadow); }
 .board-file::before { display: none; }
 .board-file .board-note-body { height: auto; overflow: visible; }
@@ -248,7 +245,7 @@ body.board-open #board {
 .board-file-preview img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .board-file-preview.is-loading { background: #eee5d3; color: #67553b; border: 1px solid #bba887; }
 .board-file-caption { display: block; height: calc(105px * var(--board-zoom, 1)); padding: calc(10px * var(--board-zoom, 1)) calc(12px * var(--board-zoom, 1)); background: #fffaf0; }
-.board-file-caption .board-application-link { position: static; display: inline-block; margin-top: calc(8px * var(--board-zoom, 1)); }
+.board-file-caption .board-note-comment { margin-top: calc(8px * var(--board-zoom, 1)); font-size: calc(12px * var(--board-zoom, 1)); line-height: 1.3; -webkit-line-clamp: 2; }
 .investigation-note.board-file .board-note-title { font-size: calc(14px * var(--board-zoom, 1)); -webkit-line-clamp: 1; }
 .investigation-note.board-file .board-note-address { margin-top: calc(4px * var(--board-zoom, 1)); padding-bottom: 0; border: 0; font-size: calc(10px * var(--board-zoom, 1)); -webkit-line-clamp: 1; }
 .board-file .board-note-edit { top: calc(37px * var(--board-zoom, 1)); right: calc(8px * var(--board-zoom, 1)); }

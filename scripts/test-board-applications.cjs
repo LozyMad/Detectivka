@@ -161,7 +161,7 @@ function boardBrowser(fetcher) {
   b.load('frontend/js/game-session.js'); b.load('frontend/js/game.js');
   const code = fs.readFileSync('frontend/js/investigation-board.js', 'utf8').replace(
     'window.investigationBoard = { show, openFromTrip, hide: clearSelection };',
-    'window.investigationBoard = { show, openFromTrip, hide: clearSelection, state, init, activateNote, selectNote, openDialog, threadPoints };');
+    'window.investigationBoard = { show, openFromTrip, hide: clearSelection, state, init, activateNote, selectNote, openDialog, openNoteApplication, saveDialog, threadPoints };');
   vm.runInContext(code, b.context);
   b.board = b.window.investigationBoard; b.board.init();
   b.element('board-tab').click = () => {};
@@ -169,7 +169,7 @@ function boardBrowser(fetcher) {
 }
 const json = data => new Response(JSON.stringify(data));
 
-test('player pins once, finds existing card, opens documents and can begin threads from application', async () => {
+test('player pins once and selects the card for threads; documents open only through its menu', async () => {
   let notes = [];
   const b = boardBrowser(call => {
     if (call.url.endsWith('/notes/application')) {
@@ -186,11 +186,14 @@ test('player pins once, finds existing card, opens documents and can begin threa
   assert.match(b.element('boardNotes').innerHTML, /&lt;Ломбард&gt;/);
   b.run('applicationScenarioId = 12');
   b.board.activateNote(2); await flush();
-  assert.ok(b.calls.some(call => call.url.endsWith('/scenarios/12/addresses/50/4')));
-  assert.equal(b.board.state.pendingLink, null);
-  b.board.selectNote(2); assert.equal(b.board.state.pendingLink, 2);
+  assert.ok(!b.calls.some(call => call.url.includes('/scenarios/')));
+  assert.equal(b.board.state.pendingLink, 2);
   b.board.openDialog({ note: notes[0] });
   assert.equal(b.element('boardNoteTitleInputWrap').hidden, true);
+  assert.equal(b.element('boardNoteColorPicker').hidden, true);
+  assert.equal(b.element('boardNoteOpen').hidden, false);
+  await b.board.openNoteApplication();
+  assert.ok(b.calls.some(call => call.url.endsWith('/scenarios/12/addresses/50/4')));
 });
 
 test('a concurrent attachment response focuses the existing card; failed pin leaves viewer open', async () => {
@@ -225,7 +228,7 @@ test('viewer action follows the current application when a previous board lookup
   assert.equal(b.element('applicationBoardBtn').hidden, true);
 });
 
-test('file card opens its exact file and viewer pin action returns to folder when going back', async () => {
+test('menu opens the exact file and preserves an unsaved comment when returning from the viewer', async () => {
   const photo = { id: 'photo.jpg', name: 'Фотография.jpg', type: 'image/jpeg' };
   const b = boardBrowser(call => {
     if (call.url.includes('/files/')) return new Response(new Uint8Array([1, 2, 3]), { headers: { 'Content-Type': 'image/jpeg' } });
@@ -237,6 +240,12 @@ test('file card opens its exact file and viewer pin action returns to folder whe
   b.run('applicationScenarioId = 12');
   b.board.state.notes = [{ id: 7, application_address_id: 50, application_number: 4, application_file_id: photo.id, title: photo.name }];
   b.board.activateNote(7); await flush();
+  assert.equal(b.calls.length, 0);
+  assert.equal(b.board.state.pendingLink, 7);
+  b.board.openDialog({ note: b.board.state.notes[0] });
+  b.element('boardNoteComment').value = 'Черновик комментария';
+  await b.board.openNoteApplication();
+  await flush();
   assert.ok(b.calls.some(call => call.url.endsWith('/addresses/50/4/files/photo.jpg?preview=1')));
   assert.equal(b.run('applicationBoardSource.file_id'), 'photo.jpg');
   assert.equal(b.element('applicationBoardBtn').textContent, 'Найти на доске');
@@ -245,6 +254,43 @@ test('file card opens its exact file and viewer pin action returns to folder whe
   assert.equal(b.run('applicationBoardSource.file_id'), undefined);
   assert.equal(b.element('applicationBoardBtn').textContent, 'На доску');
   b.run('closeApplicationFolder()');
+  assert.equal(b.element('boardNoteOverlay').hidden, false);
+  assert.equal(b.element('boardNoteComment').value, 'Черновик комментария');
+});
+
+test('file comments replace the link button and saving preserves the hidden color', async () => {
+  const note = { id: 9, address_id: -1, application_address_id: 50, application_number: 4, application_file_id: 'photo.jpg',
+    color: 'blue', title: 'Фото', x: 950, y: 600, comment: '' };
+  let saved;
+  const b = boardBrowser(call => { saved = JSON.parse(call.options.body); return json({ note: { ...note, ...saved } }); });
+  b.board.state.notes = [note];
+  b.board.openDialog({ note });
+  b.document.querySelector = () => ({ value: 'pink' });
+  b.element('boardNoteComment').value = 'Сверить даты\n<img src=x onerror=alert(1)>';
+  await b.board.saveDialog({ preventDefault() {} });
+  assert.equal(saved.color, 'blue');
+  assert.equal(saved.comment, 'Сверить даты\n<img src=x onerror=alert(1)>');
+  const html = b.element('boardNotes').innerHTML;
+  assert.match(html, /board-file-caption/);
+  assert.match(html, /Сверить даты\n&lt;img/);
+  assert.doesNotMatch(html, /board-application-link|Связать<|<img src=x/);
+  b.board.openDialog({ note: { id: 10, address_id: 50, title: 'Локация', color: 'green' } });
+  assert.equal(b.element('boardNoteColorPicker').hidden, false);
+  assert.equal(b.element('boardNoteColorPicker').disabled, false);
+  assert.equal(b.element('boardNoteOpen').hidden, true);
+});
+
+test('application cards can be joined and disconnected by tapping them without opening files', async () => {
+  const b = boardBrowser(call => call.options.method === 'DELETE' ? json({ ok: true }) : json({ link: { id: 1, note_a: 1, note_b: 2 } }));
+  b.board.state.notes = [1, 2].map(id => ({ id, application_address_id: 50, application_number: id,
+    application_file_id: `photo-${id}.jpg`, x: id * 300, y: 600, title: 'Фото' }));
+  b.board.activateNote(1); b.board.activateNote(2); await flush();
+  assert.equal(b.board.state.links.length, 1);
+  assert.equal(b.calls[0].url, '/api/game/board/links');
+  b.board.activateNote(2); b.board.activateNote(1); await flush();
+  assert.equal(b.board.state.links.length, 0);
+  assert.equal(b.calls[1].options.method, 'DELETE');
+  assert.ok(b.calls.every(call => !call.url.includes('/applications/')));
 });
 
 test('preview downloads are bounded, authenticated and canceled on leaving the board', async () => {

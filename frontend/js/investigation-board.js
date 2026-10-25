@@ -112,21 +112,20 @@
     }
     $('boardNotes').innerHTML = state.notes.map(note => {
       const tilt = noteTilt(note.id);
-      const linkButton = isApplication(note) ? '<button type="button" class="board-application-link" title="Соединить с другой карточкой"><i class="fas fa-project-diagram" aria-hidden="true"></i> Связать</button>' : '';
       const title = `<strong class="board-note-title">${escape(note.title)}</strong>`;
       const address = note.address_label ? `<small class="board-note-address">${escape(note.address_label)}</small>` : '';
+      const comment = `<span class="board-note-comment">${escape(note.comment || (isApplication(note) ? 'Без комментария' : 'Без заметки'))}</span>`;
       return `<article class="investigation-note ${isApplication(note) ? 'board-application' : ''} ${note.application_file_id ? 'board-file' : ''} ${state.pendingLink === Number(note.id) ? 'is-connecting' : ''}"
         data-id="${Number(note.id)}" data-color="${paperColor(note.color)}" data-file-type="${escape(note.application_file_type || '')}" tabindex="0" role="button"
-        aria-label="${isApplication(note) ? 'Открыть' : 'Выбрать стикер:'} ${escape(note.title)}" aria-pressed="${state.pendingLink === Number(note.id)}"
+        aria-label="${isApplication(note) ? 'Выбрать приложение:' : 'Выбрать стикер:'} ${escape(note.title)}" aria-pressed="${state.pendingLink === Number(note.id)}"
         style="left:${scaledLength(note.x)};top:${scaledLength(note.y)};--note-tilt:${tilt}deg;${note.application_file_id ? `--file-width:${scaledLength(noteWidth(note))};--file-media-height:${scaledLength(fileMediaHeight(note))};--file-card-height:${scaledLength(noteHeight(note))}` : ''}">
           <button type="button" class="board-note-edit" title="Редактировать стикер" aria-label="Редактировать стикер: ${escape(note.title)}">⋯</button>
           <span class="board-note-body">
             ${note.application_file_id ? `<span class="board-file-preview is-loading" data-board-preview-id="${Number(note.id)}" data-file-id="${escape(note.application_file_id)}"><span>Загрузка превью…</span></span>
-              <span class="board-file-caption">${title}${address}${linkButton}</span>` :
+              <span class="board-file-caption">${title}${address}${comment}</span>` :
               `${isApplication(note) ? '<span class="board-application-kind"><i class="far fa-folder-open" aria-hidden="true"></i> Материалы дела</span>' : ''}
-              ${title}${address}<span class="board-note-comment">${escape(note.comment || (isApplication(note) ? 'Открыть материалы →' : 'Без заметки'))}</span>`}
+              ${title}${address}${comment}`}
           </span>
-          ${!note.application_file_id ? linkButton : ''}
         </article>`;
     }).join('');
     window.boardApplicationPreviews?.render(state.notes);
@@ -317,6 +316,11 @@
     $('boardNoteTitleInput').value = state.free ? title : '';
     $('boardNoteAddress').textContent = address;
     $('boardNoteAddress').hidden = state.free;
+    $('boardNoteColorPicker').hidden = isApplication(note);
+    $('boardNoteColorPicker').disabled = isApplication(note);
+    $('boardNoteCommentLabel').textContent = isApplication(note) ? 'Комментарий' : 'Ваша заметка';
+    $('boardNoteOpen').hidden = !isApplication(note);
+    $('boardNoteOpen').textContent = note?.application_file_id ? 'Открыть файл' : 'Открыть';
     $('boardNoteComment').value = note?.comment || '';
     $('boardNoteSave').textContent = note ? 'Сохранить изменения' : state.free ? 'Создать стикер' : 'Прикрепить на доску';
     $('boardNoteDelete').hidden = !note;
@@ -378,18 +382,24 @@
   }
 
   function activateNote(id) {
-    const note = noteById(id);
     if (state.connecting) return;
-    if (isApplication(note) && !state.pendingLink) {
-      openApplicationFolder(note.application_address_id, note.application_number, '', Number(note.application_number) === 0, note.application_file_id || '');
-    } else selectNote(id);
+    selectNote(id);
+  }
+
+  function openNoteApplication() {
+    const note = state.editing;
+    if (!isApplication(note)) return;
+    // Keep this form behind the viewer so returning preserves an unsaved comment.
+    return openApplicationFolder(note.application_address_id, note.application_number, '',
+      Number(note.application_number) === 0, note.application_file_id || '');
   }
 
   async function saveDialog(event) {
     event.preventDefault();
     const button = $('boardNoteSave');
     if (button.disabled) return;
-    const color = document.querySelector('input[name="boardColor"]:checked')?.value || 'yellow';
+    const color = isApplication(state.editing) ? state.editing.color || 'blue'
+      : document.querySelector('input[name="boardColor"]:checked')?.value || 'yellow';
     const fields = { comment: $('boardNoteComment').value, color,
       ...(state.free ? { title: $('boardNoteTitleInput').value } : {}) };
     button.disabled = true;
@@ -584,7 +594,7 @@
     }
     viewport.addEventListener('pointerdown', event => {
       if (event.button !== 0) return;
-      if (!pointers.size && event.target.closest('.board-note-edit, .board-application-link, .board-thread-segment')) return;
+      if (!pointers.size && event.target.closest('.board-note-edit, .board-thread-segment')) return;
       event.preventDefault();
       pointers.set(event.pointerId, point(event));
       viewport.setPointerCapture(event.pointerId);
@@ -688,6 +698,7 @@
     $('boardNoteCancel').addEventListener('click', closeDialog);
     $('boardNoteClose').addEventListener('click', closeDialog);
     $('boardNoteDelete').addEventListener('click', deleteCurrentNote);
+    $('boardNoteOpen').addEventListener('click', openNoteApplication);
     $('boardNoteOverlay').addEventListener('click', event => {
       if (event.target === $('boardNoteOverlay')) closeDialog();
     });
@@ -700,8 +711,6 @@
       } else if ($('board').classList.contains('active')) leaveBoard();
     });
     $('boardNotes').addEventListener('click', event => {
-      const linkButton = event.target.closest('.board-application-link');
-      if (linkButton) { selectNote(Number(linkButton.closest('.investigation-note').dataset.id)); return; }
       const button = event.target.closest('.board-note-edit');
       if (button) { clearSelection(); openDialog({ note: noteById(button.closest('.investigation-note').dataset.id) }); }
     });
