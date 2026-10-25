@@ -50,7 +50,7 @@ async function findByApplication(roomId, scenarioId, addressId, number, fileId =
   return note || null;
 }
 
-const noteHeight = note => note.application_file_id && note.application_file_type === 'application/pdf' ? 440 : 300;
+const noteHeight = note => note.application_file_id ? 440 : 300;
 
 function nextPosition(notes, data) {
   // A grid starts near the centre; occupied cells are skipped without stacking notes.

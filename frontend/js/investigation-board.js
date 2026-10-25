@@ -20,7 +20,12 @@
   const $ = id => document.getElementById(id);
   const noteById = id => state.notes.find(note => Number(note.id) === Number(id));
   const isApplication = note => note?.application_number != null;
-  const noteHeight = note => note?.application_file_id && note.application_file_type === 'application/pdf' ? 440 : 300;
+  const fileRatios = new Map();
+  const ratioKey = note => `${note.id}:${note.application_file_id}`;
+  const fileRatio = note => fileRatios.get(ratioKey(note)) || (note.application_file_type === 'application/pdf' ? .707 : 1.5);
+  const noteWidth = note => note?.application_file_id ? Math.min(300, 276 * fileRatio(note)) : 300;
+  const fileMediaHeight = note => noteWidth(note) / fileRatio(note);
+  const noteHeight = note => note?.application_file_id ? 29 + fileMediaHeight(note) + 105 : 300;
   const matchesApplication = (note, source) => isApplication(note) &&
     Number(note.application_address_id) === (source.briefing ? 0 : Number(source.address_id)) &&
     Number(note.application_number) === (source.briefing ? 0 : Number(source.number)) &&
@@ -65,7 +70,7 @@
     const viewportWidth = viewport.offsetWidth || viewport.clientWidth;
     const viewportHeight = viewport.offsetHeight || viewport.clientHeight;
     state.width = Math.max(2400, Math.ceil(viewportWidth / state.zoom) + 1,
-      ...state.notes.map(note => Number(note.x) + 450));
+      ...state.notes.map(note => Number(note.x) + noteWidth(note) + 150));
     state.height = Math.max(1600, Math.ceil(viewportHeight / state.zoom) + 1,
       ...state.notes.map(note => Number(note.y) + noteHeight(note) + 120));
     $('boardCanvas').style.width = `${state.width * state.zoom}px`;
@@ -107,19 +112,21 @@
     }
     $('boardNotes').innerHTML = state.notes.map(note => {
       const tilt = noteTilt(note.id);
+      const linkButton = isApplication(note) ? '<button type="button" class="board-application-link" title="Соединить с другой карточкой"><i class="fas fa-project-diagram" aria-hidden="true"></i> Связать</button>' : '';
+      const title = `<strong class="board-note-title">${escape(note.title)}</strong>`;
+      const address = note.address_label ? `<small class="board-note-address">${escape(note.address_label)}</small>` : '';
       return `<article class="investigation-note ${isApplication(note) ? 'board-application' : ''} ${note.application_file_id ? 'board-file' : ''} ${state.pendingLink === Number(note.id) ? 'is-connecting' : ''}"
         data-id="${Number(note.id)}" data-color="${paperColor(note.color)}" data-file-type="${escape(note.application_file_type || '')}" tabindex="0" role="button"
         aria-label="${isApplication(note) ? 'Открыть' : 'Выбрать стикер:'} ${escape(note.title)}" aria-pressed="${state.pendingLink === Number(note.id)}"
-        style="left:${scaledLength(note.x)};top:${scaledLength(note.y)};--note-tilt:${tilt}deg">
+        style="left:${scaledLength(note.x)};top:${scaledLength(note.y)};--note-tilt:${tilt}deg;${note.application_file_id ? `--file-width:${scaledLength(noteWidth(note))};--file-media-height:${scaledLength(fileMediaHeight(note))};--file-card-height:${scaledLength(noteHeight(note))}` : ''}">
           <button type="button" class="board-note-edit" title="Редактировать стикер" aria-label="Редактировать стикер: ${escape(note.title)}">⋯</button>
           <span class="board-note-body">
-            ${note.application_file_id ? `<span class="board-file-preview" data-board-preview-id="${Number(note.id)}" data-file-id="${escape(note.application_file_id)}"><span>Загрузка превью…</span></span>` :
-              isApplication(note) ? '<span class="board-application-kind"><i class="far fa-folder-open" aria-hidden="true"></i> Материалы дела</span>' : ''}
-            <strong class="board-note-title">${escape(note.title)}</strong>
-            ${note.address_label ? `<small class="board-note-address">${escape(note.address_label)}</small>` : ''}
-            ${!note.application_file_id ? `<span class="board-note-comment">${escape(note.comment || (isApplication(note) ? 'Открыть материалы →' : 'Без заметки'))}</span>` : ''}
+            ${note.application_file_id ? `<span class="board-file-preview" data-board-preview-id="${Number(note.id)}" data-file-id="${escape(note.application_file_id)}"><span>Загрузка превью…</span></span>
+              <span class="board-file-caption">${title}${address}${linkButton}</span>` :
+              `${isApplication(note) ? '<span class="board-application-kind"><i class="far fa-folder-open" aria-hidden="true"></i> Материалы дела</span>' : ''}
+              ${title}${address}<span class="board-note-comment">${escape(note.comment || (isApplication(note) ? 'Открыть материалы →' : 'Без заметки'))}</span>`}
           </span>
-          ${isApplication(note) ? '<button type="button" class="board-application-link" title="Соединить с другой карточкой"><i class="fas fa-project-diagram" aria-hidden="true"></i> Связать</button>' : ''}
+          ${!note.application_file_id ? linkButton : ''}
         </article>`;
     }).join('');
     window.boardApplicationPreviews?.render(state.notes);
@@ -127,8 +134,8 @@
 
   function renderFasteners() {
     $('boardFasteners').innerHTML = state.notes.map(note =>
-      `<span id="boardFastener${Number(note.id)}" class="board-note-fastener" data-note-id="${Number(note.id)}"
-        data-color="${paperColor(note.color)}" style="left:${scaledLength(note.x)};top:${scaledLength(note.y)};--note-tilt:${noteTilt(note.id)}deg"></span>`
+      `<span id="boardFastener${Number(note.id)}" class="board-note-fastener${isApplication(note) ? ' board-file-fastener' : ''}" data-note-id="${Number(note.id)}"
+        data-color="${paperColor(note.color)}" style="left:${scaledLength(Number(note.x) + (noteWidth(note) - 300) / 2)};top:${scaledLength(note.y)};--note-tilt:${noteTilt(note.id)}deg"></span>`
     ).join('');
   }
 
@@ -145,7 +152,7 @@
     // The artwork's shaft is at (150, 46) on a 300px note. Keep the thread beneath the pin cap.
     const anchor = note => {
       const angle = noteTilt(note.id) * Math.PI / 180;
-      return { x: Number(note.x) + 150 + 104 * Math.sin(angle),
+      return { x: Number(note.x) + noteWidth(note) / 2 + 104 * Math.sin(angle),
         y: Number(note.y) + 150 - 104 * Math.cos(angle) };
     };
     const start = anchor(a), end = anchor(b);
@@ -181,7 +188,7 @@
   function moveThreads(noteId) {
     const note = noteById(noteId), fastener = $(`boardFastener${noteId}`);
     if (note && fastener) {
-      fastener.style.left = scaledLength(note.x);
+      fastener.style.left = scaledLength(Number(note.x) + (noteWidth(note) - 300) / 2);
       fastener.style.top = scaledLength(note.y);
     }
     for (const link of state.links) {
@@ -253,8 +260,8 @@
 
   function centerOn(note) {
     const viewport = $('boardViewport');
-    const x = note ? Number(note.x) + 150 : state.notes.length
-      ? (Math.min(...state.notes.map(n => Number(n.x))) + Math.max(...state.notes.map(n => Number(n.x))) + 300) / 2 : state.width / 2;
+    const x = note ? Number(note.x) + noteWidth(note) / 2 : state.notes.length
+      ? (Math.min(...state.notes.map(n => Number(n.x))) + Math.max(...state.notes.map(n => Number(n.x) + noteWidth(n)))) / 2 : state.width / 2;
     const y = note ? Number(note.y) + noteHeight(note) / 2 : state.notes.length
       ? (Math.min(...state.notes.map(n => Number(n.y))) + Math.max(...state.notes.map(n => Number(n.y) + noteHeight(n)))) / 2 : state.height / 2;
     viewport.scrollLeft = x * state.zoom - viewport.clientWidth / 2;
@@ -265,7 +272,7 @@
     const viewport = $('boardViewport');
     let zoom = 1;
     if (state.notes.length) {
-      const width = Math.max(...state.notes.map(n => Number(n.x))) - Math.min(...state.notes.map(n => Number(n.x))) + 380;
+      const width = Math.max(...state.notes.map(n => Number(n.x) + noteWidth(n))) - Math.min(...state.notes.map(n => Number(n.x))) + 80;
       const height = Math.max(...state.notes.map(n => Number(n.y) + noteHeight(n))) - Math.min(...state.notes.map(n => Number(n.y))) + 80;
       zoom = Math.min(1, viewport.clientWidth / width, viewport.clientHeight / height);
     }
@@ -723,6 +730,21 @@
   window.investigationBoard = { show, openFromTrip, hide: clearSelection };
   window.investigationBoard.hide = () => { clearSelection(); window.boardApplicationPreviews?.clear(); };
   Object.assign(window.investigationBoard, { findApplication, openFromApplication });
+  window.investigationBoard.filePreviewReady = (id, ratio) => {
+    const note = noteById(id);
+    if (!note?.application_file_id || !Number.isFinite(ratio) || ratio < .05 || ratio > 20 ||
+      Math.abs((fileRatios.get(ratioKey(note)) || 0) - ratio) < .001) return;
+    fileRatios.set(ratioKey(note), ratio);
+    const card = document.querySelector(`#boardNotes .investigation-note[data-id="${Number(id)}"]`);
+    if (card) {
+      // Keep focus and an in-progress drag on the same DOM node as the image loads.
+      card.style.setProperty('--file-width', scaledLength(noteWidth(note)));
+      card.style.setProperty('--file-media-height', scaledLength(fileMediaHeight(note)));
+      card.style.setProperty('--file-card-height', scaledLength(noteHeight(note)));
+      updateDimensions(); renderThreads(); renderFasteners();
+    } else render();
+    if (state.fitView) fitNotes();
+  };
   window.investigationBoard.refresh = async () => { if (state.editing || state.pendingLink || state.connecting || positionDrain || pendingPositions.size || document.querySelector('.is-dragging')) return; return load(true); };
   document.addEventListener('DOMContentLoaded', init);
 })();

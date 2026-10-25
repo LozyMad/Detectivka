@@ -12,6 +12,7 @@
       if (host.dataset.fileId !== note.application_file_id) continue;
       if (!url) { host.textContent = message; continue; }
       const image = document.createElement('img');
+      image.onload = () => window.investigationBoard?.filePreviewReady?.(note.id, image.naturalWidth / image.naturalHeight);
       image.src = url; image.alt = note.title; image.draggable = false; image.decoding = 'async';
       host.replaceChildren(image);
     }

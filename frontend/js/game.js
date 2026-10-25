@@ -1452,6 +1452,14 @@ function setApplicationBoardSource(source, ready) {
     }).catch(() => { /* Pinning will check the current board again. */ });
 }
 
+async function pinApplicationFromButton(button, source) {
+    if (button.disabled || !source || !window.investigationBoard) return;
+    button.disabled = true;
+    try { await window.investigationBoard.openFromApplication(source); }
+    catch (error) { alert(error.message); }
+    finally { button.disabled = !!button.hidden; }
+}
+
 function showApplicationLoadError(target, retry) {
     applicationRetry = retry;
     target.textContent = 'Не удалось загрузить материал. Проверьте соединение и попробуйте ещё раз.';
@@ -1519,13 +1527,29 @@ async function openApplicationFolder(addressId, number, fallbackUrl = '', briefi
         const files = data.application.files || [];
         applicationFolderReady = true;
         setApplicationBoardSource(applicationFolderSource, true);
+        const folderSource = applicationFolderSource;
+        const canPinFiles = !!window.investigationBoard && !!gameStorage.getItem('roomUser');
         list.innerHTML = files.length ? files.map((file, index) => `
+            <div class="application-file-row">
             <button type="button" class="application-file" data-file-index="${index}">
                 <i class="fas ${file.type === 'application/pdf' ? 'fa-file-pdf' : 'fa-file-image'}" aria-hidden="true"></i>
                 <span>${escapeHtmlPlayer(displayApplicationFileName(file, index))}</span>
-            </button>`).join('') : 'В этой папке пока нет файлов';
+            </button>
+            ${canPinFiles ? `<button type="button" class="application-file-pin" data-file-index="${index}" aria-label="На доску: ${escapeHtmlPlayer(displayApplicationFileName(file, index))}">На доску</button>` : ''}
+            </div>`).join('') : 'В этой папке пока нет файлов';
         list.querySelectorAll('.application-file').forEach(button => button.addEventListener('click', () =>
             openApplicationFile(base, files[Number(button.dataset.fileIndex)], Number(button.dataset.fileIndex), token)));
+        list.querySelectorAll('.application-file-pin').forEach(button => {
+            const index = Number(button.dataset.fileIndex);
+            const source = { ...folderSource, file_id: files[index].id };
+            button.addEventListener('click', () => pinApplicationFromButton(button, source));
+            window.investigationBoard.findApplication(source).then(note => {
+                if (applicationFolderSource !== folderSource) return;
+                const label = note ? 'Найти на доске' : 'На доску';
+                button.textContent = label;
+                button.setAttribute('aria-label', `${label}: ${displayApplicationFileName(files[index], index)}`);
+            }).catch(() => {});
+        });
         if (fileId) {
             const index = files.findIndex(file => file.id === fileId);
             if (index < 0) {
@@ -1605,15 +1629,8 @@ document.addEventListener('click', event => {
     openApplicationFolder(link.dataset.addressId, link.dataset.number, link.dataset.fallbackUrl || '', link.dataset.briefing === 'true');
 });
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('applicationBoardBtn')?.addEventListener('click', async () => {
-        const button = document.getElementById('applicationBoardBtn');
-        if (button.disabled || !applicationBoardSource || !window.investigationBoard) return;
-        const source = applicationBoardSource;
-        button.disabled = true;
-        try { await window.investigationBoard.openFromApplication(source); }
-        catch (error) { alert(error.message); }
-        finally { if (applicationBoardSource === source) button.disabled = false; }
-    });
+    document.getElementById('applicationBoardBtn')?.addEventListener('click', () =>
+        pinApplicationFromButton(document.getElementById('applicationBoardBtn'), applicationBoardSource));
     document.getElementById('applicationZoomBtn')?.addEventListener('click', toggleApplicationImageZoom);
     document.getElementById('applicationCloseBtn')?.addEventListener('click', closeApplicationFolder);
     document.getElementById('applicationBackBtn')?.addEventListener('click', () => { applicationRequestId++; showApplicationFiles(); });

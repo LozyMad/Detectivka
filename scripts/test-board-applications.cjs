@@ -161,7 +161,7 @@ function boardBrowser(fetcher) {
   b.load('frontend/js/game-session.js'); b.load('frontend/js/game.js');
   const code = fs.readFileSync('frontend/js/investigation-board.js', 'utf8').replace(
     'window.investigationBoard = { show, openFromTrip, hide: clearSelection };',
-    'window.investigationBoard = { show, openFromTrip, hide: clearSelection, state, init, activateNote, selectNote, openDialog };');
+    'window.investigationBoard = { show, openFromTrip, hide: clearSelection, state, init, activateNote, selectNote, openDialog, threadPoints };');
   vm.runInContext(code, b.context);
   b.board = b.window.investigationBoard; b.board.init();
   b.element('board-tab').click = () => {};
@@ -282,4 +282,50 @@ test('preview downloads are bounded, authenticated and canceled on leaving the b
   previews.clear(); await flush();
   assert.ok(waiting.slice(1).every(item => item.call.options.signal.aborted));
   assert.equal(b.api.stats().active, 0);
+});
+
+test('list buttons attach the selected briefing file without opening it and block duplicate taps', async () => {
+  const files = [{ id: 'first.pdf', name: 'Брифинг.pdf', type: 'application/pdf' }, { id: 'second.pdf', name: 'Городское время.pdf', type: 'application/pdf' }];
+  const b = browser(() => json({ application: { files } }));
+  b.load('frontend/js/game-session.js'); b.load('frontend/js/game.js');
+  const buttons = files.map((file, index) => { const button = b.element('file-pin-' + index); button.dataset.fileIndex = String(index); button.hidden = false; return button; });
+  b.element('applicationFiles').querySelectorAll = selector => selector === '.application-file-pin' ? buttons : [];
+  const waiting = deferred(), pinned = [];
+  b.window.investigationBoard = {
+    findApplication: source => Promise.resolve(source.file_id === files[1].id ? { id: 8 } : null),
+    openFromApplication: source => { pinned.push(source); return waiting.promise; }
+  };
+  b.run('applicationScenarioId = 12');
+  await b.run("openApplicationFolder(null, null, '', true)"); await flush();
+  assert.match(b.element('applicationFiles').innerHTML, /application-file-pin/);
+  assert.equal(buttons[0].textContent, 'На доску');
+  assert.equal(buttons[1].textContent, 'Найти на доске');
+  buttons[0].emit('click'); buttons[0].emit('click'); await flush();
+  assert.equal(pinned.length, 1);
+  assert.deepEqual(JSON.parse(JSON.stringify(pinned[0])), { briefing: true, file_id: files[0].id });
+  assert.equal(b.calls.length, 1, 'pinning from the list never downloads or opens the file');
+  waiting.reject(new Error('Сбой сохранения')); await flush();
+  assert.equal(buttons[0].disabled, false);
+  assert.match(b.alerts[0], /Сбой сохранения/);
+});
+
+test('file surfaces follow their image proportions while threads keep meeting the pin', async () => {
+  const b = boardBrowser(call => json({ notes: b.board.state.notes, links: [] }));
+  const note = { id: 5, address_id: -1, application_address_id: 50, application_number: 4, application_file_id: 'portrait.jpg',
+    application_file_type: 'image/jpeg', title: 'Квитанция', address_label: 'Ломбард', x: 950, y: 600 };
+  b.board.state.notes = [note];
+  b.board.filePreviewReady(5, .75);
+  assert.match(b.element('boardNotes').innerHTML, /--file-width:calc\(207px/);
+  assert.match(b.element('boardNotes').innerHTML, /board-file-caption/);
+  assert.match(b.element('boardFasteners').innerHTML, /board-file-fastener/);
+  const pin = b.board.threadPoints(note, { id: 6, x: 1400, y: 600 })[0];
+  const angle = -1.35 * Math.PI / 180;
+  assert.ok(Math.abs(pin.x - (950 + 207 / 2 + 104 * Math.sin(angle))) < 1e-8);
+  const htmlBeforeLoad = b.element('boardNotes').innerHTML;
+  const card = b.element('file-card');
+  b.document.querySelector = selector => selector.includes('data-id="5"') ? card : null;
+  b.board.filePreviewReady(5, 2);
+  assert.equal(b.element('boardNotes').innerHTML, htmlBeforeLoad, 'loading a preview preserves the focused or dragged card DOM');
+  assert.equal(card.style['--file-width'], 'calc(300px * var(--board-zoom, 1))');
+  assert.equal(card.style['--file-media-height'], 'calc(150px * var(--board-zoom, 1))');
 });
