@@ -31,6 +31,11 @@ function createGameHouses({ query, transaction, shared, scoring, finalizeRoom, r
     await query(`CREATE TABLE IF NOT EXISTS house_operations (
       id TEXT PRIMARY KEY, house_id TEXT NOT NULL REFERENCES game_houses(id), admin_id INTEGER NOT NULL,
       payload TEXT NOT NULL, result TEXT NOT NULL, created_at TEXT NOT NULL)`);
+    await query(`CREATE TABLE IF NOT EXISTS house_archives (
+      house_id TEXT PRIMARY KEY REFERENCES game_houses(id) ON DELETE CASCADE, archived_at TEXT NOT NULL)`);
+    await query(`CREATE TABLE IF NOT EXISTS house_deletions (
+      house_id TEXT PRIMARY KEY, admin_id INTEGER NOT NULL, request_key TEXT NOT NULL,
+      payload TEXT NOT NULL, deleted_at TEXT NOT NULL)`);
     ready = true;
   }
   const staff = admin => { if (!admin?.is_admin) fail(403, 'Нужны права организатора'); };
@@ -181,7 +186,7 @@ function createGameHouses({ query, transaction, shared, scoring, finalizeRoom, r
       house = await transaction(async q => {
         await q('UPDATE game_houses SET revision=revision WHERE id=$1', [id]);
         const current = await one(q, 'SELECT * FROM game_houses WHERE id=$1', [id]);
-        if (current.state !== 'running' || !current.game_end_time) return current;
+        if (!current || current.state !== 'running' || !current.game_end_time) return current;
         const end = new Date(current.game_end_time).getTime(), half = end - Number(current.duration_seconds) * 500;
         if (current.pause_halfway && !current.halfway_paused && Date.now() >= half) {
           current.state = 'paused'; current.paused_at = new Date(half).toISOString(); current.halfway_paused = 1;
@@ -242,19 +247,66 @@ function createGameHouses({ query, transaction, shared, scoring, finalizeRoom, r
       return { ok: true };
     });
   }
-  async function list(admin) {
+  async function archive(admin, id, body = {}) {
+    if (typeof body.archived !== 'boolean') fail(400, 'Укажите, нужно ли архивировать дом');
+    return locked(admin, id, body, 'archive', async q => {
+      if (body.archived) await q('INSERT INTO house_archives (house_id,archived_at) VALUES ($1,$2) ON CONFLICT(house_id) DO NOTHING', [id,now()]);
+      else await q('DELETE FROM house_archives WHERE house_id=$1', [id]);
+      return { ok: true, archived: body.archived };
+    });
+  }
+  async function remove(admin, id, body = {}) {
+    staff(admin); key(body);
+    if (body.confirmed !== true) fail(400, 'Подтвердите удаление дома');
+    const payload = crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex');
+    const prior = async q => {
+      const receipt = await one(q, 'SELECT * FROM house_deletions WHERE house_id=$1', [id]);
+      if (!receipt) return false;
+      if (Number(receipt.admin_id) !== Number(admin.id) || receipt.request_key !== body.request_key || receipt.payload !== payload) fail(404, 'Дом не найден или недоступен');
+      return true;
+    };
+    if (await prior(query)) return { ok: true, deleted: true };
+    await access(admin, id); await sync(id);
+    return transaction(async q => {
+      await q('UPDATE game_houses SET revision=revision WHERE id=$1', [id]);
+      if (await prior(q)) return { ok: true, deleted: true };
+      const house = await access(admin, id, q);
+      if (body.revision !== Number(house.revision)) fail(409, 'Дом изменился. Обновите данные перед удалением');
+      if (!['pending','finished'].includes(house.state)) fail(409, 'Сначала завершите игру во всём доме');
+      const timestamp = now();
+      const teams = (await q('SELECT room_id FROM house_teams WHERE house_id=$1', [id])).rows;
+      for (const team of teams) {
+        await q("UPDATE rooms SET state='finished',game_end_time=COALESCE(game_end_time,$1) WHERE id=$2", [timestamp,team.room_id]);
+        await q('INSERT INTO room_archives (room_id,archived_at) VALUES ($1,$2) ON CONFLICT(room_id) DO NOTHING', [team.room_id,timestamp]);
+        await q('UPDATE shared_rooms SET invite_token=$1 WHERE room_id=$2', [crypto.randomBytes(32).toString('base64url'),team.room_id]);
+      }
+      await q('DELETE FROM house_teams WHERE house_id=$1', [id]);
+      await q('DELETE FROM house_operations WHERE house_id=$1', [id]);
+      await q('DELETE FROM house_archives WHERE house_id=$1', [id]);
+      await q('DELETE FROM game_houses WHERE id=$1', [id]);
+      await q('INSERT INTO house_deletions (house_id,admin_id,request_key,payload,deleted_at) VALUES ($1,$2,$3,$4,$5)', [id,admin.id,body.request_key,payload,timestamp]);
+      return { ok: true, deleted: true };
+    });
+  }
+  async function list(admin, archived = false) {
     staff(admin);
-    const houses = (await query('SELECT h.*,s.name AS scenario_name FROM game_houses h JOIN scenarios s ON s.id=h.scenario_id ORDER BY h.created_at DESC')).rows
-      .filter(h => admin.admin_level === 'super_admin' || Number(h.created_by) === Number(admin.id));
+    const houses = (await query('SELECT h.*,s.name AS scenario_name,a.archived_at FROM game_houses h JOIN scenarios s ON s.id=h.scenario_id LEFT JOIN house_archives a ON a.house_id=h.id ORDER BY h.created_at DESC')).rows
+      .filter(h => (admin.admin_level === 'super_admin' || Number(h.created_by) === Number(admin.id)) && Boolean(h.archived_at) === archived);
+    const items = [];
     for (const house of houses) {
-      Object.assign(house,await sync(house.id));
+      const current = await sync(house.id);
+      if (!current) continue;
+      Object.assign(house,current);
       house.team_count = Number((await one(query,'SELECT COUNT(*) AS n FROM house_teams WHERE house_id=$1',[house.id])).n);
       house.remaining_seconds = remainingSeconds(house); house.invite_path = '/house/' + house.public_id;
+      items.push(house);
     }
-    return { items: houses };
+    return { items };
   }
   async function detail(admin,id) {
     await access(admin,id); const house = await sync(id);
+    if (!house) fail(404, 'Дом не найден или недоступен');
+    house.archived_at = (await one(query, 'SELECT archived_at FROM house_archives WHERE house_id=$1', [id]))?.archived_at || null;
     const teams = (await query(`SELECT t.*,r.state,h.answers_submitted,f.review_status,f.fee,f.points,f.max_points,f.trips
       FROM house_teams t JOIN rooms r ON r.id=t.room_id JOIN shared_rooms h ON h.room_id=r.id
       LEFT JOIN player_room_scoring f ON f.room_id=r.id WHERE t.house_id=$1 ORDER BY t.room_id`,[id])).rows;
@@ -274,6 +326,7 @@ function createGameHouses({ query, transaction, shared, scoring, finalizeRoom, r
     const found = await one(query,'SELECT id FROM game_houses WHERE public_id=$1',[publicId]);
     if (!found) fail(404,'Игра не найдена');
     const house = await sync(found.id);
+    if (!house) fail(404,'Игра не найдена');
     const scenario = await one(query,'SELECT name FROM scenarios WHERE id=$1',[house.scenario_id]);
     return { house: { name:house.name,scenario_name:scenario?.name,state:house.state,format:house.format,scheduled_at:house.scheduled_at,venue:house.venue,remaining_seconds:remainingSeconds(house) },
       teams:(await query('SELECT t.room_id,t.name,r.state FROM house_teams t JOIN rooms r ON r.id=t.room_id WHERE t.house_id=$1 ORDER BY t.name',[house.id])).rows };
@@ -294,6 +347,6 @@ function createGameHouses({ query, transaction, shared, scoring, finalizeRoom, r
     if (!ready) return null;
     return one(q,'SELECT t.house_id,h.state AS house_state,h.public_id FROM house_teams t JOIN game_houses h ON h.id=t.house_id WHERE t.room_id=$1',[roomId]);
   }
-  return { init,create,update,list,detail,addTeam,editTeam,removeTeam,control,publicInfo,join,syncRoom,membership };
+  return { init,create,update,list,detail,archive,remove,addTeam,editTeam,removeTeam,control,publicInfo,join,syncRoom,membership };
 }
 module.exports = { createGameHouses };

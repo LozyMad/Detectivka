@@ -40,6 +40,121 @@ async function fixture(t,options={}){
 }
 const rejected=(promise,status)=>assert.rejects(promise,error=>error.status===status);
 
+test('house archives are reversible, private and leave the running game and team results unchanged',async t=>{
+  const f=await fixture(t),id=await f.create(),team=await f.add(id);
+  await f.control(id,'start');
+  const before=await f.roomSync(team.room_id),revision=await f.revision(id);
+  await rejected(f.store.houses.archive(f.other,id,f.body({revision,archived:true})),404);
+  await rejected(f.store.houses.archive(f.admin,id,f.body({revision,archived:'yes'})),400);
+  const op=f.body({revision,archived:true});
+  await f.store.houses.archive(f.admin,id,op);await f.store.houses.archive(f.admin,id,op);
+  assert.equal((await f.store.houses.list(f.admin)).items.length,0);
+  assert.equal((await f.store.houses.list(f.admin,true)).items.length,1);
+  assert.equal((await f.store.houses.list(f.other,true)).items.length,0);
+  assert.equal((await f.store.houses.list(f.chief,true)).items.length,1);
+  assert.ok((await f.detail(id)).house.archived_at);
+  assert.equal((await f.roomSync(team.room_id)).game_end_time,before.game_end_time);
+  assert.equal((await f.roomSync(team.room_id)).state,'running');
+  await rejected(f.store.houses.archive(f.admin,id,f.body({revision,archived:false})),409);
+  await f.store.houses.archive(f.admin,id,f.body({revision:await f.revision(id),archived:false}));
+  assert.equal((await f.store.houses.list(f.admin)).items.length,1);
+  assert.equal((await f.store.houses.list(f.admin,true)).items.length,0);
+});
+
+test('room archives preserve state, support retries and reject other organizers and house agencies',async t=>{
+  const f=await fixture(t),id=await f.create(),team=await f.add(id);
+  await f.query("INSERT INTO rooms (name,scenario_id,created_by,state,is_test) VALUES ('Отдельная',1,1,'running',TRUE)");
+  const room=(await f.query("SELECT id FROM rooms WHERE name='Отдельная'")).rows[0].id;
+  await rejected(f.store.archive.setRoom(f.other,room,{archived:true}),404);
+  await rejected(f.store.archive.setRoom({},room,{archived:true}),403);
+  await rejected(f.store.archive.setRoom(f.admin,room,{archived:'true'}),400);
+  await rejected(f.store.archive.setRoom(f.admin,team.room_id,{archived:true}),409);
+  await Promise.all([f.store.archive.setRoom(f.admin,room,{archived:true}),f.store.archive.setRoom(f.admin,room,{archived:true})]);
+  assert.equal((await f.store.archive.roomArchives()).length,1);
+  assert.equal((await f.roomSync(room)).state,'running');
+  await f.store.archive.setRoom(f.chief,room,{archived:false});
+  assert.equal((await f.store.archive.roomArchives()).length,0);
+});
+
+test('house deletion requires confirmation, ownership and current revision; active houses must finish first',async t=>{
+  const f=await fixture(t),id=await f.create();await f.add(id);
+  const op=f.body({revision:await f.revision(id),confirmed:true});
+  await rejected(f.store.houses.remove(f.other,id,op),404);
+  await rejected(f.store.houses.remove(f.admin,id,{...op,confirmed:false}),400);
+  await rejected(f.store.houses.remove(f.admin,id,{...op,revision:op.revision+1}),409);
+  await f.control(id,'start');
+  await rejected(f.store.houses.remove(f.admin,id,f.body({revision:await f.revision(id),confirmed:true})),409);
+  await f.control(id,'pause');
+  await rejected(f.store.houses.remove(f.admin,id,f.body({revision:await f.revision(id),confirmed:true})),409);
+  assert.ok(await f.detail(id));
+});
+
+test('deleting a finished house removes links, archives agency rooms and retains scores and answers',async t=>{
+  const f=await fixture(t),id=await f.create({questions_immediate:true}),team=await f.add(id),identity=await f.user(team.room_id);
+  const publicId=(await f.detail(id)).house.public_id;
+  const invite=(await f.query('SELECT invite_token FROM shared_rooms WHERE room_id=$1',[team.room_id])).rows[0].invite_token;
+  await f.control(id,'start');
+  await f.store.shared.submitAnswers(identity,{finish:true,answers:[{question_id:1,text:'Анна',revision:0}]});
+  await f.control(id,'finish',{confirmed:true});
+  const result=await f.store.shared.result(identity);
+  await f.store.houses.archive(f.admin,id,f.body({revision:await f.revision(id),archived:true}));
+  const op=f.body({revision:await f.revision(id),confirmed:true});
+  await Promise.all([f.store.houses.remove(f.admin,id,op),f.store.houses.remove(f.admin,id,op)]);
+  await f.store.houses.remove(f.admin,id,op);
+  await rejected(f.store.houses.remove(f.other,id,op),404);
+  await rejected(f.store.houses.remove(f.admin,id,f.body({revision:op.revision,confirmed:true})),404);
+  await rejected(f.detail(id),404);await rejected(f.store.houses.publicInfo(publicId),404);
+  await rejected(f.store.houses.join(publicId,{room_id:team.room_id,password:'секрет123'}),404);
+  await rejected(f.store.shared.join(invite),404);
+  assert.equal((await f.store.houses.list(f.admin,true)).items.length,0);
+  assert.equal((await f.store.archive.roomArchives())[0].room_id,team.room_id);
+  assert.equal((await f.store.shared.result(identity)).scoring.fee,result.scoring.fee);
+  assert.equal((await f.query('SELECT answer_text FROM question_answers')).rows[0].answer_text,'Анна');
+  assert.equal((await f.query('SELECT * FROM house_operations WHERE house_id=$1',[id])).rows.length,0);
+});
+
+test('deleting an unstarted house closes agency entry without spending a player attempt',async t=>{
+  const f=await fixture(t),id=await f.create(),team=await f.add(id);
+  await f.store.houses.remove(f.admin,id,f.body({revision:await f.revision(id),confirmed:true}));
+  const room=await f.roomSync(team.room_id);assert.equal(room.state,'finished');assert.equal(room.game_start_time,null);
+  assert.equal((await f.query('SELECT * FROM player_attempts')).rows.length,0);
+  await rejected(f.store.shared.identity(team.room_id),403);
+});
+
+test('failed house deletion rolls back invitation rotation, archives and all room changes',async t=>{
+  const f=await fixture(t),id=await f.create(),team=await f.add(id);
+  const invite=(await f.query('SELECT invite_token FROM shared_rooms WHERE room_id=$1',[team.room_id])).rows[0].invite_token;
+  await f.query("CREATE TRIGGER refuse_house_delete BEFORE DELETE ON game_houses BEGIN SELECT RAISE(ABORT,'fixture delete failure'); END");
+  const op=f.body({revision:await f.revision(id),confirmed:true});
+  await assert.rejects(f.store.houses.remove(f.admin,id,op),/fixture delete failure/);
+  assert.equal((await f.roomSync(team.room_id)).state,'pending');
+  assert.equal((await f.store.archive.roomArchives()).length,0);
+  assert.equal((await f.query('SELECT invite_token FROM shared_rooms WHERE room_id=$1',[team.room_id])).rows[0].invite_token,invite);
+  assert.equal((await f.detail(id)).teams.length,1);
+  await f.query('DROP TRIGGER refuse_house_delete');await f.store.houses.remove(f.admin,id,op);
+  await rejected(f.detail(id),404);
+});
+
+test('room controller returns archive metadata and enforces access before applying changes',async t=>{
+  const f=await fixture(t),fs=require('node:fs'),vm=require('node:vm');
+  await f.query("INSERT INTO rooms (name,scenario_id,created_by,state,is_test) VALUES ('Комната',1,1,'finished',FALSE)");
+  const id=(await f.query('SELECT id FROM rooms')).rows[0].id;
+  const module={exports:{}},dependencies={
+    '../models/room':{listByAdmin:async admin=>(await f.query('SELECT * FROM rooms WHERE created_by=$1',[admin])).rows},
+    '../models/roomUser':{},'../models/scenario':{},jsonwebtoken:{},'crypto':{},
+    '../services/roomTimer':{syncRoomTimer:f.roomSync},'../services/questionAccess':{},'../services/playerRuntime':{cabinet:f.store}
+  };
+  vm.runInNewContext(fs.readFileSync('backend/controllers/roomController.js','utf8'),{module,console,require:name=>dependencies[name]});
+  const response=()=>({code:200,status(code){this.code=code;return this;},json(data){this.data=data;}});
+  const req={user:f.admin,params:{room_id:String(id)},body:{archived:true}};
+  let res=response();await module.exports.archiveRoom({...req,user:f.other},res);assert.equal(res.code,404);
+  res=response();await module.exports.archiveRoom(req,res);assert.equal(res.code,200);
+  res=response();await module.exports.listRooms(req,res);assert.ok(res.data.rooms[0].archived_at);
+  assert.equal(res.data.rooms[0].state,'finished');
+  await module.exports.archiveRoom({...req,body:{archived:false}},response());
+  res=response();await module.exports.listRooms(req,res);assert.equal(res.data.rooms[0].archived_at,null);
+});
+
 test('organizer can disable only the question delay while retaining a common timed investigation',async t=>{
   const f=await fixture(t),id=await f.create({questions_immediate:true}),a=await f.add(id);
   let data=await f.detail(id);assert.equal(data.house.duration_seconds,7200);assert.equal(data.house.questions_delay_seconds,0);
@@ -209,7 +324,7 @@ test('real HTTP enforces organizer ownership, team passwords, rate limits and al
   const respond=(_req,res)=>{legacyMutations++;res.json({ok:true});};
   const dependencies={express,jsonwebtoken:jwt,'../models/user':{findById:async id=>Number(id)===1?f.admin:f.other},'../models/room':{},
     '../services/playerRuntime':{cabinet:f.store},'../services/playerDatabase':{query:f.query},'../services/roomTimer':{syncRoomTimer:f.roomSync},
-    '../controllers/roomController':Object.fromEntries(['createRoom','changeTestRoomScenario','enterTestRoom','listRooms','addRoomUser','listRoomUsers','removeRoomUser','startRoomTimer','pauseRoomTimer','resumeRoomTimer','stopRoomTimer','deleteRoom'].map(k=>[k,respond]))};
+    '../controllers/roomController':Object.fromEntries(['createRoom','changeTestRoomScenario','enterTestRoom','listRooms','addRoomUser','listRoomUsers','removeRoomUser','startRoomTimer','pauseRoomTimer','resumeRoomTimer','stopRoomTimer','archiveRoom','deleteRoom'].map(k=>[k,respond]))};
   function load(path){const module={exports:{}};vm.runInNewContext(fs.readFileSync(path,'utf8'),{module,console,process:{env:{JWT_SECRET:secret}},require:name=>{if(!(name in dependencies))throw Error('Unexpected dependency: '+name);return dependencies[name];}});return module.exports;}
   const auth=load('backend/middleware/auth.js');dependencies['../middleware/auth']=auth;
   const app=express();app.use(express.json());app.use('/api/houses',load('backend/routes/houses.js'));app.use('/api/rooms',load('backend/routes/room.js'));
@@ -227,10 +342,15 @@ test('real HTTP enforces organizer ownership, team passwords, rate limits and al
   const publicResponse=await call('/api/houses/public/'+publicId,'GET',undefined,null);assert.equal(publicResponse.status,200);assert.equal((await publicResponse.json()).teams.length,2);
   assert.equal((await call('/api/houses/public/'+publicId+'/join','POST',{room_id:a.room_id,password:'wrong'},null)).status,401);
   assert.equal((await call('/api/houses/public/'+publicId+'/join','POST',{room_id:a.room_id,password:'секрет123'},null)).status,200);
-  for(const [path,method]of [[a.room_id+'/start','POST'],[a.room_id+'/pause','POST'],[a.room_id+'/resume','POST'],[a.room_id+'/stop','POST'],[a.room_id+'/invite','POST'],[a.room_id+'/users','POST'],['users/'+ua.id,'DELETE'],[String(a.room_id),'DELETE']]){
+  for(const [path,method]of [[a.room_id+'/start','POST'],[a.room_id+'/pause','POST'],[a.room_id+'/resume','POST'],[a.room_id+'/stop','POST'],[a.room_id+'/invite','POST'],[a.room_id+'/users','POST'],[a.room_id+'/archive','PATCH'],['users/'+ua.id,'DELETE'],[String(a.room_id),'DELETE']]){
     assert.equal((await call('/api/rooms/'+path,method,{})).status,409,path);
   }
   assert.equal(legacyMutations,0);
+  assert.equal((await call('/api/houses/'+id+'/archive','POST',f.body({revision:await f.revision(id),archived:true}),other)).status,404);
+  assert.equal((await call('/api/houses/'+id+'/archive','POST',f.body({revision:await f.revision(id),archived:true}))).status,200);
+  assert.equal((await (await call('/api/houses')).json()).items.length,0);
+  assert.equal((await (await call('/api/houses?archived=true')).json()).items.length,1);
+  assert.equal((await call('/api/houses/'+id,'DELETE',f.body({revision:await f.revision(id),confirmed:false}))).status,400);
   assert.equal((await call('/api/houses/'+id+'/control','POST',f.body({revision:await f.revision(id),action:'start'}),staff,{Origin:'https://elsewhere.invalid'})).status,403);
   await f.control(id,'start');assert.equal((await call('/game','GET',undefined,player)).status,200);
   await f.control(id,'finish',{confirmed:true});assert.equal((await call('/game','GET',undefined,player)).status,403);
@@ -238,4 +358,8 @@ test('real HTTP enforces organizer ownership, team passwords, rate limits and al
   const returned=await call('/api/houses/public/'+publicId+'/join','POST',{room_id:a.room_id,password:'секрет123'},null);assert.equal((await returned.json()).finished,true);
   let response;for(let i=0;i<16;i++)response=await call('/api/houses/public/'+publicId+'/join','POST',{room_id:b.room_id,password:'wrong'},null);
   assert.equal(response.status,429);assert.equal(response.headers.get('Retry-After'),'60');
+  const deletion=f.body({revision:await f.revision(id),confirmed:true});
+  assert.equal((await call('/api/houses/'+id,'DELETE',deletion)).status,200);
+  assert.equal((await call('/api/houses/'+id,'DELETE',deletion)).status,200);
+  assert.equal((await call('/api/houses/public/'+publicId,'GET',undefined,null)).status,404);
 });

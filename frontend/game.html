@@ -386,7 +386,7 @@
     <link href="css/dark-interface.css?v=3" rel="stylesheet">
     <link href="css/game-dossier.css?v=18" rel="stylesheet">
     <link href="css/investigation-board.css?v=card-comments4" rel="stylesheet">
-    <link href="css/game-workspace.css?v=card-comments4" rel="stylesheet">
+    <link href="css/game-workspace.css?v=choice-confirm1" rel="stylesheet">
     <link rel="stylesheet" href="/css/player-game.css?v=mobile-timer1">
     <link rel="stylesheet" href="/css/game-tutorial.css?v=5">
 </head>
@@ -693,10 +693,10 @@
                 </div>
                 <div class="modal-body">
                     <div id="choiceContent">
-                        <!-- Success message -->
-                        <div class="alert alert-success mb-4" id="successMessage">
-                            <i class="fas fa-check-circle me-2"></i>
-                            <strong>Успешная поездка!</strong>
+                        <!-- Branch introduction -->
+                        <div class="alert alert-info mb-4" id="successMessage">
+                            <i class="fas fa-code-branch me-2" aria-hidden="true"></i>
+                            <strong id="choiceIntroTitle">Перед вами развилка</strong>
                             <p class="mb-0 mt-2" id="addressDescription"></p>
                         </div>
 
@@ -723,6 +723,15 @@
                         </div>
                     </div>
                 </div>
+                <dialog id="choiceConfirmDialog" class="choice-confirm-dialog" aria-labelledby="choiceConfirmTitle" aria-describedby="choiceConfirmWarning">
+                    <h2 id="choiceConfirmTitle">Вы уверены в выборе?</h2>
+                    <p id="choiceConfirmSelection" class="choice-confirm-selection"></p>
+                    <p id="choiceConfirmWarning">Обсудите выбор с командой. После подтверждения его нельзя будет отменить.</p>
+                    <div class="choice-confirm-actions">
+                        <button type="button" id="choiceConfirmCancel" class="btn btn-outline-light">Вернуться к выбору</button>
+                        <button type="button" id="choiceConfirmSubmit" class="btn btn-primary">Подтвердить выбор</button>
+                    </div>
+                </dialog>
             </div>
         </div>
     </div>
@@ -780,7 +789,7 @@
     </aside>
 
     <script src="js/game-pdf.js?v=preview-cache3"></script>
-    <script src="js/game.js?v=file-list-pins2"></script>
+    <script src="js/game.js?v=choice-confirm1"></script>
     <script src="js/board-preview-cache.js?v=1"></script>
     <script src="js/board-application-previews.js?v=preview-cache3"></script>
     <script src="js/investigation-board.js?v=card-comments4"></script>

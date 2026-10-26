@@ -23,3 +23,11 @@ test('a polling response started before a save cannot restore an obsolete house 
   resolveRead(json({house:{id:'fixture',revision:0},teams:[]}));await read;
   assert.equal(f.getCurrent().house.revision,1);
 });
+test('a lost deletion response keeps the same key and revision for retry and clears the deleted detail',async()=>{
+  const requests=[];let unavailable=true;
+  const f=fixture(async(_path,options)=>{requests.push(JSON.parse(options.body));if(unavailable)throw Error('Connection lost');return json({ok:true,deleted:true});});
+  const body={revision:0,confirmed:true};
+  await assert.rejects(f.mutate('/fixture',body,'DELETE'),/Connection lost/);
+  assert.equal(f.getCurrent().house.id,'fixture');unavailable=false;
+  await f.mutate('/fixture',body,'DELETE');assert.deepEqual(requests[0],requests[1]);assert.equal(f.getCurrent(),null);
+});

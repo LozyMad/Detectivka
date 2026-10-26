@@ -271,6 +271,13 @@ html:root body.game-container #choiceModal :is(.alert-success,.alert-info) { col
 html:root body.game-container #choiceModal .choice-btn { border: 1px solid var(--work-border) !important; border-radius: 9px; color: var(--work-text) !important; background: var(--work-input) !important; padding: 16px !important; font-size: 16px !important; }
 html:root body.game-container #choiceModal .choice-btn:hover { background: var(--work-raised) !important; border-color: var(--work-accent) !important; }
 html:root body.game-container #choiceModal .choice-btn .badge { color: var(--work-accent) !important; background: #edb28c14 !important; font-size: 12px !important; }
+html:root body.game-container .choice-confirm-dialog { position: fixed; inset: 0; margin: auto; width: min(500px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 28px; border: 1px solid #715847; border-radius: 14px; background: var(--work-panel); color: var(--work-text); box-shadow: 0 25px 90px #0009; }
+html:root body.game-container .choice-confirm-dialog::backdrop { background: #080605cf; backdrop-filter: blur(5px); }
+html:root body.game-container .choice-confirm-dialog h2 { margin: 0 0 18px; color: var(--work-text); font-size: 24px; }
+html:root body.game-container .choice-confirm-selection { padding: 12px 14px; border-left: 3px solid var(--work-accent); border-radius: 4px; background: var(--work-input); color: var(--work-accent); white-space: pre-wrap; overflow-wrap: anywhere; }
+html:root body.game-container #choiceConfirmWarning { color: var(--work-muted); line-height: 1.5; }
+html:root body.game-container .choice-confirm-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+html:root body.game-container .choice-confirm-actions button { min-height: 44px; padding: 9px 13px; font-size: 14px; }
 @keyframes workspace-dialog-in { from { opacity: 0; transform: translateY(10px) scale(.99); } to { opacity: 1; transform: none; } }
 
 /* Desktop: slim rail, a continuous journal and an independently scrolling tool. */

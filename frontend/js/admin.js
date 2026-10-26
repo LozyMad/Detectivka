@@ -1576,7 +1576,7 @@ function displayRooms(rooms) {
         return `
         <tr>
             <td>${r.id}</td>
-            <td>${escapeHtml(r.name)} ${r.is_test ? '<span class="badge bg-info text-dark">Тестовая</span>' : ''}${r.state === 'paused' ? ' <span class="badge bg-warning text-dark">На паузе</span>' : ''}</td>
+            <td>${escapeHtml(r.name)} ${r.archived_at ? '<span class="badge bg-secondary">В архиве</span> ' : ''}${r.is_test ? '<span class="badge bg-info text-dark">Тестовая</span>' : ''}${r.state === 'paused' ? ' <span class="badge bg-warning text-dark">На паузе</span>' : ''}</td>
             <td style="color: var(--noir-cream) !important;">${r.is_test
                 ? `<select class="form-select form-select-sm" aria-label="Сценарий тестовой комнаты" onchange="changeTestRoomScenario(${r.id}, this.value)">${scenarios.map(s => `<option value="${s.id}" ${String(s.id) === String(r.scenario_id) ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select>`
                 : escapeHtml(scenarioName)}</td>
@@ -1598,6 +1598,7 @@ function displayRooms(rooms) {
                 ${r.is_test || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-light" onclick="copyRoomInvite(${r.id})" title="Ссылка для друзей">Ссылка</button>`}
                 ${r.is_test || r.duration_seconds === 0 || r.state === 'finished' ? '' : `<button class="btn btn-sm btn-outline-warning" onclick="openRoomTimeDialog(${r.id})" title="Добавить время" aria-label="Добавить время"><i class="fas fa-clock" aria-hidden="true"></i></button>`}
                 ${r.is_test || r.is_shared ? '' : `<button class="btn btn-sm btn-outline-primary" onclick="viewRoomUsers(${r.id})"><i class="fas fa-users"></i></button>`}
+                <button class="btn btn-sm btn-outline-primary" onclick="setRoomArchived(${r.id}, ${!r.archived_at})" title="${r.archived_at ? 'Восстановить из архива' : 'Архивировать комнату'}" aria-label="${r.archived_at ? 'Восстановить из архива' : 'Архивировать комнату'}"><i class="fas fa-${r.archived_at ? 'box-open' : 'archive'}" aria-hidden="true"></i></button>
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteRoom(${r.id})" title="Удалить комнату">
                     <i class="fas fa-trash"></i>
                 </button>
@@ -1869,6 +1870,24 @@ async function removeRoomUser(userId) {
 
 
 
+
+const roomArchiveRequests = new Set();
+async function setRoomArchived(roomId, archived) {
+    if (roomArchiveRequests.has(roomId)) return;
+    roomArchiveRequests.add(roomId);
+    try {
+        const response = await authFetch(`${API_BASE}/rooms/${roomId}/archive`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ archived })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Не удалось изменить архив');
+        showMessage(archived ? 'Комната перенесена в архив. Ход игры и результаты сохранены.' : 'Комната восстановлена из архива', 'success');
+        await loadRooms(true);
+    } catch (error) {
+        showMessage(error.message, 'danger');
+    } finally { roomArchiveRequests.delete(roomId); }
+}
 
 async function deleteRoom(roomId) {
     if (!confirm('Удалить комнату? Это действие нельзя отменить.')) return;

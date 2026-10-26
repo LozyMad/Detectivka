@@ -97,22 +97,22 @@
  }
  function filterTable(id,value){const query=value.trim().toLocaleLowerCase('ru');byId(id)?.querySelectorAll('tr').forEach(row=>{row.hidden=!!query&&!row.textContent.toLocaleLowerCase('ru').includes(query);});}
  function refreshOverview(){
-  for(const [state,id]of [['running','wsRunning'],['pending','wsPending'],['paused','wsPaused']])byId(id).textContent=roomsLoaded?String(rooms.filter(r=>!r.is_test&&r.state===state).length):'—';
+  for(const [state,id]of [['running','wsRunning'],['pending','wsPending'],['paused','wsPaused']])byId(id).textContent=roomsLoaded?String(rooms.filter(r=>!r.archived_at&&!r.is_test&&r.state===state).length):'—';
   byId('wsScenarios').textContent=casesLoaded?String(cases.length):'—';
   const host=byId('wsCurrentRooms');host.replaceChildren();
   if(!roomsLoaded){const empty=document.createElement('p');empty.className='ws-empty';empty.textContent='Загружаем комнаты. Если данные не появились, откройте раздел «Комнаты» для повторной загрузки.';host.append(empty);return;}
-  const current=rooms.filter(r=>!r.is_test&&r.state!=='finished').slice(0,5);
+  const current=rooms.filter(r=>!r.archived_at&&!r.is_test&&r.state!=='finished').slice(0,5);
   if(!current.length){const empty=document.createElement('p');empty.className='ws-empty';empty.textContent='Сейчас нет незавершённых комнат. Создайте комнату, когда будете готовы собрать команду.';host.append(empty);return;}
   const statuses={running:'Идёт игра',pending:'Ожидает старта',paused:'На паузе'};
   current.forEach(room=>{const row=document.createElement('div');row.className='ws-room-row';const icon=document.createElement('i');icon.className='fas fa-door-open';icon.setAttribute('aria-hidden','true');const body=document.createElement('div'),name=document.createElement('strong'),meta=document.createElement('small'),badge=document.createElement('span'),open=document.createElement('button');name.textContent=room.name;meta.textContent=(room.scenario_name||'Сценарий №'+room.scenario_id)+' · №'+room.id;badge.className='ws-status '+room.state;badge.textContent=statuses[room.state]||room.state;body.append(name,meta);open.type='button';open.className='btn btn-outline-primary btn-sm';open.textContent='К комнате';open.addEventListener('click',()=>{switchTab('rooms');const search=byId('wsRoomSearch');search.value=room.name;filterRooms();});row.append(icon,body,badge,open);host.append(row);});
  }
- function filterRooms(){const value=byId('wsRoomSearch')?.value?.trim().toLocaleLowerCase('ru')||'',state=byId('wsRoomState')?.value||'';byId('roomsTable')?.querySelectorAll('tr').forEach(row=>{const id=Number(row.firstElementChild?.textContent),room=rooms.find(r=>Number(r.id)===id);row.hidden=!!room&&((state==='test'?!room.is_test:!!state&&room.state!==state)||(!!value&&!row.textContent.toLocaleLowerCase('ru').includes(value)));});}
+ function filterRooms(){const value=byId('wsRoomSearch')?.value?.trim().toLocaleLowerCase('ru')||'',state=byId('wsRoomState')?.value||'';byId('roomsTable')?.querySelectorAll('tr').forEach(row=>{const id=Number(row.firstElementChild?.textContent),room=rooms.find(r=>Number(r.id)===id);row.hidden=!!room&&((state==='archived'?!room.archived_at:!!room.archived_at)||(state==='test'?!room.is_test:!!state&&state!=='archived'&&room.state!==state)||(!!value&&!row.textContent.toLocaleLowerCase('ru').includes(value)));});}
  function buildRoomWorkspace(){
   const panel=byId('rooms-tab'),table=byId('roomsTable').closest('.card');panel.prepend(table);
   const create=disclosure('createRoomForm','Создать комнату','Команда войдёт по ссылке. Таймер запускается отдельно, когда все готовы.');
   const teams=disclosure('addRoomUserForm','Команды с отдельным входом','Для комнат со входом по названию команды и паролю. Для общей комнаты достаточно ссылки.');
   if(create)panel.insertBefore(create,table);
-  const filters=document.createElement('div');filters.className='ws-review-filters';filters.innerHTML='<label>Поиск комнаты<input id="wsRoomSearch" class="form-control" type="search" placeholder="Название, сценарий или номер"></label><label>Статус<select id="wsRoomState" class="form-select"><option value="">Все комнаты</option><option value="running">Идут сейчас</option><option value="pending">Ожидают старта</option><option value="paused">На паузе</option><option value="finished">Завершены</option><option value="test">Тестовые</option></select></label>';
+  const filters=document.createElement('div');filters.className='ws-review-filters';filters.innerHTML='<label>Поиск комнаты<input id="wsRoomSearch" class="form-control" type="search" placeholder="Название, сценарий или номер"></label><label>Статус<select id="wsRoomState" class="form-select"><option value="">Все комнаты вне архива</option><option value="running">Идут сейчас</option><option value="pending">Ожидают старта</option><option value="paused">На паузе</option><option value="finished">Завершены</option><option value="test">Тестовые</option><option value="archived">Архив</option></select></label>';
   table.before(filters);byId('wsRoomSearch').addEventListener('input',filterRooms);byId('wsRoomState').addEventListener('change',filterRooms);
   const view=window.viewRoomUsers;if(view)window.viewRoomUsers=function(...args){reveal('addRoomUserForm');return view(...args);};
  }

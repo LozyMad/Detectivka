@@ -39,6 +39,7 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
     await shared.init();
     await admin.init();
     await scoring.init();
+    await archive.init();
     await houses.init();
   }
   async function register(body) {
@@ -289,12 +290,13 @@ function createPlayerCabinet({ query, transaction, localMode = false, postgres =
   }
   async function result(accountId,id){let run=await ownRun(accountId,id);await roomSync(run.room_id);await finalizeRoom(run.room_id);run=await ownRun(accountId,id);if(run.state!=='finished')fail(409,'Разбор доступен после завершения');if(!run.game_start_time)return {run,cancelled:true,scoring:null,ranked:false,solution:null,rating_rule:'Комната закрыта до запуска. Попытка не использована.'};const product=await one(query,'SELECT solution FROM player_products WHERE id=$1',[run.product_id]);return {run,scoring:await scoring.publicSummary(run.room_id),ranked:(await scoring.firstRuns(accountId)).has(run.id),solution:product?.solution||null,rating_rule:'Гонорар учитывает качество ответов и поездки. В общий рейтинг входит только первое завершённое прохождение каждого платного дела: до 2000 рейтинговых баллов за дело. Демо и повторные прохождения не меняют рейтинг.'};}
   const admin=require('./playerAdmin').createPlayerAdmin({query,transaction,roomSync,remainingSeconds,finalizeRoom,scoring});
+  const archive=require('./organizerArchive').createOrganizerArchive({query,transaction});
   const houses=require('./gameHouses').createGameHouses({query,transaction,shared,scoring,finalizeRoom,remainingSeconds});
   shared.setHouses(houses);
   admin.setHouses(houses);
   scoring.setFinalizer(finalizeRoom);
   shared.setScoring(scoring);
   shared.setFinalizer(finalizeRoom);
-  return {houses,scoring,admin,shared,finalizeRoom,init,register,login,authenticate,logout,updateAccount,requestReset,resetPassword,catalog,bundles,purchase,start,join,enter,control,history,profile,result};
+  return {archive,houses,scoring,admin,shared,finalizeRoom,init,register,login,authenticate,logout,updateAccount,requestReset,resetPassword,catalog,bundles,purchase,start,join,enter,control,history,profile,result};
 }
 module.exports={createPlayerCabinet,SESSION_MS};

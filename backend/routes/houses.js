@@ -26,10 +26,12 @@ router.post('/public/:publicId/join',(req,res,next) => {
   next();
 },wrap(async(req,res) => res.json(await cabinet.houses.join(req.params.publicId,req.body))));
 router.use(authenticateToken,adminRequired);
-router.get('/',wrap(async(req,res) => res.json(await cabinet.houses.list(req.user))));
+router.get('/',wrap(async(req,res) => res.json(await cabinet.houses.list(req.user,req.query.archived==='true'))));
 router.post('/',wrap(async(req,res) => res.status(201).json(await cabinet.houses.create(req.user,req.body))));
 router.get('/:id',wrap(async(req,res) => res.json(await cabinet.houses.detail(req.user,req.params.id))));
 router.patch('/:id',wrap(async(req,res) => res.json(await cabinet.houses.update(req.user,req.params.id,req.body))));
+router.post('/:id/archive',wrap(async(req,res) => res.json(await cabinet.houses.archive(req.user,req.params.id,req.body))));
+router.delete('/:id',wrap(async(req,res) => res.json(await cabinet.houses.remove(req.user,req.params.id,req.body))));
 router.post('/:id/control',wrap(async(req,res) => res.json(await cabinet.houses.control(req.user,req.params.id,req.body))));
 router.post('/:id/teams',wrap(async(req,res) => res.status(201).json(await cabinet.houses.addTeam(req.user,req.params.id,req.body))));
 router.patch('/:id/teams/:roomId',wrap(async(req,res) => res.json(await cabinet.houses.editTeam(req.user,req.params.id,Number(req.params.roomId),req.body))));

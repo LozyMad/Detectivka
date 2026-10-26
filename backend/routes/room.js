@@ -12,6 +12,7 @@ const {
   pauseRoomTimer,
   resumeRoomTimer,
   stopRoomTimer,
+  archiveRoom,
   deleteRoom
 } = require('../controllers/roomController');
 
@@ -39,6 +40,7 @@ router.post('/:room_id/invite', (req,res,next)=> {
 router.post('/', createRoom);
 router.get('/', listRooms);
 router.delete('/:room_id', deleteRoom);
+router.patch('/:room_id/archive', archiveRoom);
 router.patch('/:room_id/scenario', changeTestRoomScenario);
 router.post('/:room_id/test-login', enterTestRoom);
 router.post('/:room_id/users', addRoomUser);

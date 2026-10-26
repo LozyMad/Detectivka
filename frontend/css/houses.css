@@ -37,3 +37,5 @@
 .houses-workspace details>summary{cursor:pointer;font-weight:650;padding:12px 0}
 @media(max-width:600px){.house-lobby{margin-block:24px}.house-entry .header-inner{min-height:68px;gap:16px}.house-entry .header-inner .button{font-size:11px;min-height:36px;padding:8px 14px}.house-entry-card{padding:24px 20px}.houses-fields{grid-template-columns:1fr}.houses-controls .btn{flex-grow:1}.houses-dialog{padding:20px}.houses-card{padding:18px}}
 @media(max-height:760px) and (min-width:601px){.house-lobby{margin-block:24px}.house-entry-card{padding:26px 30px}.house-entry form{margin-top:18px;padding-top:18px}}
+.houses-archive-filter{display:grid;gap:6px;min-width:200px;margin-left:auto}
+@media(max-width:600px){.houses-archive-filter{margin-left:0;width:100%}}

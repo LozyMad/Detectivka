@@ -104,9 +104,10 @@ const listRooms = async (req, res) => {
       room.state === 'running' && !room.is_test ? syncRoomTimer(room.id, room) : room
     ));
     const visibleRooms=[];
+    const archives = new Map((await require('../services/playerRuntime').cabinet.archive.roomArchives()).map(row => [Number(row.room_id), row.archived_at]));
     for(const room of currentRooms){
       if(room.is_shared&&await require('../services/playerRuntime').cabinet.houses.membership(room.id))continue;
-      visibleRooms.push(room);
+      visibleRooms.push({ ...room, archived_at: archives.get(Number(room.id)) || null });
     }
     res.json({ rooms: visibleRooms });
   } catch (error) {
@@ -227,6 +228,15 @@ const stopRoomTimer = async (req, res) => {
   }
 };
 
+const archiveRoom = async (req, res) => {
+  try {
+    res.json(await require('../services/playerRuntime').cabinet.archive.setRoom(req.user, Number(req.params.room_id), req.body));
+  } catch (error) {
+    if (!error.status) console.error('Archive room error:', error);
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Не удалось изменить архив комнаты' });
+  }
+};
+
 const deleteRoom = async (req, res) => {
   try {
     const { room_id } = req.params;
@@ -258,6 +268,7 @@ module.exports = {
   pauseRoomTimer,
   resumeRoomTimer,
   stopRoomTimer,
+  archiveRoom,
   deleteRoom
 };
 

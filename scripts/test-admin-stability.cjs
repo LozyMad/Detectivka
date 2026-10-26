@@ -20,6 +20,26 @@ test('admin no longer exposes the retired database reset action', () => {
   assert.equal(b.run('typeof nuclearReset'), 'undefined');
 });
 
+test('room archive suppresses duplicate submissions, refreshes the confirmed list and can restore', async () => {
+  const pending=deferred();
+  const b=admin(call=>call.options.method==='PATCH'?pending.promise:json({rooms:[{id:14,name:'Комната',archived_at:'2026-10-26'}]}));
+  const first=b.run('setRoomArchived(14,true)');await flush();
+  await b.run('setRoomArchived(14,true)');assert.equal(b.calls.length,1);
+  assert.deepEqual(JSON.parse(b.calls[0].options.body),{archived:true});
+  pending.resolve(json({ok:true,archived:true}));await first;
+  assert.equal(b.window.renderedRooms[0].archived_at,'2026-10-26');
+  assert.match(b.window.lastMessage,/архив/);
+  await b.run('setRoomArchived(14,false)');
+  assert.deepEqual(JSON.parse(b.calls.filter(call=>call.options.method==='PATCH')[1].options.body),{archived:false});
+});
+
+test('failed room archive preserves the current list and allows another attempt',async()=>{
+  const b=admin(()=>json({error:'Нет доступа'},404));b.run('roomsCache=[{id:14,name:"Комната"}];');
+  await b.run('setRoomArchived(14,true)');assert.equal(b.calls.length,1);
+  assert.equal(b.run('roomsCache[0].archived_at'),undefined);assert.equal(b.window.lastMessage,'Нет доступа');
+  await b.run('setRoomArchived(14,true)');assert.equal(b.calls.length,2);
+});
+
 test('adding a scene refreshes the submitted case after resetting the form', async () => {
   const b = admin(() => json({ success: true }));
   b.element('addressScenario').value = '12';

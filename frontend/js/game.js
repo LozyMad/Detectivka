@@ -2082,6 +2082,10 @@ async function submitAllAnswers() {
 let currentAddressId = null;
 let currentVisitedLocationId = null;
 let currentScenarioId = null;
+let currentInteractiveChoices = [];
+let pendingPlayerChoice = null;
+let choiceSubmitInFlight = false;
+let choiceContextVersion = 0;
 
 // Проверяем, есть ли интерактивные выборы для адреса
 async function checkForInteractiveChoices(addressId, description, visitedLocationId) {
@@ -2130,6 +2134,12 @@ async function checkForInteractiveChoices(addressId, description, visitedLocatio
 // Показать модальное окно с интерактивными выбором
 function showInteractiveChoiceModal(choices, description) {
     console.log('showInteractiveChoiceModal called with:', { choices, description });
+    cancelPlayerChoice();
+    choiceContextVersion++;
+    currentInteractiveChoices = choices;
+    document.getElementById('choiceIntroTitle').textContent = 'Перед вами развилка';
+    document.getElementById('choiceOptions').style.display = 'block';
+    document.getElementById('choiceResponse').style.display = 'none';
     
     // Обновляем описание адреса
     const addressDescElement = document.getElementById('addressDescription');
@@ -2148,6 +2158,8 @@ function showInteractiveChoiceModal(choices, description) {
     
     choices.forEach((choice, index) => {
         const button = document.createElement('button');
+        button.type = 'button';
+        button.disabled = choiceSubmitInFlight;
         button.className = 'btn btn-outline-light btn-lg choice-btn';
         button.style.cssText = `
             border: 2px solid var(--noir-gold);
@@ -2158,7 +2170,7 @@ function showInteractiveChoiceModal(choices, description) {
         button.innerHTML = `
             <div class="d-flex align-items-center">
                 <span class="badge bg-primary me-3 fs-6">${String.fromCharCode(65 + index)}</span>
-                <span>${choice.choice_text}</span>
+                <span>${escapeHtmlPlayer(choice.choice_text)}</span>
             </div>
         `;
         
@@ -2193,8 +2205,32 @@ function showInteractiveChoiceModal(choices, description) {
     console.log('Modal shown successfully');
 }
 
-// Сделать выбор игрока
-async function makePlayerChoice(choiceId) {
+// Selecting an option is local until the team explicitly confirms it.
+function makePlayerChoice(choiceId) {
+    const choice = currentInteractiveChoices.find(item => Number(item.id) === Number(choiceId));
+    if (!choice || pendingPlayerChoice || choiceSubmitInFlight || !currentScenarioId || !currentAddressId) return;
+    pendingPlayerChoice = { choiceId: choice.id, scenarioId: currentScenarioId, addressId: currentAddressId,
+        visitedLocationId: currentVisitedLocationId, version: choiceContextVersion };
+    document.getElementById('choiceConfirmSelection').textContent = choice.choice_text;
+    document.getElementById('choiceConfirmDialog').showModal();
+    document.getElementById('choiceConfirmCancel').focus();
+}
+
+function cancelPlayerChoice() {
+    pendingPlayerChoice = null;
+    const dialog = document.getElementById('choiceConfirmDialog');
+    if (dialog?.open) dialog.close();
+}
+
+async function confirmPlayerChoice() {
+    const selection = pendingPlayerChoice;
+    if (!selection || choiceSubmitInFlight) return;
+    if (selection.version !== choiceContextVersion || selection.addressId !== currentAddressId || selection.scenarioId !== currentScenarioId) {
+        cancelPlayerChoice(); return;
+    }
+    choiceSubmitInFlight = true;
+    cancelPlayerChoice();
+    document.querySelectorAll('#choiceButtons button').forEach(button => { button.disabled = true; });
     try {
         const token = gameStorage.getItem('token');
         const roomUser = JSON.parse(gameStorage.getItem('roomUser'));
@@ -2211,10 +2247,10 @@ async function makePlayerChoice(choiceId) {
             },
             body: JSON.stringify({
                 room_user_id: roomUser.id,
-                scenario_id: currentScenarioId,
-                address_id: currentAddressId,
-                choice_id: choiceId,
-                visited_location_id: currentVisitedLocationId
+                scenario_id: selection.scenarioId,
+                address_id: selection.addressId,
+                choice_id: selection.choiceId,
+                visited_location_id: selection.visitedLocationId
             })
         });
         
@@ -2227,20 +2263,27 @@ async function makePlayerChoice(choiceId) {
         
         // Показываем результат выбора
         tripHistoryVersion++;
-        showChoiceResponse(data.response);
+        if (selection.version === choiceContextVersion) showChoiceResponse(data.response);
         
     } catch (error) {
         console.error('Error making choice:', error);
+        if (selection.version !== choiceContextVersion) return;
         
         // Показываем ошибку
         document.getElementById('choiceOptions').style.display = 'none';
         document.getElementById('choiceResponse').style.display = 'block';
         document.getElementById('responseText').textContent = 'Произошла ошибка при обработке вашего выбора.';
+    } finally {
+        choiceSubmitInFlight = false;
+        document.querySelectorAll('#choiceButtons button').forEach(button => { button.disabled = false; });
     }
 }
 
 // Показать результат выбора
 function showChoiceResponse(responseText) {
+    cancelPlayerChoice();
+    currentInteractiveChoices = [];
+    document.getElementById('choiceIntroTitle').textContent = 'Выбор сделан';
     // Скрываем варианты выбора
     document.getElementById('choiceOptions').style.display = 'none';
     
@@ -2313,6 +2356,10 @@ async function openChoiceHistory(addressId, description, visitedLocationId) {
 
 // Показать уже сделанные выборы
 function showExistingChoice(choice, description) {
+    cancelPlayerChoice();
+    choiceContextVersion++;
+    currentInteractiveChoices = [];
+    document.getElementById('choiceIntroTitle').textContent = 'Выбор сделан';
     // Обновляем описание адреса
     document.getElementById('addressDescription').innerHTML = renderScenarioText(description || 'Локация найдена', currentAddressId);
     
@@ -2331,6 +2378,9 @@ function showExistingChoice(choice, description) {
 
 // Сброс модального окна при закрытии
 document.getElementById('choiceModal').addEventListener('hidden.bs.modal', function () {
+    cancelPlayerChoice();
+    choiceContextVersion++;
+    currentInteractiveChoices = [];
     // Сброс состояния модального окна
     document.getElementById('choiceOptions').style.display = 'block';
     document.getElementById('choiceResponse').style.display = 'none';
@@ -2340,6 +2390,12 @@ document.getElementById('choiceModal').addEventListener('hidden.bs.modal', funct
     currentAddressId = null;
     currentVisitedLocationId = null;
     currentScenarioId = null;
+});
+
+document.getElementById('choiceConfirmCancel').addEventListener('click', cancelPlayerChoice);
+document.getElementById('choiceConfirmSubmit').addEventListener('click', confirmPlayerChoice);
+document.getElementById('choiceConfirmDialog').addEventListener('cancel', event => {
+    event.preventDefault(); cancelPlayerChoice();
 });
 
 // ===== Интернет-кафе =====

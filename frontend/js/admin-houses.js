@@ -5,7 +5,7 @@
   const statuses={pending:'Ожидает старта',running:'Идёт игра',paused:'На паузе',finished:'Завершён'};
   const clock=value=>value==null?'Без таймера':`${Math.floor(Math.max(0,value)/3600)}:${String(Math.floor(Math.max(0,value)%3600/60)).padStart(2,'0')}:${String(Math.max(0,value)%60).padStart(2,'0')}`;
   const date=value=>value?new Date(value).toLocaleString('ru-RU'):'Дата не указана';
-  let initialized=false,selected=null,current=null,sequence=0,polling=false,mutating=false,retry=null;
+  let initialized=false,selected=null,current=null,sequence=0,polling=false,mutating=false,retry=null,archived=false,listItems=[];
   async function request(path,options={}){
     const response=await fetch('/api/houses'+path,{...options,headers:{Authorization:'Bearer '+localStorage.getItem('token'),...(options.body?{'Content-Type':'application/json'}:{})},cache:'no-store',signal:AbortSignal.timeout(15000)});
     const data=await response.json();
@@ -22,6 +22,7 @@
     try{
       const data=await request(op.path,{method:op.method,body:JSON.stringify(op.body)});
       if(current&&selected&&op.path.startsWith('/'+selected)&&Number.isInteger(op.body.revision))current.house.revision=Math.max(Number(current.house.revision),op.body.revision+1);
+      if(data?.deleted){selected=null;current=null;}
       retry=null;message('');return data;
     }catch(error){if(error.status&&error.status<500)retry=null;message(error.name==='TimeoutError'?'Сервер не ответил вовремя. Повторите последнее действие.':error.message);throw error;}
     finally{mutating=false;$('houses-retry').hidden=!retry;}
@@ -29,7 +30,8 @@
   const button=(action,label,extra='',kind='outline-primary')=>`<button type="button" class="btn btn-${kind} btn-sm" data-house-action="${action}" ${extra}>${label}</button>`;
   function init(){
     if(initialized)return;initialized=true;
-    $('houses-tab').innerHTML=`<div class="houses-workspace"><div id="houses-root-toolbar" class="houses-toolbar">${button('create','Создать дом','','primary')}${button('refresh','Обновить')}</div><p id="houses-error" class="alert alert-danger houses-error" role="alert" hidden></p><button id="houses-retry" type="button" class="btn btn-warning mb-3" hidden>Повторить последнее действие</button><div id="houses-list" class="houses-grid"></div><div id="houses-detail" hidden></div></div>`;
+    $('houses-tab').innerHTML=`<div class="houses-workspace"><div id="houses-root-toolbar" class="houses-toolbar">${button('create','Создать дом','','primary')}${button('refresh','Обновить')}<label class="houses-archive-filter">Показать<select id="houses-archive-filter" class="form-select"><option value="active">Дома вне архива</option><option value="archived">Архив</option></select></label></div><p id="houses-error" class="alert alert-danger houses-error" role="alert" hidden></p><button id="houses-retry" type="button" class="btn btn-warning mb-3" hidden>Повторить последнее действие</button><div id="houses-list" class="houses-grid"></div><div id="houses-detail" hidden></div></div>`;
+    $('houses-archive-filter').addEventListener('change',()=>{archived=$('houses-archive-filter').value==='archived';load();});
     $('houses-tab').addEventListener('click',event=>{
       const target=event.target.closest('[data-house-action]');if(!target)return;
       event.preventDefault();handle(target.dataset.houseAction,target).catch(error=>message(error.message));
@@ -57,9 +59,10 @@
         const data=await request('/'+encodeURIComponent(selected));if(seq!==sequence)return;
         current=data;renderDetail();
       }else{
-        const data=await request('');if(seq!==sequence)return;
+        const data=await request(archived?'?archived=true':'');if(seq!==sequence)return;
+        listItems=data.items;
         current=null;$('houses-detail').hidden=true;$('houses-list').hidden=false;$('houses-root-toolbar').hidden=false;
-        $('houses-list').innerHTML=data.items.length?data.items.map(h=>`<article class="houses-card"><span class="pa-badge ${esc(h.state)}">${esc(statuses[h.state])}</span><h3 class="mt-3">${esc(h.name)}</h3><p>${esc(h.scenario_name)}</p><p class="houses-muted">${h.format==='offline'?'Очная игра':'Онлайн'} · ${esc(date(h.scheduled_at))}</p><p>${h.team_count} агентств</p>${button('open','Открыть дом',`data-id="${esc(h.id)}"`)}</article>`).join(''):'<div class="houses-card"><h3>Первый дом</h3><p>Выберите дело, подготовьте агентства и запустите общую игру.</p></div>';
+        $('houses-list').innerHTML=data.items.length?data.items.map(h=>`<article class="houses-card"><span class="pa-badge ${esc(h.state)}">${esc(statuses[h.state])}</span>${h.archived_at?'<span class="pa-badge ms-2">В архиве</span>':''}<h3 class="mt-3">${esc(h.name)}</h3><p>${esc(h.scenario_name)}</p><p class="houses-muted">${h.format==='offline'?'Очная игра':'Онлайн'} · ${esc(date(h.scheduled_at))}</p><p>${h.team_count} агентств</p><div class="houses-controls">${button('open','Открыть дом',`data-id="${esc(h.id)}"`)}${lifecycleButtons(h)}</div></article>`).join(''):archived?'<div class="houses-card"><h3>Архив пуст</h3><p>Архивные дома появятся здесь. Их можно будет восстановить.</p></div>':'<div class="houses-card"><h3>Нет домов вне архива</h3><p>Создайте дом, подготовьте агентства и запустите общую игру.</p></div>';
       }
       if(!retry)message('');
     }catch(error){message(error.message);}
@@ -76,12 +79,14 @@
     $('houses-detail').innerHTML=`<div class="houses-toolbar">${button('back','← Все дома')}<h2>${esc(h.name)}</h2>${button('refresh','Обновить')}${button('settings','Настройки',h.state!=='pending'?'disabled':'')}</div><div class="houses-card mb-3"><div class="houses-meta"><span>${esc(h.scenario_name)}</span><span>${h.format==='offline'?'Очная игра':'Онлайн'}</span><span>${esc(date(h.scheduled_at))}</span><span>${esc(h.venue)}</span></div><div id="house-timer"></div><div id="house-controls" class="houses-controls"></div><p class="houses-muted">Запуск, пауза и добавление времени действуют на все агентства. ${h.questions_delay_seconds?'Вопросы открываются через '+Math.floor(h.questions_delay_seconds/60)+' минут игрового времени.':'Вопросы доступны сразу после старта.'}</p>${button('copy','Скопировать ссылку дома')} <a class="btn btn-outline-primary btn-sm" href="${esc(h.invite_path)}" target="_blank" rel="noopener">Открыть вход игроков</a><span id="house-copy-status" class="ms-2" role="status"></span></div><div class="houses-toolbar"><h3>Агентства и гонорары</h3><span id="house-standings-status" class="houses-muted"></span>${button('add-team','Добавить агентство',h.state!=='pending'?'disabled':'')}</div><div class="table-responsive"><table class="table houses-table"><thead><tr><th>Место</th><th>Агентство</th><th>Участники</th><th>Игра</th><th>Гонорар</th><th>Проверка</th><th>Действия</th></tr></thead><tbody id="house-teams"></tbody></table></div><p class="houses-muted mt-3">Рейтинг виден только организатору. При равном гонораре агентства делят место. Количество участников не влияет на расчёт.</p>`;
     updateDetail();
   }
+  function lifecycleButtons(h){return button(h.archived_at?'restore':'archive',h.archived_at?'Восстановить':'В архив',`data-id="${esc(h.id)}"`)+button('delete','Удалить',`data-id="${esc(h.id)}" ${['pending','finished'].includes(h.state)?'':'disabled title="Сначала завершите игру во всём доме"'}`,'outline-danger');}
   function setHTML(node,html){if(node.dataset.rendered!==html){node.dataset.rendered=html;node.innerHTML=html;}}
   function updateDetail(){
     if(!$('house-timer')||!current)return;
     const h=current.house;
-    $('house-timer').innerHTML=`<p><span class="pa-badge ${esc(h.state)}">${esc(statuses[h.state])}</span></p><p class="houses-clock">${h.state==='pending'?(h.duration_seconds?clock(h.duration_seconds):'Без таймера'):h.state==='finished'?'Игра завершена':clock(h.remaining_seconds)}</p>`;
+    $('house-timer').innerHTML=`<p><span class="pa-badge ${esc(h.state)}">${esc(statuses[h.state])}</span>${h.archived_at?'<span class="pa-badge ms-2">В архиве</span>':''}</p><p class="houses-clock">${h.state==='pending'?(h.duration_seconds?clock(h.duration_seconds):'Без таймера'):h.state==='finished'?'Игра завершена':clock(h.remaining_seconds)}</p>`;
     const controls=[];
+    controls.push(lifecycleButtons(h));
     if(h.state==='pending')controls.push(button('start','Начать игру','','primary'));
     if(h.state==='running')controls.push(button('pause','Общая пауза'));
     if(h.state==='paused')controls.push(button('resume','Продолжить игру','','primary'));
@@ -133,6 +138,16 @@
     if(action==='refresh')return load();
     if(action==='back'){selected=null;current=null;return load();}
     if(action==='open'){selected=target.dataset.id;return load();}
+    if(['archive','restore','delete'].includes(action)){
+      const h=current?.house||listItems.find(item=>item.id===target.dataset.id);if(!h)return;
+      const id=h.id,revision=Number(h.revision);
+      if(action==='delete'){
+        const popup=dialog('Удалить дом?',`<p>Дом «${esc(h.name)}» и его ссылка будут удалены. Комнаты агентств останутся в архиве с результатами. Восстановить дом после удаления нельзя.</p>`,'Удалить дом',()=>mutate('/'+id,{revision,confirmed:true},'DELETE'));
+        popup.querySelector('[type=submit]').className='btn btn-danger';return;
+      }
+      if(action==='restore'){await mutate('/'+id+'/archive',{revision,archived:false});return load();}
+      dialog('Архивировать дом?',`<p>Дом «${esc(h.name)}» будет скрыт из основного списка. Ход игры и результаты сохранятся. Восстановить дом можно в разделе «Архив».</p>`,'В архив',()=>mutate('/'+id+'/archive',{revision,archived:true}));return;
+    }
     if(action==='copy')return copy(current.house.invite_path);
     if(action==='team-link')return copy(team.invite_path);
     if(action==='add-team')return teamDialog();
