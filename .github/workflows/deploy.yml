@@ -1,4 +1,4 @@
-name: Deploy to Beget
+name: Deploy to Timeweb
 
 on:
   workflow_dispatch:
@@ -6,25 +6,38 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-timeweb
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Test exact address book restoration
+        run: python3 scripts/test_address_book_backup.py
+
       - name: Check deploy secret
         run: |
           if [ -z "$DEPLOY_SECRET" ]; then
-            echo "::error::DETEKTUM is not set. Add it in repo Settings → Secrets and variables → Actions → Secrets."
+            echo "::error::TIMEWEB_DEPLOY_SECRET is not set in repository Actions secrets."
             exit 1
           fi
           echo "DEPLOY_SECRET is set (length: ${#DEPLOY_SECRET} chars)"
         env:
-          DEPLOY_SECRET: ${{ secrets.DETEKTUM }}
+          DEPLOY_SECRET: ${{ secrets.TIMEWEB_DEPLOY_SECRET }}
 
       - name: Call deploy webhook on server
         env:
-          DEPLOY_SECRET: ${{ secrets.DETEKTUM }}
-          DEPLOY_URL: https://detektum.ru/api/deploy
+          DEPLOY_SECRET: ${{ secrets.TIMEWEB_DEPLOY_SECRET }}
+          DEPLOY_URL: https://179.236.41.171/api/deploy
         run: |
           echo "Calling deploy endpoint..."
           RESP=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL" \
@@ -38,20 +51,21 @@ jobs:
             echo "Deploy OK"
           else
             if [ "$CODE" = "000" ]; then
-              echo "::error::Connection failed (000). Check pm2 status, Nginx, HTTPS and DNS for detektum.ru."
+              echo "::error::Connection to Timeweb failed. Check PM2, Nginx and HTTPS on 179.236.41.171."
             else
-              echo "::error::Deploy failed (code $CODE). Check GitHub secret DETEKTUM matches DEPLOY_SECRET in server .env."
+              echo "::error::Deploy failed (code $CODE). Check TIMEWEB_DEPLOY_SECRET matches DEPLOY_SECRET on Timeweb."
             fi
             exit 1
           fi
 
       - name: Verify address book migration after restart
         env:
-          DEPLOY_SECRET: ${{ secrets.DETEKTUM }}
+          DEPLOY_SECRET: ${{ secrets.TIMEWEB_DEPLOY_SECRET }}
+          DEPLOY_URL: https://179.236.41.171/api/deploy
         run: |
           for ATTEMPT in 1 2 3 4 5 6; do
             sleep 10
-            RESP=$(curl -s -w "\n%{http_code}" -X POST https://detektum.ru/api/deploy \
+            RESP=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL" \
               -H "X-Deploy-Secret: $DEPLOY_SECRET" -H "Content-Type: application/json" \
               --data '{"verifyOnly":true}' --connect-timeout 10 --max-time 20) || true
             BODY=$(echo "$RESP" | head -n -1)
