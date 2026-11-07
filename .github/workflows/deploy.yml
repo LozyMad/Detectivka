@@ -24,6 +24,13 @@ jobs:
       - name: Test exact address book restoration
         run: python3 scripts/test_address_book_backup.py
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test server stability
+        run: node --test scripts/test-server-stability.cjs
+
       - name: Check deploy secret
         run: |
           if [ -z "$DEPLOY_SECRET" ]; then
