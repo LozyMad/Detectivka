@@ -28,17 +28,18 @@ jobs:
             RESULT=$(curl -4 -sS -I -o /dev/null --connect-timeout 8 --max-time 15 \
               -w 'http=%{http_code} remote=%{remote_ip} connect=%{time_connect} tls=%{time_appconnect} total=%{time_total}' "$URL") && EXIT_CODE=0 || EXIT_CODE=$?
             echo "::notice::$URL curl_exit=$EXIT_CODE $RESULT"
-            if [[ "$URL" == https:* ]]; then EXPECTED=200; else EXPECTED=301; fi
+            if [[ "$URL" == https://detektum.ru/ ]]; then EXPECTED=200; else EXPECTED=301; fi
             if [[ "$EXIT_CODE" != 0 || "$RESULT" != "http=$EXPECTED "* ]]; then
               FAILURES=$((FAILURES + 1))
             fi
           done
           for HOST in detektum.ru www.detektum.ru; do
-            RESULT=$(curl -4 -sS -I -o /dev/null --resolve "$HOST:443:159.194.252.192" \
+            RESULT=$(curl -4 -sS -I -o /dev/null --resolve "$HOST:443:179.236.41.171" \
               --connect-timeout 8 --max-time 15 \
               -w 'http=%{http_code} remote=%{remote_ip} connect=%{time_connect} tls=%{time_appconnect} total=%{time_total}' "https://$HOST/") && EXIT_CODE=0 || EXIT_CODE=$?
             echo "::notice::Direct-IP https://$HOST/ curl_exit=$EXIT_CODE $RESULT"
-            if [[ "$EXIT_CODE" != 0 || "$RESULT" != "http=200 "* ]]; then
+            if [[ "$HOST" == detektum.ru ]]; then EXPECTED=200; else EXPECTED=301; fi
+            if [[ "$EXIT_CODE" != 0 || "$RESULT" != "http=$EXPECTED "* ]]; then
               FAILURES=$((FAILURES + 1))
             fi
           done
