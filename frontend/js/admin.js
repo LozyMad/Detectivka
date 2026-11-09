@@ -5,6 +5,7 @@ let roomsCache = null;
 let roomsCacheTime = 0;
 let roomsRequest = null;
 let roomTimeRequest = null;
+let statisticsRequest = null;
 let adminPageReady = false;
 let adminPageSuspended = false;
 const roomsPoll = window.gameNetwork.poll(() => loadRooms(true), 5000);
@@ -657,7 +658,7 @@ function switchTab(tabName) {
         populateScenarioDropdowns();
     } else if (tabName === 'statistics') {
         ensureStatsScenarioOptions();
-        // Don't auto-load; let user click refresh
+        loadStatistics();
     } else if (tabName === 'rooms') {
         loadRooms(true);
         ensureRoomScenarioOptions();
@@ -703,7 +704,7 @@ async function loadInitialData() {
     
     // Заполняем выпадающие списки
     populateScenarioDropdowns();
-    ensureStatsScenarioOptions();
+    if (document.getElementById('statistics-tab')?.style.display === 'block') loadStatistics();
     ensureRoomScenarioOptions();
     if (roomsCache) displayRooms(roomsCache);
     populateAnswersRoomSelect();
@@ -1416,29 +1417,35 @@ function populateExportScenarioSelect() {
 function ensureStatsScenarioOptions() {
     const select = document.getElementById('statsScenarioSelect');
     if (!select) return;
-    const options = scenarios.map(s => `<option value="${s.id}">${s.name} ${s.is_active ? '(активный)' : ''}</option>`).join('');
+    const previous = select.value;
+    const options = scenarios.map(s => `<option value="${s.id}">${escapeHtml(s.name)}${s.is_active ? ' (активный)' : ''}</option>`).join('');
     select.innerHTML = '<option value="">Выберите сценарий...</option>' + options;
+    const selected = scenarios.find(s => String(s.id) === previous) || scenarios.find(s => s.is_active) || scenarios[0];
+    select.value = selected ? String(selected.id) : '';
 }
 
 // Загрузка статистики по сценарию
 async function loadStatistics() {
-    const scenarioSelect = document.getElementById('statsScenarioSelect');
+    const scenarioId = document.getElementById('statsScenarioSelect')?.value;
+    const scope = document.getElementById('statsScopeSelect')?.value || 'all';
     const statsTable = document.getElementById('statsTable');
-    
-    if (!scenarioSelect || !statsTable) return;
-    
-    const scenarioId = scenarioSelect.value;
+    if (!statsTable) return;
+
+    statisticsRequest?.abort();
     if (!scenarioId) {
-        statsTable.innerHTML = '<tr><td colspan="4" class="text-center">Выберите сценарий и нажмите Обновить</td></tr>';
+        statsTable.innerHTML = '<tr><td colspan="4" class="text-center">Выберите сценарий</td></tr>';
         return;
     }
-    
+
+    const request = new AbortController();
+    statisticsRequest = request;
+    statsTable.innerHTML = '<tr><td colspan="4" class="text-center">Загружаем поездки…</td></tr>';
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/admin/statistics/${scenarioId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        const response = await window.gameNetwork.fetch(`${API_BASE}/admin/statistics/${encodeURIComponent(scenarioId)}?scope=${encodeURIComponent(scope)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
+            signal: request.signal
         });
         
         if (!response.ok) {
@@ -1449,27 +1456,31 @@ async function loadStatistics() {
         }
         
         const data = await response.json();
-        const stats = data.stats || [];
+        if (request.signal.aborted) return;
+        const stats = data.stats;
         
         if (stats.length === 0) {
-            statsTable.innerHTML = '<tr><td colspan="4" class="text-center">Нет данных для выбранного сценария</td></tr>';
+            statsTable.innerHTML = '<tr><td colspan="4" class="text-center">По выбранным фильтрам поездок пока нет</td></tr>';
             return;
         }
         
         // Отображаем статистику в таблице
         statsTable.innerHTML = stats.map(stat => `
             <tr>
-                <td>${stat.district}</td>
-                <td>${stat.total_attempts}</td>
-                <td class="text-success">${stat.found_count}</td>
-                <td class="text-danger">${stat.not_found_count}</td>
+                <td>${escapeHtml(stat.district)}</td>
+                <td>${Number(stat.total_attempts)}</td>
+                <td class="text-success">${Number(stat.found_count)}</td>
+                <td class="text-danger">${Number(stat.not_found_count)}</td>
             </tr>
         `).join('');
         
     } catch (error) {
+        if (request.signal.aborted) return;
         console.error('Error loading statistics:', error);
         statsTable.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Ошибка загрузки статистики</td></tr>';
         showMessage('Ошибка загрузки статистики', 'danger');
+    } finally {
+        if (statisticsRequest === request) statisticsRequest = null;
     }
 }
 

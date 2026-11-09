@@ -71,27 +71,6 @@ if (DB_TYPE === 'postgresql') {
     });
   }
 
-  static getStatsByScenario(scenarioId) {
-    return new Promise((resolve, reject) => {
-      db.all(
-        `SELECT 
-           district,
-           COUNT(*) as total_attempts,
-           SUM(CASE WHEN found = 1 THEN 1 ELSE 0 END) as found_count,
-           SUM(CASE WHEN found = 0 THEN 1 ELSE 0 END) as not_found_count
-         FROM visit_attempts 
-         WHERE scenario_id = ? AND (room_id IS NULL OR NOT EXISTS (SELECT 1 FROM rooms r WHERE r.id = visit_attempts.room_id AND r.is_test = 1))
-         GROUP BY district
-         ORDER BY total_attempts DESC`,
-        [scenarioId],
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        }
-      );
-    });
-  }
-
   // Новый метод: получение попыток пользователя по сценарию (описание адреса из базы сценария)
   static getByUserAndScenario(userId, scenarioId, roomId = null) {
     return new Promise((resolve, reject) => {
@@ -184,5 +163,18 @@ if (DB_TYPE === 'postgresql') {
 
   VisitAttempt = VisitAttemptSQLite;
 }
+
+VisitAttempt.getStatsByScenario = async function (scenarioId, scope = 'games') {
+  const { query } = require('../config/database');
+  const { rows } = await query(`SELECT v.district, COUNT(*) AS total_attempts,
+      COUNT(CASE WHEN v.found = TRUE THEN 1 END) AS found_count,
+      COUNT(CASE WHEN v.found = FALSE THEN 1 END) AS not_found_count
+    FROM visit_attempts v LEFT JOIN rooms r ON r.id = v.room_id
+    WHERE v.scenario_id = $1 AND ($2 = 'all'
+      OR ($2 = 'test' AND r.is_test = TRUE)
+      OR ($2 = 'games' AND COALESCE(r.is_test, FALSE) = FALSE))
+    GROUP BY v.district ORDER BY total_attempts DESC, v.district`, [scenarioId, scope]);
+  return rows;
+};
 
 module.exports = VisitAttempt;

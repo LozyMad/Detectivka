@@ -122,23 +122,20 @@ const createScenario = async (req, res) => {
   }
 };
 
-// Добавьте эту функцию
 const getStatistics = async (req, res) => {
   try {
-    const { scenario_id } = req.params;
-    
-    // Проверяем права доступа к сценарию
+    const scenarioId = Number(req.params.scenario_id);
+    const scope = req.query.scope ?? 'games';
+    if (!Number.isSafeInteger(scenarioId) || scenarioId < 1 || !['games', 'test', 'all'].includes(scope)) {
+      return res.status(400).json({ error: 'Некорректный сценарий или режим статистики' });
+    }
     if (req.user.admin_level !== 'super_admin') {
-      // Для обычного админа проверяем, есть ли у него доступ к этому сценарию
-      const AdminPermission = require('../models/adminPermission');
-      const hasPermission = await AdminPermission.hasPermission(req.user.id, scenario_id);
-      
-      if (!hasPermission) {
+      const available = await Scenario.getAvailableForAdmin(req.user.id, req.user.admin_level);
+      if (!available.some(scenario => Number(scenario.id) === scenarioId)) {
         return res.status(403).json({ error: 'Access denied to this scenario' });
       }
     }
-    
-    const stats = await VisitAttempt.getStatsByScenario(scenario_id);
+    const stats = await VisitAttempt.getStatsByScenario(scenarioId, scope);
     res.json({ stats });
   } catch (error) {
     console.error('Get statistics error:', error);

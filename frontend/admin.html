@@ -543,7 +543,7 @@
  <div class="ws-section-line"><div><h2>Комнаты в работе</h2><p>Незавершённые расследования из ваших комнат.</p></div><button type="button" class="btn btn-outline-secondary btn-sm" data-ws-go="rooms">Все комнаты <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div><div id="wsCurrentRooms" class="ws-current-rooms"><p class="ws-empty">Загружаем комнаты…</p></div>
  <div class="ws-section-line"><div><h2>С чего начнём?</h2><p>Выберите задачу — нужные инструменты уже рядом.</p></div></div><div class="ws-task-grid"><button type="button" data-ws-go="scenarios" data-ws-super><i class="far fa-folder-open"></i><strong>Подготовить дело</strong><span>Сцены, вопросы, брифинг и приложения.</span><b>Открыть сценарии →</b></button><button type="button" data-ws-go="playerManagement"><i class="far fa-user"></i><strong>Помочь игроку</strong><span>Найти прохождение, проверить доступ и попытки.</span><b>Открыть игроков →</b></button><button type="button" data-ws-go="reviews"><i class="far fa-check-circle"></i><strong>Подвести итоги</strong><span>Оценить ответы и опубликовать гонорар.</span><b>Перейти к проверке →</b></button></div>
 </section>
-<section id="reviews-tab" class="tab-content" style="display:none" data-no-persist><div class="ws-help-note">Здесь проверяются общие комнаты: оценка каждого ответа от 0 до 5 и публикация гонорара. <button class="ws-text-button" type="button" data-ws-go="answers">Ответы отдельных команд →</button></div><div class="filters ws-review-filters"><label>Статус проверки<select id="review-status" class="form-select"><option value="pending_review">Ожидают проверки</option><option value="graded">Опубликованные</option><option value="all">Все завершённые</option></select></label><button class="btn btn-outline-primary" id="review-refresh" type="button">Обновить</button></div><p id="review-error" class="alert alert-danger" role="alert" hidden></p><p id="review-notice" class="alert alert-success" role="status" hidden></p><div id="reviews" class="review-layout"><div id="review-list" class="review-list">Загружаем игры…</div><div id="review-detail" class="review-detail"><p class="muted">Выберите комнату для проверки.</p></div></div></section>
+<section id="reviews-tab" class="tab-content" style="display:none" data-no-persist><div class="ws-help-note">Здесь появляются общие комнаты после завершения игры. Здесь можно проверить ответы и опубликовать гонорар. <button class="ws-text-button" type="button" data-ws-go="answers">Открыть тестовые проверки и ответы отдельных команд →</button></div><div class="filters ws-review-filters"><label>Статус проверки<select id="review-status" class="form-select"><option value="pending_review">Ожидают проверки</option><option value="graded">Опубликованные</option><option value="all">Все завершённые</option></select></label><button class="btn btn-outline-primary" id="review-refresh" type="button">Обновить</button></div><p id="review-error" class="alert alert-danger" role="alert" hidden></p><p id="review-notice" class="alert alert-success" role="status" hidden></p><div id="reviews" class="review-layout"><div id="review-list" class="review-list">Загружаем игры…</div><div id="review-detail" class="review-detail"><p class="muted">Выберите комнату для проверки.</p></div></div></section>
 
                 <section id="playerManagement-tab" class="tab-content player-admin" style="display:none" data-no-persist aria-labelledby="playerManagementTitle">
  <div class="pa-heading"><div><span class="pa-eyebrow">Игроки и совместные расследования</span><h3 id="playerManagementTitle">Самостоятельные игры</h3><p>Доступы к делам, попытки и управление общими комнатами.</p></div><button type="button" class="btn btn-outline-primary" id="paRefresh">Обновить</button></div>
@@ -994,8 +994,16 @@
                         <div class="card-body">
                             <div class="row g-3 align-items-end">
                                 <div class="col-md-6">
-                                    <label class="form-label">Сценарий</label>
-                                    <select id="statsScenarioSelect" class="form-select"></select>
+                                    <label class="form-label" for="statsScenarioSelect">Сценарий</label>
+                                    <select id="statsScenarioSelect" class="form-select" onchange="loadStatistics()"></select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="statsScopeSelect">Поездки</label>
+                                    <select id="statsScopeSelect" class="form-select" onchange="loadStatistics()">
+                                        <option value="all">Все поездки</option>
+                                        <option value="games">Только игровые</option>
+                                        <option value="test">Только тестовые</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-3">
                                     <button class="btn btn-outline-primary w-100" onclick="loadStatistics()">
@@ -1023,7 +1031,7 @@
                                     </thead>
                                     <tbody id="statsTable">
                                         <tr>
-                                            <td colspan="4" class="text-center">Выберите сценарий и нажмите Обновить</td>
+                                            <td colspan="4" class="text-center">Выберите сценарий</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -1715,7 +1723,7 @@
             </form>
         </div></div>
     </div>
-    <script src="js/admin.js?v=individual-ai2"></script>
+    <script src="js/admin.js?v=statistics1"></script>
     <script src="js/admin-players.js?v=linear-fee1"></script>
     <script src="js/admin-houses.js?v=archive1"></script>
     <script src="js/admin-enquiries.js?v=2"></script>
