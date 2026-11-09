@@ -48,8 +48,9 @@ function readConfig(env = process.env) {
 
 function buildInstructions(questions) {
   const policyVersion = questions[0]?.ai_rule?.version;
-  const {STAVKA_VERSION, stavkaPolicy} = require('./scenarioAiGrading');
-  const isStavka = policyVersion === STAVKA_VERSION;
+  const {STAVKA_VERSION, STAVKA_V2_VERSION, getStavkaPolicy} = require('./scenarioAiGrading');
+  const isStavka = [STAVKA_VERSION, STAVKA_V2_VERSION].includes(policyVersion);
+  const stavkaPolicy = getStavkaPolicy(policyVersion);
   const sameVersion = questions.every(q => q.ai_rule?.version === policyVersion);
   if (isStavka && (!sameVersion || !stavkaPolicy)) throw new GradingError('AI_POLICY_UNAVAILABLE');
   const semanticPolicy = sameVersion ? (isStavka ? stavkaPolicy : semanticPolicies[policyVersion]) : null;
