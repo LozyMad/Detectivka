@@ -282,7 +282,13 @@ test('early submission closes only its agency; team drafts, results and answer k
   assert.equal((await f.roomSync(a.room_id)).state,'finished');assert.equal((await f.roomSync(b.room_id)).state,'running');
   let result=await f.store.shared.result(ua);assert.equal(result.awaiting_house_finish,true);assert.deepEqual(result.scoring.grades,[]);assert.equal(result.scoring.fee,2000);
   assert.equal((await f.query('SELECT * FROM player_attempts')).rows.length,0);
-  await f.control(id,'finish',{confirmed:true});result=await f.store.shared.result(ua);assert.equal(result.awaiting_house_finish,false);assert.equal(result.scoring.grades[0].correct_answer,'Анна');
+  await f.store.shared.submitAnswers(ub,{finish:true,answers:[{question_id:1,text:'Анна',revision:0}]});
+  assert.equal((await f.detail(id)).house.state,'running');
+  result=await f.store.shared.result(ua);
+  assert.equal(result.awaiting_house_finish,false);
+  assert.equal(result.scoring.grades[0].grade,5);
+  assert.equal(result.scoring.grades[0].answer_text,'Анна');
+  assert.equal(result.scoring.grades[0].correct_answer,'Анна');
   const login=await f.store.houses.join((await f.detail(id)).house.public_id,{room_id:a.room_id,password:'секрет123'});assert.equal(login.finished,true);
 });
 

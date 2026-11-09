@@ -106,10 +106,9 @@ function createSharedRooms({query,transaction,postgres=false,roomSync,remainingS
     if(room.state!=='finished')fail(409,'Разбор доступен после завершения расследования');
     if(!room.game_start_time)return {room:{id:room.id,name:room.name},cancelled:true,scoring:null,rating_rule:'Комната закрыта до запуска. Гонорар не рассчитывается.'};
     await finalize(room.id);
-    const membership=await houses?.membership(room.id);
+    const awaiting=await houses?.isAnswerReviewLocked(room.id)||false;
     const summary=await scoring?.publicSummary(room.id)||null;
-    const awaiting=!!membership&&membership.house_state!=='finished';
-    return {room:{id:room.id,name:room.name},scoring:awaiting&&summary?{...summary,grades:[]}:summary,awaiting_house_finish:awaiting,ranked:false,rating_rule:awaiting?'Ваше расследование завершено. Разбор ответов откроется после общего завершения игры.':'Гонорар зависит от качества ответов и количества поездок. Оценка каждого ответа — от 0 до 5.'};
+    return {room:{id:room.id,name:room.name},scoring:awaiting&&summary?{...summary,grades:[]}:summary,awaiting_house_finish:awaiting,ranked:false,rating_rule:awaiting?'Ваше расследование завершено. Разбор откроется, когда остальные агентства закончат игру или организатор завершит дом.':'Гонорар зависит от качества ответов и количества поездок. Оценка каждого ответа — от 0 до 5.'};
   }
   return {init,provision,adminInvite,join,identity,authorize,activeQuestions,snapshot,saveNotes,saveDraft,submitAnswers,result,setFinalizer(fn){finalize=fn;},setScoring(service){scoring=service;},setHouses(service){houses=service;}};
 }

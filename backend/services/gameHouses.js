@@ -347,6 +347,15 @@ function createGameHouses({ query, transaction, shared, scoring, finalizeRoom, r
     if (!ready) return null;
     return one(q,'SELECT t.house_id,h.state AS house_state,h.public_id FROM house_teams t JOIN game_houses h ON h.id=t.house_id WHERE t.room_id=$1',[roomId]);
   }
-  return { init,create,update,list,detail,archive,remove,addTeam,editTeam,removeTeam,control,publicInfo,join,syncRoom,membership };
+  async function isAnswerReviewLocked(roomId) {
+    if (!ready) return false;
+    const unfinishedTeam = await one(query, `SELECT 1 FROM house_teams team
+      JOIN game_houses house ON house.id=team.house_id
+      JOIN house_teams sibling ON sibling.house_id=house.id
+      JOIN rooms room ON room.id=sibling.room_id
+      WHERE team.room_id=$1 AND house.state<>'finished' AND room.state<>'finished' LIMIT 1`, [roomId]);
+    return !!unfinishedTeam;
+  }
+  return { init,create,update,list,detail,archive,remove,addTeam,editTeam,removeTeam,control,publicInfo,join,syncRoom,membership,isAnswerReviewLocked };
 }
 module.exports = { createGameHouses };
