@@ -2270,11 +2270,13 @@ function displayRoomAnswers(data) {
     let html = '';
     
     data.users.forEach((user, userIndex) => {
-        const collapseId = `answers-team-${user.id != null ? user.id : userIndex}`;
+        const collapseId = `answers-team-${user.room_user_id ?? userIndex}`;
         const review = user.ai_review;
         const grades = new Map((review?.grades || []).map(grade => [grade.question_id, grade]));
         const reviewStatus = {waiting: 'После окончания игры', queued: 'В очереди', processing: 'Проверяются',
             completed: 'Проверены', needs_review: 'Нужна ручная проверка', superseded: 'Нужна ручная проверка'}[review?.status];
+        const score = review?.status === 'completed' && grades.size
+            ? ` · ${review.grades.reduce((total, grade) => total + grade.grade, 0)} / ${grades.size * 5} баллов` : '';
         html += `
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center pe-3" role="button" tabindex="0" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="true" aria-controls="${collapseId}" style="cursor: pointer;">
@@ -2296,7 +2298,7 @@ function displayRoomAnswers(data) {
                 </div>
                 <div class="collapse show" id="${collapseId}">
                 <div class="card-body">
-                    ${reviewStatus ? `<p><strong>Проверка ответов:</strong> ${reviewStatus}</p>` : ''}
+                    ${reviewStatus ? `<p><strong>Проверка ответов:</strong> ${reviewStatus}${score}</p>` : ''}
         `;
         
         if (!user.answers || user.answers.length === 0) {
@@ -2428,10 +2430,10 @@ async function populateAnswersRoomSelect() {
         // Очищаем и добавляем опции
         select.innerHTML = '<option value="">Выберите комнату...</option>';
         
-        data.rooms.filter(room => !room.is_test).forEach(room => {
+        data.rooms.forEach(room => {
             const option = document.createElement('option');
             option.value = room.id;
-            option.textContent = `${room.name} (${room.scenario_name})`;
+            option.textContent = `${room.is_test ? 'Тестовая · ' : ''}#${room.id} ${room.name} (${room.scenario_name})`;
             select.appendChild(option);
         });
         
