@@ -236,6 +236,9 @@ const getAnswersByRoom = async (req, res) => {
                 room_user_id: roomUser.id,
                 username: roomUser.username,
                 answers: userAnswers,
+                ai_review: !room.is_shared && process.env.AI_GRADING_ENABLED === '1'
+                    ? await require('../services/playerRuntime').cabinet.scoring.individualReviews.organizerSummary(room, roomUser.id)
+                    : null,
                 trip_stats: {
                     total_trips: tripStats?.total_trips || 0,
                     successful_trips: tripStats?.successful_trips || 0,

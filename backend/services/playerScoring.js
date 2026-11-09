@@ -1,4 +1,5 @@
 'use strict';
+const {configured, freezeScenarioRubric} = require('./scenarioAiGrading');
 const FORMULA_VERSION=2, DEFAULT_MAX_FEE=2000, DEFAULT_STANDARD_TRIPS=20;
 const fail=(status,message)=>{const e=new Error(message);e.status=status;throw e;};
 const now=()=>new Date().toISOString();
@@ -12,7 +13,7 @@ function calculateFee({points,max_points,trips,max_fee=DEFAULT_MAX_FEE,standard_
   const fee=Math.round(max_fee*answer_factor*trip_factor);
   return {points,max_points,trips,max_fee,standard_trips,quality,trip_factor,fee,rating_points:Math.round(2000*answer_factor*trip_factor),formula_version};
 }
-function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync,aiGrader}) {
+function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync,aiGrader,postgres}) {
   const bind=q=>(sql,params=[])=>{const values=[];const mapped=sql.replace(/\$(\d+)/g,(_,n)=>{values.push(params[Number(n)-1]);return '$'+values.length;});return q(mapped,values);};
   const query=bind(rawQuery),transaction=work=>rawTransaction(q=>work(bind(q)));
   const one=async(q,sql,params=[]) => (await q(sql,params)).rows[0];
@@ -20,6 +21,7 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
   const staff=admin=>{if(!admin?.is_admin)fail(403,'Нужны права организатора');};
   let finalize=async()=>{};
   const aiReviews=require('./aiReviewJobs').createAiReviewJobs({query,transaction,applyResult:applyAiResult,settleExpired:settleAiRooms,...(aiGrader?{grader:aiGrader}:{})});
+  const individualReviews = require('./individualAiReviews').createIndividualAiReviews({query, transaction, roomSync, postgres, grader: aiGrader});
   async function settleAiRooms(){
     const rows=(await query("SELECT f.room_id,f.questions FROM player_room_scoring f JOIN rooms r ON r.id=f.room_id WHERE f.trips IS NULL AND f.questions LIKE $2 AND r.is_test=FALSE AND r.game_start_time IS NOT NULL AND (r.state='finished' OR (r.state='running' AND r.game_end_time<=$1)) ORDER BY f.room_id LIMIT 50",[now(),'%"ai_rule":%'])).rows;
     for(const row of rows){if(!JSON.parse(row.questions).every(q=>q.ai_rule))continue;const room=await roomSync(row.room_id);if(room?.state==='finished')await finalize(row.room_id);}
@@ -32,6 +34,7 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
       `CREATE TABLE IF NOT EXISTS player_answer_grades (room_id INTEGER NOT NULL REFERENCES player_room_scoring(room_id) ON DELETE CASCADE,question_id INTEGER NOT NULL,grade INTEGER NOT NULL CHECK(grade>=0 AND grade<=5),comment TEXT NOT NULL DEFAULT '',PRIMARY KEY(room_id,question_id))`
     ])await query(sql);
     await aiReviews.init();
+    await individualReviews.init();
     for(const definition of ['rating_points INTEGER','answers TEXT']){try{await query('ALTER TABLE player_room_scoring ADD COLUMN '+definition);}catch(e){if(e.code!=='42701'&&!String(e.message).includes('duplicate column'))throw e;}}
     const rooms=(await query(`SELECT r.id FROM rooms r WHERE r.is_test=FALSE AND (EXISTS (SELECT 1 FROM shared_rooms h WHERE h.room_id=r.id) OR EXISTS (SELECT 1 FROM player_runs g WHERE g.room_id=r.id AND g.is_owner=1)) AND NOT EXISTS (SELECT 1 FROM player_room_scoring f WHERE f.room_id=r.id)`)).rows;
     for(const r of rooms)await transaction(async q=>{await capture(q,r.id,null,true);const room=await one(q,'SELECT state,game_start_time FROM rooms WHERE id=$1',[r.id]);if(room.state==='finished'&&room.game_start_time){const grade=await complete(q,r.id);if(grade.result_status==='graded')await q("UPDATE player_runs SET score=$1,result_status='graded' WHERE room_id=$2 AND room_user_id=(SELECT f.room_user_id FROM player_room_scoring f WHERE f.room_id=$2) AND (result_status IS NULL OR result_status='pending_review')",[grade.score,r.id]);}});
@@ -97,7 +100,7 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     const product=productId||owner?.product_id?await one(q,'SELECT id,rubric FROM player_products WHERE id=$1',[productId||owner.product_id]):await one(q,"SELECT id,rubric FROM player_products WHERE scenario_id=$1 AND id='borrowed-time'",[room.scenario_id]);
     const rubric=product?.rubric?JSON.parse(product.rubric):[];
     let questions=(await q('SELECT id,question_text FROM questions WHERE scenario_id=$1 AND is_active=TRUE ORDER BY question_order,id',[room.scenario_id])).rows.map(item=>({...item,criteria:criteria.find(c=>Number(c.question_id)===Number(item.id))?.criteria||'',auto_answers:rubric.find(r=>Number(r.question_id)===Number(item.id))?.answers||null}));
-    if(aiReviews.enabled&&product?.id==='borrowed-time'&&!preserveLegacy)questions=require('./borrowedTimeGrading').freezeRubric(questions)||questions;
+    if(aiReviews.enabled&&!preserveLegacy)questions=freezeScenarioRubric(room.scenario_id,questions,product?.id)||questions;
     const legacy=preserveLegacy&&room.state==='finished'&&owner?.result_status==='graded';
     const trips=legacy?Number((await one(q,'SELECT COUNT(*) AS n FROM visit_attempts WHERE room_id=$1 AND user_id=$2',[roomId,userId])).n):null;
     await q(`INSERT INTO player_room_scoring (room_id,room_user_id,scenario_id,formula_version,max_fee,standard_trips,max_points,settings_revision,questions,trips,fee,review_status,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(room_id) DO NOTHING`,[roomId,userId,room.scenario_id,legacy?0:FORMULA_VERSION,legacy?2000:saved?.max_fee||DEFAULT_MAX_FEE,saved?.standard_trips||DEFAULT_STANDARD_TRIPS,questions.length*5,saved?.revision||0,JSON.stringify(questions),trips,legacy?owner.score:null,legacy?'graded':'pending_review',now()]);
@@ -117,7 +120,7 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     if(saved.trips!=null)return {score:saved.fee,result_status:saved.review_status};
     const trips=Number((await one(q,'SELECT COUNT(*) AS n FROM visit_attempts WHERE room_id=$1 AND user_id=$2',[roomId,saved.room_user_id])).n);
     const questions=JSON.parse(saved.questions);
-    const auto=questions.every(item=>Array.isArray(item.auto_answers));
+    const auto=!questions.some(item=>item.ai_rule)&&questions.every(item=>Array.isArray(item.auto_answers));
     const answers=(await q('SELECT question_id,answer_text FROM question_answers WHERE room_user_id=$1 ORDER BY id',[saved.room_user_id])).rows;
     const latest=new Map(answers.map(a=>[Number(a.question_id),a.answer_text]));
     const grades=auto?questions.map(item=>({question_id:Number(item.id),grade:item.auto_answers.map(normalized).includes(normalized(latest.get(Number(item.id))))?5:0,comment:''})):null;
@@ -148,12 +151,13 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     if(!aiReviews.enabled||!f||room.is_test||room.state!=='finished'||!room.game_start_time||f.review_status!=='pending_review'||f.formula_version===0||f.trips==null||f.answers==null||f.fee!=null||f.published_grades!=null)return null;
     if(await one(q,'SELECT room_id FROM player_ai_reviews WHERE room_id=$1',[room.id]))return null;
     if(await one(q,'SELECT question_id FROM player_answer_grades WHERE room_id=$1 LIMIT 1',[room.id]))return null;
-    if(!await one(q,"SELECT id FROM player_products WHERE scenario_id=$1 AND id='borrowed-time'",[room.scenario_id]))return null;
+    const product = configured(room.scenario_id) ? null : await one(q,"SELECT id FROM player_products WHERE scenario_id=$1 AND id='borrowed-time'",[room.scenario_id]);
+    if(!configured(room.scenario_id)&&!product)return null;
     const questions=JSON.parse(f.questions);
     if(!questions.length)return null;
     if(questions.every(item=>item.ai_rule))return questions;
     if(questions.some(item=>item.ai_rule))return null;
-    return require('./borrowedTimeGrading').freezeRubric(questions);
+    return freezeScenarioRubric(room.scenario_id,questions,product?.id);
   }
   async function startAiReview(admin,id,body={}){
     await roomAccess(admin,id);mutation(body);
@@ -238,6 +242,6 @@ function createPlayerScoring({query:rawQuery,transaction:rawTransaction,roomSync
     const rows=(await query("SELECT f.questions FROM player_room_scoring f JOIN rooms r ON r.id=f.room_id WHERE r.state<>'finished'")).rows;
     return rows.some(r=>JSON.parse(r.questions).some(q=>Number(q.id)===Number(questionId)));
   }
-  return {init,capture,complete,needsFinalize,conditions,frozenQuestions,publicSummary,settingsList,settings,saveSettings,reviews,review,saveReview,startAiReview,firstRuns,rankings,questionInOpenRoom,aiReviews,setFinalizer:fn=>{finalize=fn;}};
+  return {init,capture,complete,needsFinalize,conditions,frozenQuestions,publicSummary,settingsList,settings,saveSettings,reviews,review,saveReview,startAiReview,firstRuns,rankings,questionInOpenRoom,aiReviews,individualReviews,setFinalizer:fn=>{finalize=fn;}};
 }
 module.exports={createPlayerScoring,calculateFee,FORMULA_VERSION};

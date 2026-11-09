@@ -22,6 +22,17 @@ router.get('/shared/result', authenticateResultToken, (req, res, next) => {
       ? res.status(error.status).json({error: error.message, ...(error.data || {})}) : next(error));
 });
 
+function individualReview(action) {
+  return (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    Promise.resolve().then(() => require('../services/playerRuntime').cabinet.scoring.individualReviews[action](req.roomUser))
+      .then(data => res.json(data)).catch(error => error.status ? res.status(error.status).json({error: error.message}) : next(error));
+  };
+}
+
+router.get('/individual/ai-review', authenticateResultToken, individualReview('result'));
+router.post('/individual/ai-review', authenticateResultToken, individualReview('submit'));
+
 router.use(authenticateToken);
 
 router.use('/shared', require('./sharedGame'));

@@ -76,9 +76,12 @@
     stopRoomResultWatch?.();
     let identity;try{identity=JSON.parse(sessionStorage.getItem('detectum-room-result')||'null');}catch(_){}
     if(!identity?.token){content.innerHTML='<section class="welcome"><h1>Результат расследования</h1><p>Откройте результат из завершённой игры или истории в личном кабинете.</p><a class="button" href="/profile#my-games">История игр</a></section>';return;}
-    content.innerHTML='<section class="room-result-page"><span class="eyebrow">Дело закрыто</span><h1>Гонорар за расследование</h1><div id="room-result-content"><p role="status">Получаем результат…</p></div><div class="actions"><button class="button secondary" type="button" data-action="room-result">Обновить результат</button><a class="button" href="'+(account?'/profile#my-games':'/catalog')+'">'+(account?'В кабинет':'Выбрать дело')+'</a></div></section>';
+    const individual = identity.mode === 'individual' || identity.mode === 'test';
+    const test = identity.mode === 'test' && Number.isSafeInteger(Number(identity.room_id));
+    const back = test ? '/game?test-room='+Number(identity.room_id) : account ? '/profile#my-games' : '/catalog';
+    content.innerHTML='<section class="room-result-page"><span class="eyebrow">'+(test?'Тестовая комната':'Дело закрыто')+'</span><h1>'+(individual?'Оценка ответов':'Гонорар за расследование')+'</h1><div id="room-result-content"><p role="status">Получаем результат…</p></div><div class="actions"><button class="button secondary" type="button" data-action="room-result">Обновить результат</button><a class="button" href="'+back+'">'+(test?'В тестовую комнату':account?'В кабинет':'Выбрать дело')+'</a></div></section>';
     stopRoomResultWatch=window.detektumResults.watch({isActive:()=>route==='/room-result',load:async()=>{
-      const response=await fetch('/api/game/shared/result',{headers:{Authorization:'Bearer '+identity.token},cache:'no-store',signal:AbortSignal.timeout(20000)});
+      const response=await fetch(individual?'/api/game/individual/ai-review':'/api/game/shared/result',{headers:{Authorization:'Bearer '+identity.token},cache:'no-store',signal:AbortSignal.timeout(20000)});
       const value=await response.json();if(!response.ok)throw new Error(value.error||'Не удалось получить результат');return value;
     },onResult:r=>{document.getElementById('room-result-content').innerHTML=window.detektumResults.render(r);},onError:error=>{
       const host=document.getElementById('room-result-content'),status=host.querySelector('[data-result-status]');if(status)status.textContent=error.message;else host.innerHTML='<p class="error" role="alert">'+escape(error.message)+'</p>';

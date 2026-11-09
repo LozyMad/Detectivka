@@ -427,6 +427,9 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         const room = JSON.parse(gameStorage.getItem('room') || 'null');
         setScenarioBanner(room?.scenario_id);
+        if (room?.ai_review_available && !room.is_test && !room.shared) {
+            window.gameSession.onRoomFinished = identity => showIndividualReview(room, identity.token);
+        }
     } catch (_) {}
     setupDistrictSelect();
     const route = window.gameSession.restoreRoute();
@@ -2011,6 +2014,11 @@ function displayQuestions(questions, scenarioId, roomUser) {
     }
 }
 
+function showIndividualReview(room, token) {
+    sessionStorage.setItem('detectum-room-result', JSON.stringify({token, room_id: room.id, mode: room.is_test ? 'test' : 'individual'}));
+    location.replace('/room-result');
+}
+
 async function submitAllAnswers() {
     const globalStatusDiv = document.getElementById('answers_global_status');
     
@@ -2020,6 +2028,7 @@ async function submitAllAnswers() {
     }
     
     const token = gameStorage.getItem('token');
+    const room = JSON.parse(gameStorage.getItem('room') || 'null');
     const results = [];
     
     for (const question of currentQuestions) {
@@ -2047,8 +2056,12 @@ async function submitAllAnswers() {
                 results.push({ questionId: question.id, ok: true });
             } else {
                 const errorBody = await response.json().catch(() => ({}));
-                const msg = errorBody.error || (response.status === 401 ? 'Требуется авторизация. Зайдите в комнату заново.' : `Ошибка ${response.status}`);
-                results.push({ questionId: question.id, ok: false, error: msg });
+                if (room?.ai_review_available && response.status === 400 && errorBody.error === 'You have already answered this question') {
+                    results.push({questionId: question.id, ok: true});
+                } else {
+                    const msg = errorBody.error || (response.status === 401 ? 'Требуется авторизация. Зайдите в комнату заново.' : `Ошибка ${response.status}`);
+                    results.push({ questionId: question.id, ok: false, error: msg });
+                }
             }
         } catch (error) {
             console.error('Error submitting answer:', error);
@@ -2068,6 +2081,19 @@ async function submitAllAnswers() {
             try {
                 gameStorage.removeItem(getAnswersStorageKey(lastAnswersScenarioId, lastAnswersRoomUser));
             } catch (e) {}
+        }
+        if (room?.ai_review_available) {
+            try {
+                const response = await window.gameNetwork.fetch(`${API_BASE}/game/individual/ai-review`, {
+                    method: 'POST', headers: {Authorization: `Bearer ${token}`}
+                });
+                const review = await response.json();
+                if (!response.ok) throw new Error(review.error || 'Проверка недоступна');
+                if (review.available && review.test) showIndividualReview(room, token);
+                if (review.available && !review.test) globalStatusDiv.textContent = 'Ответы отправлены. Оценки появятся после окончания игры.';
+            } catch (_) {
+                globalStatusDiv.textContent = 'Ответы сохранены. Повторите отправку, чтобы запустить проверку.';
+            }
         }
     } else if (successCount > 0 && failCount > 0) {
         globalStatusDiv.innerHTML = `<div class="alert alert-warning">Часть ответов отправлена успешно (${successCount}), часть с ошибками (${failCount}). ${errorMessage ? errorMessage : ''}</div>`;

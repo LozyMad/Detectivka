@@ -15,7 +15,7 @@ const publicAccount = account => ({ id: account.id, username: account.username, 
 
 function createPlayerCabinet({ query, transaction, localMode = false, postgres = false, roomSync, remainingSeconds, findTeams, aiGrader }) {
   const shared = require('./sharedRooms').createSharedRooms({query,transaction,postgres,roomSync,remainingSeconds});
-  const scoring=require('./playerScoring').createPlayerScoring({query,transaction,roomSync,aiGrader});
+  const scoring=require('./playerScoring').createPlayerScoring({query,transaction,roomSync,aiGrader,postgres});
   const one = async (q, sql, values = []) => (await q(sql, values)).rows[0];
   const insertSession = async (q, accountId) => {
     const token = crypto.randomBytes(32).toString('base64url');

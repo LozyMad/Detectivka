@@ -2271,12 +2271,16 @@ function displayRoomAnswers(data) {
     
     data.users.forEach((user, userIndex) => {
         const collapseId = `answers-team-${user.id != null ? user.id : userIndex}`;
+        const review = user.ai_review;
+        const grades = new Map((review?.grades || []).map(grade => [grade.question_id, grade]));
+        const reviewStatus = {waiting: 'После окончания игры', queued: 'В очереди', processing: 'Проверяются',
+            completed: 'Проверены', needs_review: 'Нужна ручная проверка', superseded: 'Нужна ручная проверка'}[review?.status];
         html += `
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center pe-3" role="button" tabindex="0" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="true" aria-controls="${collapseId}" style="cursor: pointer;">
                     <h6 class="mb-0">
                         <i class="fas fa-chevron-down me-2 collapse-icon"></i>
-                        <i class="fas fa-user me-2"></i>Команда: ${user.username}
+                        <i class="fas fa-user me-2"></i>Команда: ${escapeHtml(user.username)}
                     </h6>
                     <div class="d-flex gap-2">
                         <span class="badge bg-light text-dark">
@@ -2292,6 +2296,7 @@ function displayRoomAnswers(data) {
                 </div>
                 <div class="collapse show" id="${collapseId}">
                 <div class="card-body">
+                    ${reviewStatus ? `<p><strong>Проверка ответов:</strong> ${reviewStatus}</p>` : ''}
         `;
         
         if (!user.answers || user.answers.length === 0) {
@@ -2301,6 +2306,7 @@ function displayRoomAnswers(data) {
             
             user.answers.forEach((answer, answerIndex) => {
                 const hasAnswer = answer.answer_text && answer.answer_text.trim() !== '';
+                const grade = grades.get(answer.question_id);
                 const answerClass = hasAnswer ? 'border-success' : 'border-warning';
                 const answerIcon = hasAnswer ? 'fa-check-circle text-success' : 'fa-times-circle text-warning';
                 
@@ -2312,14 +2318,15 @@ function displayRoomAnswers(data) {
                                     <i class="fas ${answerIcon} me-2"></i>
                                     Вопрос ${answerIndex + 1}
                                 </h6>
-                                <p class="card-text fw-bold">${answer.question_text}</p>
+                                <p class="card-text fw-bold">${escapeHtml(answer.question_text)}</p>
                                 <div class="answer-content">
                                     ${hasAnswer ? 
-                                        `<p class="text-success"><strong>Ответ:</strong> ${answer.answer_text}</p>
+                                        `<p class="text-success"><strong>Ответ:</strong> ${escapeHtml(answer.answer_text)}</p>
                                          <small class="text-muted">Отвечено: ${new Date(answer.answered_at).toLocaleString('ru-RU')}</small>` :
                                         '<p class="text-warning"><em>Ответ не дан</em></p>'
                                     }
                                 </div>
+                                ${grade ? `<p><strong>${grade.grade}/5</strong> ${escapeHtml(grade.comment)}${grade.review_reason ? `<br>${escapeHtml(grade.review_reason)}` : ''}</p>` : ''}
                             </div>
                         </div>
                     </div>

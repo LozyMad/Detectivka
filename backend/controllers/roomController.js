@@ -88,7 +88,8 @@ const enterTestRoom = async (req, res) => {
     );
     res.json({
       token,
-      room: { id: room.id, name: room.name, scenario_id: room.scenario_id, scenario_name: room.scenario_name, is_test: true },
+      room: { id: room.id, name: room.name, scenario_id: room.scenario_id, scenario_name: room.scenario_name, is_test: true,
+        ai_review_available: process.env.AI_GRADING_ENABLED === '1' && require('../services/scenarioAiGrading').configured(room.scenario_id) },
       user: { id: testUser.id, username, room_id: room.id }
     });
   } catch (error) {

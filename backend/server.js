@@ -238,6 +238,7 @@ database.init().then(async () => {
   await require('./services/playerRuntime').cabinet.init();
   await require('./services/playerCatalogSeed').seedCatalog();
   require('./services/playerRuntime').cabinet.scoring.aiReviews.start();
+  require('./services/playerRuntime').cabinet.scoring.individualReviews.start();
   await require('./services/borisBlogRevision').updateDefaultBorisBlogs();
   // РАДИКАЛЬНАЯ инициализация вариантов выбора для ВСЕХ адресов
   try {

@@ -47,7 +47,8 @@ const roomLogin = async (req, res) => {
     );
     res.json({
       token,
-      room: { id: room.id, name: room.name, scenario_id: room.scenario_id, start_time: room.start_time, duration_seconds: room.duration_seconds },
+      room: { id: room.id, name: room.name, scenario_id: room.scenario_id, start_time: room.start_time, duration_seconds: room.duration_seconds,
+        ai_review_available: !room.is_shared && process.env.AI_GRADING_ENABLED === '1' && require('../services/scenarioAiGrading').configured(room.scenario_id) },
       user: { id: user.id, username: user.username, room_id: room.id }
     });
   } catch (error) {
