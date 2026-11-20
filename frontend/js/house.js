@@ -7,8 +7,15 @@
   let busy=false;
   const error=message=>{byId('house-error').textContent=message;byId('house-error').hidden=!message;};
   async function request(path,body){
-    const response=await fetch(base+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store',signal:AbortSignal.timeout(15000)});
-    const data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось загрузить игру');return data;
+    const controller=new AbortController();let timedOut=false;
+    const timer=setTimeout(()=>{timedOut=true;controller.abort();},15000);
+    try{
+      const response=await fetch(base+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store',signal:controller.signal});
+      const data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось загрузить игру');return data;
+    }catch(e){
+      if(timedOut){const timeout=new Error('Время ожидания истекло');timeout.name='TimeoutError';throw timeout;}
+      throw e;
+    }finally{clearTimeout(timer);}
   }
   async function load(){
     if(busy)return;

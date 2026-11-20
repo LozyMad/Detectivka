@@ -206,6 +206,17 @@ router.get('/game/scenarios/:scenarioId/addresses/:addressId/:number', authentic
   try {
     const application = await applications.get(req.params.scenarioId, req.params.addressId, req.params.number);
     if (!application) return res.status(404).json({ error: 'Приложение не найдено' });
+    await Address.getById(req.params.scenarioId, req.params.addressId)
+      .then(address => {
+        const addressLabel = address
+          ? `${address.district || ''} ${address.house_number || ''}${address.apartment ? '/' + address.apartment : ''}`.trim()
+          : '';
+        return require('../services/playerRuntime').cabinet.houses.recordApplicationRequest(req.roomUser, {
+          scenario_id: Number(req.params.scenarioId), address_id: Number(req.params.addressId),
+          application_number: Number(req.params.number), address_label: addressLabel
+        });
+      })
+      .catch(error => console.error('[Application request log]', error));
     res.json({ application });
   } catch (error) { next(error); }
 });

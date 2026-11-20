@@ -28,6 +28,12 @@ function createGameHouses({ query, transaction, shared, scoring, finalizeRoom, r
       room_id INTEGER PRIMARY KEY REFERENCES rooms(id), house_id TEXT NOT NULL REFERENCES game_houses(id),
       name TEXT NOT NULL, name_key TEXT NOT NULL, participants TEXT NOT NULL DEFAULT '', UNIQUE(house_id, name_key))`);
     await query('CREATE INDEX IF NOT EXISTS idx_house_teams_house ON house_teams(house_id)');
+    await query(`CREATE TABLE IF NOT EXISTS house_application_requests (
+      id TEXT PRIMARY KEY, house_id TEXT NOT NULL REFERENCES game_houses(id) ON DELETE CASCADE,
+      room_id INTEGER NOT NULL, scenario_id INTEGER NOT NULL, address_id INTEGER NOT NULL,
+      application_number INTEGER NOT NULL, address_label TEXT NOT NULL DEFAULT '',
+      requester TEXT NOT NULL DEFAULT '', requested_at TEXT NOT NULL)`);
+    await query('CREATE INDEX IF NOT EXISTS idx_house_application_requests_house_time ON house_application_requests(house_id, requested_at)');
     await query(`CREATE TABLE IF NOT EXISTS house_operations (
       id TEXT PRIMARY KEY, house_id TEXT NOT NULL REFERENCES game_houses(id), admin_id INTEGER NOT NULL,
       payload TEXT NOT NULL, result TEXT NOT NULL, created_at TEXT NOT NULL)`);
@@ -320,7 +326,21 @@ function createGameHouses({ query, transaction, shared, scoring, finalizeRoom, r
       team.invite_path = '/house/'+house.public_id+'?team='+team.room_id;
     }
     const scenario = await one(query,'SELECT name FROM scenarios WHERE id=$1',[house.scenario_id]);
-    return { house: { ...house, scenario_name: scenario?.name, remaining_seconds:remainingSeconds(house),invite_path:'/house/'+house.public_id }, teams, standings_final:final };
+    const application_requests=(await query(`SELECT r.requested_at,r.application_number,r.address_label,r.requester,t.name AS team_name
+      FROM house_application_requests r JOIN house_teams t ON t.room_id=r.room_id
+      WHERE r.house_id=$1 ORDER BY r.requested_at DESC LIMIT 200`,[id])).rows;
+    return { house: { ...house, scenario_name: scenario?.name, remaining_seconds:remainingSeconds(house),invite_path:'/house/'+house.public_id }, teams, standings_final:final, application_requests };
+  }
+  async function recordApplicationRequest(roomUser, request) {
+    if (!roomUser?.room_id || !request) return;
+    const team=await one(query,'SELECT house_id FROM house_teams WHERE room_id=$1',[roomUser.room_id]);
+    if (!team) return;
+    await query(`INSERT INTO house_application_requests
+      (id,house_id,room_id,scenario_id,address_id,application_number,address_label,requester,requested_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[
+      crypto.randomUUID(),team.house_id,roomUser.room_id,request.scenario_id,request.address_id,
+      request.application_number,request.address_label||'',roomUser.username||'',now()
+    ]);
   }
   async function publicInfo(publicId) {
     const found = await one(query,'SELECT id FROM game_houses WHERE public_id=$1',[publicId]);
@@ -356,6 +376,6 @@ function createGameHouses({ query, transaction, shared, scoring, finalizeRoom, r
       WHERE team.room_id=$1 AND house.state<>'finished' AND room.state<>'finished' LIMIT 1`, [roomId]);
     return !!unfinishedTeam;
   }
-  return { init,create,update,list,detail,archive,remove,addTeam,editTeam,removeTeam,control,publicInfo,join,syncRoom,membership,isAnswerReviewLocked };
+  return { init,create,update,list,detail,archive,remove,addTeam,editTeam,removeTeam,control,publicInfo,join,syncRoom,recordApplicationRequest,membership,isAnswerReviewLocked };
 }
 module.exports = { createGameHouses };
