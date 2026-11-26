@@ -54,12 +54,12 @@ function createEnquiryRoutes({ store = enquiries, limiter = createSubmissionLimi
       if (previous) return res.json({ ok: true, id: previous.id });
       if (!limiter(req)) {
         res.setHeader('Retry-After', '900');
-        return res.status(429).json({ error: 'Слишком много заявок за короткое время. Попробуйте позже или напишите в @detectum.' });
+        return res.status(429).json({ error: 'Слишком много заявок за короткое время. Попробуйте позже или напишите в @detektum.' });
       }
       const saved = await store.submit(values);
       return res.status(saved.created ? 201 : 200).json({ ok: true, id: saved.id });
     } catch (error) {
-      return failure(res, error, 'Не удалось сохранить заявку. Попробуйте ещё раз или напишите в @detectum.');
+      return failure(res, error, 'Не удалось сохранить заявку. Попробуйте ещё раз или напишите в @detektum.');
     }
   });
 
